@@ -4,9 +4,34 @@ This is still a work in progress. We are currently using GPS and Lidar, but plan
 on incorporating IMU, wheel odometry, and visual odometry.
 
 ## Installation
-Clone this repo to your catkin workspace:
+Note: This package assumes you have install the package inspector_gadget
+(https://github.com/nickcharron/inspector_gadget) and all its dependencies
+before installing ig_graph_slam.
+
+1. Clone this repo to your catkin workspace:
 
 ```
 cd /path/to/catkin_ws/src
-git clone git@github.com:
+git clone https://github.com/nickcharron/ig_graph_slam.git
 ```
+
+2. Download and install Intel MKL from https://software.intel.com/en-us/mkl
+
+	 Note: this is not required, but having it yields better performance with gtsam
+
+3. Install all dependencies:
+
+```
+cd /ig_graph_slam
+bash ./scritps/install_deps.sh
+```
+
+## Additional Information and Useful Resources
+
+GTSAM discussion group: https://groups.google.com/forum/#!forum/gtsam-users
+
+GTSAM concepts: https://bitbucket.org/gtborg/gtsam/src/90f688d94c720ac859689e62d6a003dabc79bc42/GTSAM-Concepts.md?fileviewer=file-view-default
+
+GTSAM primer: https://bitbucket.org/gtborg/gtsam/wiki/Home
+
+GTSAM extra install instructions: https://bitbucket.org/gtborg/gtsam/src/90f688d94c720ac859689e62d6a003dabc79bc42/INSTALL?fileviewer=file-view-default
