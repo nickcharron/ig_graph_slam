@@ -12,11 +12,11 @@ FIND_PACKAGE(Boost COMPONENTS REQUIRED log_SETup log)
 FIND_PACKAGE(PCL 1.8 REQUIRED)
 FIND_PACKAGE(OpenCV REQUIRED)
 FIND_PACKAGE(yaml-cpp REQUIRED)
-#FIND_PACKAGE(SUITESPARSE REQUIRED)
+FIND_PACKAGE(SUITESPARSE REQUIRED)
 FIND_PACKAGE(GTSAM REQUIRED)
 FIND_PACKAGE(GeographicLib 1.49 REQUIRED)
 FIND_PACKAGE(wave REQUIRED utils matching containers geometry gtsam)
-FIND_PACKAGE(catkin REQUIRED COMPONENTS wave_spatial_utils)
+#FIND_PACKAGE(catkin REQUIRED COMPONENTS wave_spatial_utils)
 
 ADD_DEFINITIONS(${PCL_DEFINITIONS})
 ADD_DEFINITIONS(${GeographicLib_DEFINITIONS})
@@ -33,7 +33,7 @@ INCLUDE_DIRECTORIES(
         ~/catkin_ws/devel/include
         /opt/ros/kinetic/include
         ${OpenCV_INCLUDE_DIRS}
-        #${SUITESPARE_INCLUDE_DIRS}
+        ${SUITESPARE_INCLUDE_DIRS}
         ${GTSAM_INCLUDE_DIRS}
         ${GeographicLib_INCLUDE_DIRS}
 )
@@ -42,7 +42,7 @@ LINK_DIRECTORIES(
         ${PCL_LIBRARY_DIRS}
         ~/catkin_ws/devel/lib
         /opt/ros/kinetic/lib
-        #${SUITESPARSE_LIBRARY_DIRS}
+        ${SUITESPARSE_LIBRARY_DIRS}
 )
 
 #ADD_EXECUTABLE(${PROJECT_NAME}_node
@@ -53,7 +53,7 @@ LINK_DIRECTORIES(
 #TARGET_LINK_LIBRARIES(${PROJECT_NAME}_node
 #        yaml-cpp
 #        wave::wave
-#        wave_spatial_utils
+#        #wave_spatial_utils
 #        ${catkin_LIBRARIES}
 #        ${PCL_LIBRARIES}
 #        ${OpenCV_LIBS}

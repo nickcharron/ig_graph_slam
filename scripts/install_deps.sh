@@ -26,6 +26,10 @@ install_gtsam()
 		git clone https://bitbucket.org/gtborg/gtsam.git
 		cd gtsam
 		mkdir build
+		cd build
+		cmake ..
+		make -j8
+		sudo make install
 	else
 		cd gtsam
 		echo "gtsam is already cloned, do you want to pull any new commits? (y/n)"
@@ -235,6 +239,7 @@ install_libwave()
 	cd build
 	cmake ..
 	make -j8
+	echo_green "installing\ libwave."
 	sudo make install
 }
 
