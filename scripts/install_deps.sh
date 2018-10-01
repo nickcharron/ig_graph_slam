@@ -12,6 +12,48 @@ echo_green()
 	tput sgr0
 }
 
+install_python_vtk()
+{
+	sudo apt-get install python-vtk
+}
+
+install_kindr()
+{
+	echo_green "Installing\ kindr..."
+
+	if [ ! -d /home/$u/software ]; then
+		mkdir /home/$u/software
+	fi
+
+	cd /home/$u/software
+
+	if [ ! -d /home/$u/software/kindr ]; then
+		git clone https://github.com/ANYbotics/kindr.git
+		cd kindr
+		mkdir build
+		cd build
+		cmake ..
+		make -j8
+		sudo make install
+		sudo ldconfig # refresh shared library cache.
+	else
+		echo "kindr is already cloned, do you want to rebuild? (y/n)"
+		read rebuild_kindr
+		if [ $rebuild_kindr == "y" ]; then
+			cd kindr
+			cd build
+			cmake ..
+			make -j8
+			sudo make install
+			sudo ldconfig # refresh shared library cache.
+		else
+			echo "Not updating kindr..."
+		fi
+
+	fi
+	echo_green "Done\ installing\ kindr."
+}
+
 install_gtsam()
 {
 	echo_green "Installing\ gtsam..."
@@ -42,6 +84,10 @@ install_gtsam()
 			sudo make install
 		else
 			echo "Not updating gtsam..."
+			cd build
+			cmake ..
+			make -j8
+			sudo make install
 		fi
 	fi
 	echo_green "Done\ installing\ gtsam."
@@ -246,7 +292,9 @@ install_libwave()
 main()
 {
 	# install GTSAM and other required programs
-	install_gtsam
+	install_kindr
+	install_python_vtk
+	#install_gtsam
 	install_ceres
 	install_geographiclib
 	install_opencv

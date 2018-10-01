@@ -16,7 +16,7 @@ FIND_PACKAGE(SUITESPARSE REQUIRED)
 FIND_PACKAGE(GTSAM REQUIRED)
 FIND_PACKAGE(GeographicLib 1.49 REQUIRED)
 FIND_PACKAGE(wave REQUIRED utils matching containers geometry gtsam)
-#FIND_PACKAGE(catkin REQUIRED COMPONENTS wave_spatial_utils)
+FIND_PACKAGE(catkin REQUIRED COMPONENTS wave_spatial_utils)
 
 ADD_DEFINITIONS(${PCL_DEFINITIONS})
 ADD_DEFINITIONS(${GeographicLib_DEFINITIONS})
@@ -24,7 +24,7 @@ ADD_DEFINITIONS(${GeographicLib_DEFINITIONS})
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 INCLUDE_DIRECTORIES(
-        include
+        include/ig_graph_slam
         ${catkin_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIR} # NOTE: No 'S' for Boost's include directory
         /usr/local/include/gtsam/3rdparty/Eigen
@@ -45,30 +45,34 @@ LINK_DIRECTORIES(
         ${SUITESPARSE_LIBRARY_DIRS}
 )
 
-#ADD_EXECUTABLE(${PROJECT_NAME}_node
-#        src/main.cpp
-#        )
+ADD_EXECUTABLE(${PROJECT_NAME}_node
+        src/main.cpp
+        src/gtsam_graph.cpp
+        src/scan_matcher.cpp
+        #src/main.cpp
+        #src/test2.cpp
+        )
 
 # Uncomment once we have at least one exec.
-#TARGET_LINK_LIBRARIES(${PROJECT_NAME}_node
+TARGET_LINK_LIBRARIES(${PROJECT_NAME}_node
 #        yaml-cpp
-#        wave::wave
-#        #wave_spatial_utils
-#        ${catkin_LIBRARIES}
-#        ${PCL_LIBRARIES}
-#        ${OpenCV_LIBS}
-#        ${GeographicLib_LIBRARIES}
-#        gtsam
-#        rosbag
-#        rosbag_storage
-#        roscpp_serialization
-#        roscpp
-#        cpp_common
-#        roslib
-#        rostime
-#        rosbag
-#        rosconsole
-#)
+        wave::wave
+        wave_spatial_utils
+        ${catkin_LIBRARIES}
+        ${PCL_LIBRARIES}
+        ${OpenCV_LIBS}
+        ${GeographicLib_LIBRARIES}
+        gtsam
+        rosbag
+        rosbag_storage
+        roscpp_serialization
+        roscpp
+        cpp_common
+        roslib
+        rostime
+        rosbag
+        rosconsole
+)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp

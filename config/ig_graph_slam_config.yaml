@@ -1,0 +1,53 @@
+scanreg_init_icp_distance_max: 25   # distance limit between two initial scan locations to be considered for nearest neighbours
+k_nearest_neighbours: 15            # maximum number of nearest neighbours
+trajectory_sampling_distance: 2.5     # How many meters between sample points on trajectory
+distance_match_limit: 20
+distance_match_min: 0
+downsample_cell_size: 0.2          # Voxel cell length for final downsampling of aggregate map
+iterations: 1                       # How many times to update initial estimates and redo matches
+max_range: 65                      # Points beyond this l1 distance are removed
+use_z_filter: true
+z_lower_threshold: -2
+z_upper_threshold: 1.8
+use_gps: true                       # Whether to use GPS priors in graph optimization. Even if set false, GPS will be
+                                    # used to supply initial estimates for the matcher.
+optimize_gps_lidar: true            #whether to optimize extrinsic GPS - lidar transform.
+
+gps_topic: "/piksi/navsatfix_best_fix"
+lidar_topic: "/hvlp/velodyne_points"   # CHANGE THIS TO COMBINED CLOUD
+bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-07-06-09-15-39.bag"
+ground_segment: false               # Whether to remove the ground points. This will greatly improve match speed, but
+                                    # may reduce elevation accuracy of final map
+visualize: false                   #Whether to visualize matches as they happen
+downsample_input: true
+input_downsample_size: 0.2
+
+matcher_type: "icp1"    # icp1: point to plane icp in PCL, icp2: point to plane in PCL
+matcher_config_path: "config/icp1.yaml"
+step_matches: fakse
+fixed_scan_transform_cov: false
+scan_transform_cov:
+  rows: 6
+  cols: 6
+  data: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+         0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+         0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+         0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+         0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+         0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+# Transform
+
+# IS THIS USED??? IF SO, UPDATE. IF NOT, REMOVE
+T_LIDAR_GPS:
+  rows: 4
+  cols: 4
+#  data: [0.00198557728013, 0.999851298907, 0.0171300191978, -1.12584371634,
+#         -0.999995766779, 0.00194884664695, 0.00216065276941, 0.0794562050592,
+#         0.00212694769751, -0.0171342368257, 0.999850935901, -1.31,
+#          0.0, 0.0, 0.0, 1.0]
+  # 2018-02-22 lidar calib using colby map 2018-03-23
+  data: [0.014639292388417, 0.999713733025263, 0.018924669589204, -1.124956918212964,
+         -0.999886807885517, 0.014570840151735, 0.003749937837334, 0.072660555301776,
+         0.003473116018466, -0.018977423902277, 0.999813880103270, -1.25,
+         0, 0, 0, 1]
