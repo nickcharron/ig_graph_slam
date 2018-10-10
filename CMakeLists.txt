@@ -31,6 +31,7 @@ INCLUDE_DIRECTORIES(
         /usr/include/eigen3
         ${PCL_INCLUDE_DIRS}
         ~/catkin_ws/devel/include
+        ~/ig_catkin_ws/devel/include
         /opt/ros/kinetic/include
         ${OpenCV_INCLUDE_DIRS}
         ${SUITESPARE_INCLUDE_DIRS}
@@ -41,6 +42,7 @@ INCLUDE_DIRECTORIES(
 LINK_DIRECTORIES(
         ${PCL_LIBRARY_DIRS}
         ~/catkin_ws/devel/lib
+        ~/ig_catkin_ws/devel/lib
         /opt/ros/kinetic/lib
         ${SUITESPARSE_LIBRARY_DIRS}
 )

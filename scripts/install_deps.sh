@@ -241,6 +241,9 @@ install_opencv()
 
 install_libwave()
 {
+	echo_green "Installing\ libwave\ dependencies..."
+	sudo apt-get install doxygen
+
 	echo_green "Installing\ libwave..."
 
 	if [ ! -d /home/$u/software ]; then
@@ -293,14 +296,14 @@ main()
 {
 	# install GTSAM and other required programs
 	install_kindr
-	install_python_vtk
+	#install_python_vtk
 	#install_gtsam
-	install_ceres
-	install_geographiclib
+	#install_ceres
+	#install_geographiclib
 	install_opencv
 
 	# install libwave
-	install_libwave
+	#install_libwave
 
 	echo_green "DONE\ INSTALLING\ DEPENDENCIES\ FOR\ \IG_GRAPH_SLAM!"
 
