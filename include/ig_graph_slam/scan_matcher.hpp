@@ -23,7 +23,7 @@
 #include <wave/matching/pointcloud_display.hpp>
 #include <wave/matching/ground_segmentation.hpp>
 
-//#include "kdtreetype.hpp"
+#include "kdtreetype.hpp"
 #include "gtsam_graph.hpp"
 
 /***
@@ -34,7 +34,7 @@ struct Params
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     std::string bag_file_path, lidar_topic, gps_topic, matcher_type, matcher_config;
     int knn, iterations;
-    float trajectory_sampling_dist, max_range, max_range_neg,
+    float trajectory_sampling_dist, distance_match_limit, distance_match_min,
           input_downsample_size, downsample_cell_size,
           set_search_radius, set_min_neighbours,
           x_lower_threshold, x_upper_threshold,
@@ -54,6 +54,17 @@ struct Params
  * @param params
  */
 void fillparams(Params &params);
+
+/***
+ * Takes new scan if the distance between the scans are more than dist
+ * @param p1 pose of first scan
+ * @param p2 pose of second scan
+ * @param dist minimum distance between scans
+ * @return
+ */
+bool takeNewScan(const Eigen::Affine3d &p1,
+                 const Eigen::Affine3d &p2,
+                 const double &dist);
 
 struct ScanMatcher
 {
@@ -95,13 +106,27 @@ struct ScanMatcher
     */
    virtual void loadROSBagMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag) = 0;
 
+   /***
+    * Creates pose scan map
+    */
+   virtual void createPoseScanMap() = 0;
+
+   /***
+    * Find Adjacent scans for all scans. Adjacent scans will only consist of
+    * future scans with respect to the current scan
+    */
+   void findAdjacentScans();
+
    bool have_GPS_datum;
-   //int total_matches;
+   int total_matches;
    Eigen::Affine3d T_ECEF_MAP;
    Params params;
    wave::PointCloudDisplay init_display;
    wave::PCLPointCloudPtr cloud_temp_display;
    wave::MeasurementContainer<wave::Measurement<std::pair<wave::Vec6, wave::Vec6>, uint>> gps_container;
+   InitPose<double> init_pose; // see kdtreetype.hpp
+   std::vector<int> pose_scan_map;
+   boost::shared_ptr<std::vector<std::vector<uint64_t>>> adjacency;
 };
 
 class ICP1ScanMatcher : public ScanMatcher
@@ -111,7 +136,7 @@ class ICP1ScanMatcher : public ScanMatcher
     ~ICP1ScanMatcher() {}
     void loadROSBagMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag);
     void loadPCLPointCloudFromPointCloud2(boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg);
-    //void loadGPSDataFromNavSatFix(boost::shared_ptr<sensor_msgs::NavSatFix> gps_msg);
+    void createPoseScanMap();
 
     pcl::PassThrough<pcl::PointXYZ> pass_filter_x, pass_filter_y, pass_filter_z;
     pcl::VoxelGrid<pcl::PointXYZ> downsampler;

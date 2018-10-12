@@ -1,17 +1,18 @@
 scanreg_init_icp_distance_max: 25   # distance limit between two initial scan locations to be considered for nearest neighbours
 k_nearest_neighbours: 15            # maximum number of nearest neighbours
-trajectory_sampling_distance: 2.5   # How many meters between sample points on trajectory
+trajectory_sampling_distance: 2.5   # Minimum distance in m at which we should take new scans
+distance_match_min: 0               # specify minimum and maximum distance between scans to
+distance_match_limit: 20            # use for scan registration
 
 downsample_cell_size: 0.2          # Voxel cell length for final downsampling of aggregate map
 iterations: 1                       # How many times to update initial estimates and redo matches
-max_range: 65                      # Points beyond this l1 distance are removed
 
 # PassThrough Filter: set min and max in each direction for input cloud
 use_pass_through_filter: true
-x_upper_threshold: 20
-x_lower_threshold: 0
-y_upper_threshold: 20
-y_lower_threshold: 0
+x_upper_threshold: 60
+x_lower_threshold: -60
+y_upper_threshold: 60
+y_lower_threshold: -60
 z_upper_threshold: 1.8
 z_lower_threshold: -2
 
@@ -26,7 +27,7 @@ set_search_radius: 0.5
 
 use_gps: true                       # Whether to use GPS priors in graph optimization. Even if set false, GPS will be
                                     # used to supply initial estimates for the matcher.
-optimize_gps_lidar: true            #whether to optimize extrinsic GPS - lidar transform.
+optimize_gps_lidar: true            # whether to optimize extrinsic GPS - lidar transform.
 
 gps_topic: "/piksi/navsatfix_best_fix"
 lidar_topic: "/hvlp/velodyne_points"   # CHANGE THIS TO COMBINED CLOUD

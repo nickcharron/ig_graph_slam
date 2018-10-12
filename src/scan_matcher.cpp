@@ -24,7 +24,7 @@
 #include "scan_matcher.hpp"
 #include "conversions.hpp"
 #include "measurementtypes.hpp"
-//#include "kdtreetype.hpp"
+#include "kdtreetype.hpp"
 
 int pointCloudMsgCount = 0, gpsMsgCount = 0;
 
@@ -36,7 +36,8 @@ void fillparams(Params &params)
     parser.addParam("gps_topic", &(params.gps_topic));
     parser.addParam("k_nearest_neighbours", &(params.knn));
     parser.addParam("trajectory_sampling_distance", &(params.trajectory_sampling_dist));
-    parser.addParam("max_range", &(params.max_range));
+    parser.addParam("distance_match_limit", &(params.distance_match_limit));
+    parser.addParam("distance_match_min", &(params.distance_match_min));
     parser.addParam("x_lower_threshold", &(params.x_lower_threshold));
     parser.addParam("x_upper_threshold", &(params.x_upper_threshold));
     parser.addParam("y_lower_threshold", &(params.y_lower_threshold));
@@ -74,11 +75,126 @@ void fillparams(Params &params)
     */
     parser.load("/home/nick/ig_catkin_ws/src/ig_graph_slam/config/ig_graph_slam_config.yaml");
     ++params.knn;  // Nearest neighbour search returns same point, so increment
-    params.max_range_neg = -params.max_range;
     // might as well square these now
     // Why are these squared? Changed to x and y threshold
-    //params.distance_match_limit *= params.distance_match_limit;
-    //params.distance_match_min *= params.distance_match_min;
+    params.distance_match_limit *= params.distance_match_limit;
+    params.distance_match_min *= params.distance_match_min;
+}
+
+bool takeNewScan(const Eigen::Affine3d &p1,
+                 const Eigen::Affine3d &p2,
+                 const double &dist)
+{
+    // calculate the norm of the distance between the two points
+    double l2sqrd = (p1(0, 3) - p2(0, 3)) * (p1(0, 3) - p2(0, 3)) +
+                    (p1(1, 3) - p2(1, 3)) * (p1(1, 3) - p2(1, 3)) +
+                    (p1(2, 3) - p2(2, 3)) * (p1(2, 3) - p2(2, 3));
+    // if the norm is greater than the specified minimum sampling distance
+    if (l2sqrd > dist * dist)
+    {
+      // then yes take a new scan
+        return true;
+    }
+    else
+    {
+      // then no, do not take a new scan
+        return false;
+    }
+}
+
+void ScanMatcher::loadGPSDataFromNavSatFix(boost::shared_ptr<sensor_msgs::NavSatFix> gps_msg)
+{
+  wave::Vec6 gps_measurement; // LLA, RPY
+  gps_measurement << gps_msg->latitude,
+                     gps_msg->longitude,
+                     gps_msg->altitude,
+                     // We do not have RPY, so set to zero
+                     0,
+                     0,
+                     0;
+                     //TODO: Add RPY from IMU onboard GPS
+                     // -> see https://github.com/ethz-asl/ethz_piksi_ros/tree/master/piksi_multi_rtk_ros#installation-and-configuration
+                     //gps_msg->roll * DEG_TO_RAD,
+                     //gps_msg->pitch * DEG_TO_RAD,
+                     //-gps_msg->azimuth * DEG_TO_RAD;
+
+  wave::Vec6 gps_stdev;
+  gps_stdev << sqrt(gps_msg->position_covariance[0]),
+               sqrt(gps_msg->position_covariance[4]),
+               sqrt(gps_msg->position_covariance[8]),
+               1000000,
+               1000000,
+               1000000;
+               // gps_msg->roll_std * DEG_TO_RAD,
+               // gps_msg->pitch_std * DEG_TO_RAD,
+               // gps_msg->azimuth_std * DEG_TO_RAD;
+
+  // This sets your initial transform from map frame to earth-centered earth-fixed frame
+  if (!this->have_GPS_datum)
+  {
+    this->have_GPS_datum = true;
+    this->T_ECEF_MAP = gpsToEigen(gps_measurement, false);
+  }
+  this->gps_container.emplace(
+        rosTimeToChrono(gps_msg->header),
+        0,
+        std::make_pair(gps_measurement, gps_stdev)); // (Vector6, Vector6)
+}
+
+void ScanMatcher::findAdjacentScans()
+{
+   kd_tree_t index(3, this->init_pose, nanoflann::KDTreeSingleIndexAdaptorParams(10));
+
+   index.buildIndex();
+   std::vector<size_t> ret_indices(this->params.knn);
+   std::vector<double> out_dist_sqr(this->params.knn);
+
+   // Scan registration class
+   // As factors are added, factor id will just be counter value
+   this->adjacency = boost::make_shared<std::vector<std::vector<uint64_t>>>(this->init_pose.poses.size());
+
+   /*
+    * For each pose within the initial pose, get the position.
+    * Connect all the positions until the last pose by adding it to the adjacency
+    * at that point
+    *
+    */
+   for (uint64_t j = 0; j < this->init_pose.poses.size(); j++)
+   {
+     // query is the position of the current pose
+      double query[3] = {this->init_pose.poses[j](0, 3),
+                         this->init_pose.poses[j](1, 3),
+                         this->init_pose.poses[j](2, 3)};
+
+     // Do this for all poses except the last one
+      if (j + 1 < this->init_pose.poses.size())
+      {  // ensures that trajectory is connected
+        this->adjacency->at(j).emplace_back(j + 1);
+        this->total_matches++;
+      }
+
+     // Search for the specified amount of nearest neighbours to the position
+     // within the original init_pose poses
+       index.knnSearch(query, this->params.knn, &ret_indices[0], &out_dist_sqr[0]);
+
+     // For each pose position, check the nearest neighbours if they are
+     // within the boundaries specified
+     // If they are and they are after j, add them to the adjacency
+     // If the points were discovered before j, they won't be added to
+     // the adjacency
+       for (uint16_t k = 0; k < this->params.knn; k++)
+       {
+         if ((out_dist_sqr[ret_indices[k]] > this->params.distance_match_min) &&
+             (out_dist_sqr[ret_indices[k]] < this->params.distance_match_limit))
+         {
+           if (j < ret_indices[k])
+           {
+             this->adjacency->at(j).emplace_back(ret_indices[k]);
+             this->total_matches++;
+           }
+         }
+       }
+   }
 }
 
 ICP1ScanMatcher::ICP1ScanMatcher(Params &p_)
@@ -127,45 +243,6 @@ void ICP1ScanMatcher::loadROSBagMessage(rosbag::View::iterator &rosbag_iter, boo
     }
 }
 
-void ScanMatcher::loadGPSDataFromNavSatFix(boost::shared_ptr<sensor_msgs::NavSatFix> gps_msg)
-{
-  wave::Vec6 gps_measurement; // LLA, RPY
-  gps_measurement << gps_msg->latitude,
-                     gps_msg->longitude,
-                     gps_msg->altitude,
-                     // We do not have RPY, so set to zero
-                     0,
-                     0,
-                     0;
-                     //TODO: Add RPY from IMU onboard GPS
-                     // -> see https://github.com/ethz-asl/ethz_piksi_ros/tree/master/piksi_multi_rtk_ros#installation-and-configuration
-                     //gps_msg->roll * DEG_TO_RAD,
-                     //gps_msg->pitch * DEG_TO_RAD,
-                     //-gps_msg->azimuth * DEG_TO_RAD;
-
-  wave::Vec6 gps_stdev;
-  gps_stdev << sqrt(gps_msg->position_covariance[0]),
-               sqrt(gps_msg->position_covariance[4]),
-               sqrt(gps_msg->position_covariance[8]),
-               1000000,
-               1000000,
-               1000000;
-               // gps_msg->roll_std * DEG_TO_RAD,
-               // gps_msg->pitch_std * DEG_TO_RAD,
-               // gps_msg->azimuth_std * DEG_TO_RAD;
-
-  // This sets your initial transform from map frame to earth-centered earth-fixed frame
-  if (!this->have_GPS_datum)
-  {
-    this->have_GPS_datum = true;
-    this->T_ECEF_MAP = gpsToEigen(gps_measurement, false);
-  }
-  this->gps_container.emplace(
-        rosTimeToChrono(gps_msg->header),
-        0,
-        std::make_pair(gps_measurement, gps_stdev)); // (Vector6, Vector6)
-}
-
 void ICP1ScanMatcher::loadPCLPointCloudFromPointCloud2(boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg)
 {
     pcl_conversions::toPCL(*lidar_msg, *this->pcl_pc2);
@@ -203,4 +280,48 @@ void ICP1ScanMatcher::loadPCLPointCloudFromPointCloud2(boost::shared_ptr<sensor_
     wave::PCLPointCloudPtr temp = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     *temp = *this->cloud_ref;
     this->lidar_container.emplace_back(rosTimeToChrono(lidar_msg->header), 0, temp);
+}
+
+void ICP1ScanMatcher::createPoseScanMap()
+{
+    // save initial poses of the lidar scans based on GPS data and save iterators
+    // corresponding to these scans
+    int i = 0;
+    Eigen::Affine3d T_ECEF_GPS, T_MAP_LIDAR;
+    for (uint64_t iter = 0; iter < this->lidar_container.size(); iter++)
+    {  // this ierates through the lidar measurements
+        try
+        {
+            // extract gps measurement at the same timepoint as the current lidar message
+            auto gps_pose = this->gps_container.get(this->lidar_container[iter].time_point, 0);
+            T_ECEF_GPS = gpsToEigen(gps_pose.first, true); // true: apply T_ENU_GPS
+                // TODO: check this ^ might need to change this to false
+            T_MAP_LIDAR =  this->T_ECEF_MAP.inverse() * T_ECEF_GPS * this->params.T_LIDAR_GPS.inverse();
+            // If i > 0 then check to see if the distance between current scan and
+            // last scan is greater than the minimum, if so then save this pose
+            // If i = 0, then save the scan - first scan
+            if ( i > 0 )
+            {
+              bool take_new_scan;
+              take_new_scan = takeNewScan(T_MAP_LIDAR, init_pose.poses[i - 1],
+                                      this->params.trajectory_sampling_dist);
+              if (take_new_scan)
+              {
+                this->init_pose.poses.push_back(T_MAP_LIDAR);
+                this->pose_scan_map.push_back(iter);
+                ++i;
+              }
+            }
+            else
+            {
+              this->init_pose.poses.push_back(T_MAP_LIDAR);
+              this->pose_scan_map.push_back(iter);
+              ++i;
+            }
+        }
+        catch (const std::out_of_range &e)
+        {
+            LOG_INFO("No gps pose for time of scan, may happen at edges of recorded data");
+        }
+    }
 }

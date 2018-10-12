@@ -50,7 +50,8 @@ void outputParams(Params p_)
   std::cout << "gps_topic: " << p_.gps_topic << std::endl;
   std::cout << "k_nearest_neighbours: " << p_.knn << std::endl;
   std::cout << "trajectory_sampling_distance: " << p_.trajectory_sampling_dist << std::endl;
-  std::cout << "max_range: " << p_.max_range << std::endl;
+  std::cout << "distance_match_min: " << p_.distance_match_min << std::endl;
+  std::cout << "distance_match_limit: " << p_.distance_match_limit << std::endl;
   std::cout << "x_lower_threshold: " << p_.x_lower_threshold << std::endl;
   std::cout << "x_upper_threshold: " << p_.x_upper_threshold << std::endl;
   std::cout << "y_lower_threshold: " << p_.y_lower_threshold << std::endl;
@@ -85,7 +86,6 @@ int main()
     rosbag::Bag bag;
     boost::shared_ptr<ScanMatcher> scan_matcher;
     //ros::Time time_limit_s = ros::TIME_MIN + ros::Duration(1521829591);
-
 
   // Init pointer to scan matcher based on type
     if (p_.matcher_type == "icp1")
@@ -133,4 +133,9 @@ int main()
       scan_matcher->loadROSBagMessage(iter, end_of_bag);
     }
     bag.close();
+
+  // Select scans to store and savae their respective poses based on gps measurements
+    scan_matcher->createPoseScanMap();
+  // What does this do???
+    scan_matcher->findAdjacentScans();
 }
