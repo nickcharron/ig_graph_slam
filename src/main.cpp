@@ -136,6 +136,121 @@ int main()
 
   // Select scans to store and savae their respective poses based on gps measurements
     scan_matcher->createPoseScanMap();
-  // What does this do???
+
+  // Determine how many scans to register against for each pose and save
     scan_matcher->findAdjacentScans();
+
+  // perform graph optimization:
+
+    // init. variables:
+    GTSAMGraph graph;
+    bool no_GPS = true;
+    int cnt_match = 0;
+    TimePoint last_timestamp;
+    bool correction_norm_valid;
+
+    // build graph
+    for (int outer_loops = 0; outer_loops < p_.iterations; outer_loops++)
+    { // Iterate to update initial estimates and redo matches
+      cnt_match = 0;
+
+      // clear graph and results between each iteration
+      graph.clear();
+      graph.result.clear();
+
+      if (p_.optimize_gps_lidar)
+      { // optimize transform from lidar to gps
+          // THIS IS NOT YET IMPLEMENTED
+          // Cannot use Ben's code because the way our T_LIDAR_GPS is
+          // measured is different.
+      }
+
+      for (uint64_t j = 0; j < scan_matcher->adjacency->size(); j++)
+      { // iterate over all j scans
+          LOG_INFO("Matching scan %d of %d", j+1, scan_matcher->adjacency->size());
+          if (j == 0)
+          {
+              last_timestamp =
+                scan_matcher->getLidarScanTimePoint(scan_matcher->pose_scan_map.at(j));
+          }
+
+          // iterate over all scans adjacent to scan j
+          for (auto iter = scan_matcher->adjacency->at(j).begin();
+               iter != scan_matcher->adjacency->at(j).end();
+               iter++)
+          {
+              LOG_INFO("Matching scan %d of %d, against agjacency %d of %d", j, scan_matcher->adjacency->size(), *iter, *scan_matcher->adjacency->at(j).end());
+              Eigen::Affine3d T_Liter_Lj;
+              wave::Mat6 info;
+              bool match_success;
+              // Attempts to match the scans and checks the correction norm
+              // between scan transformation and GPS
+              match_success = scan_matcher->matchScans(*iter, j, T_Liter_Lj, info, correction_norm_valid);
+
+              if (!correction_norm_valid) // WHAT IS THIS??
+              {
+                  continue;
+              }
+              if (match_success) // create factor in graph is scan successful
+              {
+                  wave::Mat6 mgtsam; // Eigen::Matrix<double, 6, 6>
+                  // this next bit is a major gotcha, whole thing blows up
+                  // without it. This just rearranges the info matrix to the correct form
+                    // block starting at 0,0 of size 3x3
+                  mgtsam.block(0, 0, 3, 3) =
+                          info.block(3, 3, 3, 3);  // rotation
+                  mgtsam.block(3, 3, 3, 3) =
+                          info.block(0, 0, 3, 3);  // translation
+                  mgtsam.block(0, 3, 3, 3) =
+                          info.block(0, 3, 3, 3);  // off diagonal
+                  mgtsam.block(3, 0, 3, 3) =
+                          info.block(3, 0, 3, 3);  // off diagonal
+                  graph.addFactor(*iter, j, T_Liter_Lj, mgtsam);
+                  LOG_INFO("Match no %d of %d", cnt_match, scan_matcher->total_matches);
+                  cnt_match++;
+              }
+              else
+              {
+                  LOG_ERROR("Scan match failed");
+              }
+
+          }
+
+          if (p_.use_gps)
+          { // only if we want to use gps priors
+            // TODO: Implement the gps priors.
+            // Careful because currently GPS has no rotation info
+            // See Ben's code
+          }
+          graph.addInitialPose(scan_matcher->init_pose.poses.at(j), j);
+      }
+      if (no_GPS)
+      {
+          LOG_INFO("Fixing first pose.");
+          graph.fixFirstPose();
+      }
+      LOG_INFO("Done building graph.");
+      graph.print();
+      std::cout << "Hit 'Enter' to continue?" << std::endl;
+      std::cin.get(); // wait for user to hit next
+      graph.optimize();
+/*
+      // Loop through and get final alignment
+      Eigen::Affine3d temp_trans, prev;
+      for (uint64_t k = 0; k < graph.poses.size(); k++)
+      {
+          temp_trans.matrix() = graph.result.at<gtsam::Pose3>(graph.poses.at(k)).matrix();
+          offline_matcher->init_pose.poses.at(graph.poses.at(k)) = temp_trans;
+
+          // Build up measurement container for next step
+          offline_matcher->final_poses.emplace_back(offline_matcher->getLidarScanTimePoint(graph.poses.at(k)), 0, temp_trans);
+
+          prev = temp_trans;
+
+      }
+*/
+    }
+
+    // build and output map
+
 }

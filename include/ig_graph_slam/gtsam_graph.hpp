@@ -13,9 +13,31 @@
 #include <wave/utils/math.hpp>
 
 
-class GTSAMGraph {
+class GTSAMGraph
+{
  public:
     GTSAMGraph();
+
+    // Declare Functions
+    void clear();
+
+    // add a factor between to poses
+    void addFactor(uint64_t from,
+                   uint64_t to,
+                   const Eigen::Affine3d &transform,
+                   const wave::Mat6 &info);
+
+    void addInitialPose(const Eigen::Affine3d &pose, gtsam::Key id);
+    void fixFirstPose();
+    void optimize();
+    void print();
+
+    // Declare variables
+    gtsam::Values initial, result;
+    //gtsam::Key T_GPS_LIDAR_key;
+    gtsam::NonlinearFactorGraph graph;
+    std::vector<gtsam::Key> poses;
+    std::vector<gtsam::Key> biases;
 };
 
 #endif  // IG_GRAPH_SLAM_GTSAM_GRAPH_HPP

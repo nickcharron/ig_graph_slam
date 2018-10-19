@@ -26,6 +26,10 @@
 #include "kdtreetype.hpp"
 #include "gtsam_graph.hpp"
 
+// Declare some templates:
+  using Clock = std::chrono::steady_clock;
+  using TimePoint = std::chrono::time_point<Clock>;
+
 /***
  * Params loaded from the ig_graph_slam_config file
  */
@@ -112,10 +116,29 @@ struct ScanMatcher
    virtual void createPoseScanMap() = 0;
 
    /***
+     * Get TimePoint object of the LIDAR scan at the specified index. Needed for
+     * decoupling matcher from GTSAM stuff
+     * @param index index in lidar container
+     * @return
+     */
+    virtual TimePoint getLidarScanTimePoint(int index) = 0;
+
+   /***
     * Find Adjacent scans for all scans. Adjacent scans will only consist of
     * future scans with respect to the current scan
     */
    void findAdjacentScans();
+
+   /***
+     * Matches the scan
+     * @param [in] i first scan index in initial poses
+     * @param [in] j second scan index in initial poses
+     * @param [out] L_Li_Lj Transform of the pose of scan j in the frame of scan i
+     * @param [out] info Information matrix associated to resulting transform
+     * @param [out] correction_norm_valid bool to check if correction_norm is below a specified threshold
+     * @return
+     */
+    virtual bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid) = 0;
 
    bool have_GPS_datum;
    int total_matches;
@@ -137,6 +160,9 @@ class ICP1ScanMatcher : public ScanMatcher
     void loadROSBagMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag);
     void loadPCLPointCloudFromPointCloud2(boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg);
     void createPoseScanMap();
+    TimePoint getLidarScanTimePoint(int index);
+    bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid);
+    void displayPointCloud(wave::PCLPointCloudPtr cloud_display, int color, const Eigen::Affine3d &transform = Eigen::Affine3d::Identity());
 
     pcl::PassThrough<pcl::PointXYZ> pass_filter_x, pass_filter_y, pass_filter_z;
     pcl::VoxelGrid<pcl::PointXYZ> downsampler;
