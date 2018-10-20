@@ -90,6 +90,7 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
       double l2sqrd = (p1(0, 3) - p2(0, 3)) * (p1(0, 3) - p2(0, 3)) +
                       (p1(1, 3) - p2(1, 3)) * (p1(1, 3) - p2(1, 3)) +
                       (p1(2, 3) - p2(2, 3)) * (p1(2, 3) - p2(2, 3));
+
       // if the norm is greater than the specified minimum sampling distance
       if (l2sqrd > dist * dist)
       {
@@ -119,7 +120,6 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
                        //gps_msg->roll * DEG_TO_RAD,
                        //gps_msg->pitch * DEG_TO_RAD,
                        //-gps_msg->azimuth * DEG_TO_RAD;
-
     wave::Vec6 gps_stdev;
     gps_stdev << sqrt(gps_msg->position_covariance[0]),
                  sqrt(gps_msg->position_covariance[4]),
@@ -222,7 +222,7 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
       this->radfilter.setRadiusSearch(this->params.set_search_radius);
       this->pcl_pc2 = boost::make_shared<pcl::PCLPointCloud2>();
       this->cloud_ref = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-      // this->cloud_target = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+      this->cloud_target = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
       // this->aggregate = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   }
 
@@ -294,6 +294,8 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
       Eigen::Affine3d T_ECEF_GPS, T_MAP_LIDAR;
       for (uint64_t iter = 0; iter < this->lidar_container.size(); iter++)
       {  // this ierates through the lidar measurements
+        //std::cout << "Hit 'Enter' to continue" << std::endl;
+        //std::cin.get(); // wait for user to hit next
           try
           {
               // extract gps measurement at the same timepoint as the current lidar message
@@ -315,6 +317,7 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
                   this->init_pose.poses.push_back(T_MAP_LIDAR);
                   this->pose_scan_map.push_back(iter);
                   ++i;
+                  LOG_INFO("Stored scan pose %d of %d available.", i, this->lidar_container.size());
                 }
               }
               else
@@ -323,7 +326,6 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
                 this->pose_scan_map.push_back(iter);
                 ++i;
               }
-              LOG_INFO("Stored scan pose %d of %d.", i, this->lidar_container.size());
           }
           catch (const std::out_of_range &e)
           {
@@ -357,15 +359,11 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
     auto T_MAP_Lj = init_pose.poses[j]; // set initial guess of current scan
     auto T_MAP_Li = init_pose.poses[i]; // set initial guess of adjacent scan
     correction_norm_valid = true;
-
     // set current scan as reference scan
     this->matcher.setRef(this->lidar_container[pose_scan_map.at(j)].value);
-
     // display reference scan
     this->displayPointCloud(this->lidar_container[pose_scan_map.at(j)].value, 0);
-
     auto T_estLj_Li = T_MAP_Lj.inverse() * T_MAP_Li; // calculate init. T from adjacent to current
-
     pcl::transformPointCloud( *(lidar_container[pose_scan_map.at(i)].value),
                               *(this->cloud_target),
                               T_estLj_Li );
@@ -373,14 +371,11 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
                               // current scan frame using initialized T, then
                               // assign to cloud_target
     this->matcher.setTarget(cloud_target);
-
     this->displayPointCloud(cloud_target, 1);
-
     if (matcher.match())
     {
         auto T_estLj_Lj = this->matcher.getResult(); // assign estimated transform to new current position
         this->displayPointCloud(cloud_target, 2, T_estLj_Lj.inverse());
-
         if (this->params.visualize && this->params.step_matches)
         {
             std::cin.get(); // wait for user to hit next

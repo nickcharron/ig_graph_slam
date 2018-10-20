@@ -18,6 +18,12 @@ const uint32_t WEEK_TO_SEC = 604800;
 const uint32_t EPOCH_OFFSET = 315964800;
 const uint32_t LEAP_SECONDS = 18;
 
+void outputTransform(Eigen::Affine3d T, std::string name)
+{
+  std::cout << name << " :" << std::endl;
+  std::cout << T.matrix() << std::endl;
+}
+
 void ecefPointFromLLH(const double llh[3], double ecef[3])
 {
     double latitude = llh[0], longitude = llh[1], height = llh[2];
@@ -62,6 +68,7 @@ inline Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,
 {
     double T_ECEF_ENU[4][4];
     wave_spatial_utils::ecefFromENUTransformMatrix(measurement.data(), T_ECEF_ENU, true);
+
     // Transformation from the ENU frame formed at the position of the GPS
     // antenna to ECEF
     Eigen::Affine3d E_T_ECEF_ENU;
@@ -72,6 +79,7 @@ inline Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,
             T_ECEF_ENU[2][2], T_ECEF_ENU[2][3], T_ECEF_ENU[3][0],
             T_ECEF_ENU[3][1], T_ECEF_ENU[3][2], T_ECEF_ENU[3][3];
 
+    //outputTransform(E_T_ECEF_ENU, "E_T_ECEF_ENU");
 
     Eigen::Affine3d T_ENU_GPSIMU;
 
@@ -100,6 +108,8 @@ inline Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,
     T_ENU_GPSIMU.matrix()(2, 3) = 0.0;
     T_ENU_GPSIMU.matrix()(3, 3) = 1.0;
 
+    //outputTransform(T_ENU_GPSIMU, "T_ENU_GPSIMU");
+    //outputTransform(E_T_ECEF_ENU * T_ENU_GPSIMU, "T_ECEF_GPSIMU");
     Eigen::Affine3d T_ECEF_GPSIMU;
     if (applyT_ENU_GPS)
     {
@@ -109,6 +119,7 @@ inline Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,
     {
         return E_T_ECEF_ENU;
     }
+
 }
 
 #endif  // IG_GRAPH_SLAM_CONVERSIONS_HPP

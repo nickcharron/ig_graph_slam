@@ -179,14 +179,14 @@ int main()
                iter != scan_matcher->adjacency->at(j).end();
                iter++)
           {
-              LOG_INFO("Matching scan %d of %d, against agjacency %d of %d", j, scan_matcher->adjacency->size(), *iter, *scan_matcher->adjacency->at(j).end());
+              //LOG_INFO("Matching scan %d of %d, against agjacency %d of %d..", j+1, scan_matcher->adjacency->size(), *iter, *scan_matcher->adjacency->at(j).end());
               Eigen::Affine3d T_Liter_Lj;
               wave::Mat6 info;
               bool match_success;
+
               // Attempts to match the scans and checks the correction norm
               // between scan transformation and GPS
               match_success = scan_matcher->matchScans(*iter, j, T_Liter_Lj, info, correction_norm_valid);
-
               if (!correction_norm_valid) // WHAT IS THIS??
               {
                   continue;
@@ -231,7 +231,7 @@ int main()
       }
       LOG_INFO("Done building graph.");
       graph.print();
-      std::cout << "Hit 'Enter' to continue?" << std::endl;
+      std::cout << "Hit 'Enter' to continue" << std::endl;
       std::cin.get(); // wait for user to hit next
       graph.optimize();
 /*
