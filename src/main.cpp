@@ -234,23 +234,28 @@ int main()
       std::cout << "Hit 'Enter' to continue" << std::endl;
       std::cin.get(); // wait for user to hit next
       graph.optimize();
-/*
+
       // Loop through and get final alignment
       Eigen::Affine3d temp_trans, prev;
       for (uint64_t k = 0; k < graph.poses.size(); k++)
       {
+          // get resulting transform for pose k
           temp_trans.matrix() = graph.result.at<gtsam::Pose3>(graph.poses.at(k)).matrix();
-          offline_matcher->init_pose.poses.at(graph.poses.at(k)) = temp_trans;
 
-          // Build up measurement container for next step
-          offline_matcher->final_poses.emplace_back(offline_matcher->getLidarScanTimePoint(graph.poses.at(k)), 0, temp_trans);
+          // update initial pose estimate for next iteration (if needed)
+          scan_matcher->init_pose.poses.at(graph.poses.at(k)) = temp_trans;
 
+          // Add result to final pose measurement container
+          scan_matcher->final_poses.emplace_back(scan_matcher->getLidarScanTimePoint(graph.poses.at(k)), 0, temp_trans);
+
+          // this seems to be useless?
           prev = temp_trans;
-
       }
-*/
+
     }
 
     // build and output map
+    scan_matcher->createAggregateMap(graph);
+    scan_matcher->outputAggregateMap(graph);
 
 }

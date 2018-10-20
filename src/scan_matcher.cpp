@@ -200,6 +200,139 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
      }
   }
 
+  Eigen::Affine3d ScanMatcher::getGPSTransform(const TimePoint &time_point, bool applyT_ENU_GPS)
+  {
+      return gpsToEigen(this->gps_container.get(time_point, 0).first, applyT_ENU_GPS);
+  }
+
+  void ICP1ScanMatcher::createAggregateMap(GTSAMGraph &graph)
+  {
+      // set leaf size for voxel grid filter
+      this->downsampler.setLeafSize(this->params.downsample_cell_size,
+                                    this->params.downsample_cell_size,
+                                    this->params.downsample_cell_size);
+      int i = 0;
+      for (uint64_t k = 0; k < graph.poses.size(); k++)
+      { // iterate through all poses in graph
+          // transform current scan to target cloud using T_Map_Pk
+          pcl::transformPointCloud(*(this->lidar_container[this->pose_scan_map.at(graph.poses.at(k))].value),
+                                   *this->cloud_target,
+                                   this->final_poses.at(graph.poses.at(k)).value);
+
+          // this block makes sure every intermediate map is made up of 15 scans.
+          // each scan is filtered individually, then the whole set of 15
+          // combined scans is filtered once
+          // TODO: Make this and all other filtering a param in the yaml.
+          if ((k % 15) == 0)
+          { // every 15th pose, filter the intermediate map
+              if (i != 0) // if not first intermediate map, then filter it and
+              {           // move to the next intermediate map
+                  this->downsampler.setInputCloud(this->intermediaries.at(i));
+                  this->downsampler.filter(*(this->intermediaries.at(i)));
+                  i++;
+              }
+              else // if first intermediate map
+              {
+                  if (k != 0)
+                  { // if it's the first scan, do nothing.
+                    // if it's not the first scan, but it is the first
+                    // intermediate map , then increase iterator of int. maps
+                      i++;
+                  }
+              }
+              // add new empty point cloud to set of intermediate maps
+              this->intermediaries.emplace_back(new pcl::PointCloud<pcl::PointXYZ>);
+          }
+
+          // filter each new cloud
+          this->downsampler.setInputCloud(this->cloud_target);
+          this->downsampler.filter(*this->cloud_target);
+          // add each new cloud to current intermediate map
+          *(this->intermediaries.at(i)) += *this->cloud_target;
+      }
+
+      for (uint64_t iter = 0; iter < this->intermediaries.size(); iter++)
+      {
+          // TODO: Add option to visualize the map building
+          *this->aggregate += *(this->intermediaries.at(iter));
+      }
+  }
+
+  void ICP1ScanMatcher::outputAggregateMap(GTSAMGraph &graph)
+  {
+      this->downsampler.setLeafSize(this->params.downsample_cell_size,
+                                    this->params.downsample_cell_size,
+                                    this->params.downsample_cell_size);
+      this->downsampler.setInputCloud(this->aggregate);
+      this->downsampler.filter(*this->aggregate);
+      long timestamp = std::chrono::system_clock::now().time_since_epoch().count();
+      pcl::io::savePCDFileBinary(std::to_string(timestamp) + "aggregate_map.pcd", *this->aggregate);
+      std::cout << "outputting map at time: " << std::to_string(timestamp) << std::endl;
+
+      // now save trajectory to file
+      std::ofstream file;
+      const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", ", ");
+      file.open(std::to_string(timestamp) + "opt_traj" + ".txt");
+      for (auto iter = final_poses.begin(); iter != final_poses.end(); iter++)
+      {
+          file << iter->time_point.time_since_epoch().count() << ", ";
+          file << iter->value.matrix().format(CSVFormat);
+          file << std::endl;
+      }
+      file.close();
+
+      std::ofstream bias_file;
+      bias_file.open(std::to_string(timestamp) + "GPSbias.txt");
+      for (auto iter = graph.biases.begin(); iter != graph.biases.end(); iter++)
+      {
+          auto curbias = graph.result.at<gtsam::Point3>(*iter);
+          bias_file << curbias.x() << ", " << curbias.y() << ", " << curbias.z() << std::endl;
+      }
+      bias_file.close();
+
+      // This file contains the input traj to the GTSAM since we want to compare
+      // the pose difference betweem the input and the output of GTSAM
+      std::ofstream gt_file;
+      gt_file.open(std::to_string(timestamp) + "GTSAMinputTraj.txt");
+      for (uint64_t j = 0; j < adjacency->size(); j++)
+      {
+          Eigen::Affine3d T_ECEF_GPSIMU = getGPSTransform(getLidarScanTimePoint(pose_scan_map.at(j)), true);
+          Eigen::Affine3d T_MAP_GPSIMU, T_MAP_LIDAR;
+          T_MAP_GPSIMU = T_ECEF_MAP.inverse() * T_ECEF_GPSIMU;
+          if (this->params.optimize_gps_lidar)
+          {
+              auto result = graph.result.at<gtsam::Pose3>(6000000);
+              T_MAP_LIDAR = T_MAP_GPSIMU * result.matrix();
+          }
+          else
+          {
+              auto result = params.T_LIDAR_GPS.inverse();
+              T_MAP_LIDAR = T_MAP_GPSIMU * result.matrix();
+          }
+          gt_file << getLidarScanTimePoint(pose_scan_map.at(j)).time_since_epoch().count() << ", ";
+          gt_file << T_MAP_LIDAR.matrix().format(CSVFormat);
+          gt_file << std::endl;
+      }
+      gt_file.close();
+
+      std::ofstream datumfile;
+      using dbl = std::numeric_limits<double>;
+      datumfile.open(std::to_string(timestamp) + "map_ecef_datum" + ".txt");
+      datumfile.precision(dbl::max_digits10);
+      datumfile << T_ECEF_MAP.matrix().format(CSVFormat);
+      datumfile.close();
+      if (this->params.optimize_gps_lidar)
+      {
+          auto result = graph.result.at<gtsam::Pose3>(6000000);
+          std::ofstream datumfile;
+          using dbl = std::numeric_limits<double>;
+          datumfile.open(std::to_string(timestamp) + "T_LIDAR_GPS" + ".txt");
+          datumfile.precision(dbl::max_digits10);
+          datumfile << result.inverse().matrix().format(CSVFormat);
+          datumfile.close();
+      }
+  }
+
 // ICP1ScanMatcher (Child Class) Functions
   ICP1ScanMatcher::ICP1ScanMatcher(Params &p_)
       : ScanMatcher(p_),
@@ -223,7 +356,7 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
       this->pcl_pc2 = boost::make_shared<pcl::PCLPointCloud2>();
       this->cloud_ref = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
       this->cloud_target = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-      // this->aggregate = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+      this->aggregate = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   }
 
   void ICP1ScanMatcher::loadROSBagMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag)

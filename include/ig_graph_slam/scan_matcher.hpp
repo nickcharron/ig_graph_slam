@@ -140,6 +140,28 @@ struct ScanMatcher
      */
     virtual bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid) = 0;
 
+   /***
+     * Creates the aggregate map pointcloud. All the pointclouds are downsampled
+     * and concatenated into intermediate pointclouds. The intermeditae pointclouds
+     * are then downsampled and concatenated into an aggregate pointcloud.
+     * @param graph
+     */
+    virtual void createAggregateMap(GTSAMGraph &graph) = 0;
+
+    /***
+     * Outputs the aggregate pointcloud map as a pcd file
+     * @param graph
+     */
+    virtual void outputAggregateMap(GTSAMGraph &graph) = 0;
+
+   /***
+     * Gets the GPS Transform at a certain time point
+     * @param time_point
+     * @param applyT_ENU_GPS
+     * @return
+     */
+    Eigen::Affine3d getGPSTransform(const TimePoint &time_point, bool applyT_ENU_GPS);
+
    bool have_GPS_datum;
    int total_matches;
    Eigen::Affine3d T_ECEF_MAP;
@@ -149,6 +171,7 @@ struct ScanMatcher
    wave::MeasurementContainer<wave::Measurement<std::pair<wave::Vec6, wave::Vec6>, uint>> gps_container;
    InitPose<double> init_pose; // see kdtreetype.hpp
    std::vector<int> pose_scan_map;
+   std::vector<wave::Measurement<Eigen::Affine3d, uint>> final_poses;
    boost::shared_ptr<std::vector<std::vector<uint64_t>>> adjacency;
 };
 
@@ -163,6 +186,8 @@ class ICP1ScanMatcher : public ScanMatcher
     TimePoint getLidarScanTimePoint(int index);
     bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid);
     void displayPointCloud(wave::PCLPointCloudPtr cloud_display, int color, const Eigen::Affine3d &transform = Eigen::Affine3d::Identity());
+    void createAggregateMap(GTSAMGraph &graph);
+    void outputAggregateMap(GTSAMGraph &graph);
 
     pcl::PassThrough<pcl::PointXYZ> pass_filter_x, pass_filter_y, pass_filter_z;
     pcl::VoxelGrid<pcl::PointXYZ> downsampler;

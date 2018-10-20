@@ -40,8 +40,8 @@ use_gps: false                      # Whether to use GPS priors in graph optimiz
                                     # TODO: KEEP FALSE UNTIL WE HAVE RPY IN GPS MESSAGE
                                     # used to supply initial estimates for the matcher.
 optimize_gps_lidar: false           # NOT IMPLEMENTED-whether to optimize extrinsic GPS - lidar transform.
-visualize: false                    # Whether to visualize matches as they happen
-step_matches: false
+visualize: true                    # Whether to visualize matches as they happen
+step_matches: true
 matcher_type: "icp1"    # icp1: point to plane icp in PCL, icp2: point to plane in PCL
 matcher_config_path: "/home/nick/ig_catkin_ws/src/ig_graph_slam/config/icp1.yaml"
 # Use this if you want to set a given cov to the scan registrations.
