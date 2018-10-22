@@ -1,0 +1,17 @@
+<launch>
+<!-- Arguments: -->
+  <arg name="publish_rate" value="10"/>
+  <arg name="frame_id" value="/map"/>
+  <!-- IG Results: -->
+    <arg name="pcd_file" value="/home/nick/results/ig_maps/ig_graph_slam/2018_10_20/1540075913584314900aggregate_map.pcd"/>
+  <!-- Moose Results: -->
+    <!-- <arg name="pcd_file" value="/home/nick/results/moose_maps/.pcd"/> -->
+<!-- Start RVIZ -->
+  <node name="rviz_mapping" pkg="rviz" type="rviz"
+        args="-d $(find ig_graph_slam)/config/view_results_config.rviz" />
+
+<!-- Run pcl_ros with pcd -->
+  <node name="gs_view_results" pkg="pcl_ros" type="pcd_to_pointcloud"
+    args="$(arg pcd_file) $(arg publish_rate) _frame_id:=$(arg frame_id)" />
+
+</launch>
