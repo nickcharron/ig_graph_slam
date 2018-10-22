@@ -4,6 +4,8 @@
 #include <ros/time.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/NavSatFix.h>
+#include <geometry_msgs/Vector3Stamped.h>
+#include <novatel_msgs/INSPVAX.h>
 #include <unistd.h>
 #include <sstream>
 #include <string>
@@ -26,7 +28,8 @@
 #include "measurementtypes.hpp"
 #include "kdtreetype.hpp"
 
-int pointCloudMsgCount = 0, gpsMsgCount = 0;
+int pointCloudMsgCount = 0, gpsMsgCount = 0, imuMsgCount = 0;
+double initial_heading = 0;
 
 // General Functions
   void fillparams(Params &params)
@@ -35,6 +38,8 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
       parser.addParam("bag_file_path", &(params.bag_file_path));
       parser.addParam("lidar_topic", &(params.lidar_topic));
       parser.addParam("gps_topic", &(params.gps_topic));
+      parser.addParam("gps_imu_topic", &(params.gps_imu_topic));
+      parser.addParam("gps_type", &(params.gps_type));
       parser.addParam("k_nearest_neighbours", &(params.knn));
       parser.addParam("trajectory_sampling_distance", &(params.trajectory_sampling_dist));
       parser.addParam("distance_match_limit", &(params.distance_match_limit));
@@ -107,29 +112,25 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
 // Scan Matcher (parent Class) Functions
   void ScanMatcher::loadGPSDataFromNavSatFix(boost::shared_ptr<sensor_msgs::NavSatFix> gps_msg)
   {
+    // get rpy from imu container:
+    TimePoint imu_msg_time = rosTimeToChrono(gps_msg->header);
+    auto rpy_msg = this->imu_container.get(imu_msg_time, 0); // (vector3, vector3)
+
     wave::Vec6 gps_measurement; // LLA, RPY
     gps_measurement << gps_msg->latitude,
                        gps_msg->longitude,
                        gps_msg->altitude,
-                       // We do not have RPY, so set to zero
-                       0,
-                       0,
-                       0;
-                       //TODO: Add RPY from IMU onboard GPS
-                       // -> see https://github.com/ethz-asl/ethz_piksi_ros/tree/master/piksi_multi_rtk_ros#installation-and-configuration
-                       //gps_msg->roll * DEG_TO_RAD,
-                       //gps_msg->pitch * DEG_TO_RAD,
-                       //-gps_msg->azimuth * DEG_TO_RAD;
+                       rpy_msg.first(0), // roll
+                       rpy_msg.first(1), // pitch
+                       rpy_msg.first(2); // yaw
+
     wave::Vec6 gps_stdev;
     gps_stdev << sqrt(gps_msg->position_covariance[0]),
                  sqrt(gps_msg->position_covariance[4]),
                  sqrt(gps_msg->position_covariance[8]),
-                 1000000,
-                 1000000,
-                 1000000;
-                 // gps_msg->roll_std * DEG_TO_RAD,
-                 // gps_msg->pitch_std * DEG_TO_RAD,
-                 // gps_msg->azimuth_std * DEG_TO_RAD;
+                 rpy_msg.second(0), // roll stddev
+                 rpy_msg.second(1), // pitch stddev
+                 rpy_msg.second(2); // yaw stddev
 
     // This sets your initial transform from map frame to earth-centered earth-fixed frame
     if (!this->have_GPS_datum)
@@ -141,6 +142,36 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
           rosTimeToChrono(gps_msg->header),
           0,
           std::make_pair(gps_measurement, gps_stdev)); // (Vector6, Vector6)
+  }
+
+  void ScanMatcher::loadGPSDataFromINSPVAX(boost::shared_ptr<novatel_msgs::INSPVAX> gps_msg)
+  {
+      wave::Vec6 gps_measurement; // LLA, RPY
+      gps_measurement << gps_msg->latitude,
+                         gps_msg->longitude,
+                         gps_msg->altitude + gps_msg->undulation,
+                         gps_msg->roll * DEG_TO_RAD,
+                         gps_msg->pitch * DEG_TO_RAD,
+                         -gps_msg->azimuth * DEG_TO_RAD;
+      wave::Vec6 gps_stdev;
+      gps_stdev << gps_msg->latitude_std,
+                   gps_msg->longitude_std,
+                   gps_msg->altitude_std,
+                   gps_msg->roll_std * DEG_TO_RAD,
+                   gps_msg->pitch_std * DEG_TO_RAD,
+                   gps_msg->azimuth_std * DEG_TO_RAD;
+
+      if (!this->have_GPS_datum)
+      {
+          this->have_GPS_datum = true;
+          this->T_ECEF_MAP = gpsToEigen(gps_measurement, false);
+      }
+
+      this->gps_container.emplace(
+              gpsTimeToChrono(gps_msg->header.gps_week,
+                              gps_msg->header.gps_week_seconds),
+              0,
+              std::make_pair(gps_measurement, gps_stdev)); // (Vector6, Vector6)
   }
 
   void ScanMatcher::findAdjacentScans()
@@ -359,13 +390,63 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
       this->aggregate = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   }
 
+  void ICP1ScanMatcher::loadIMUMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag, bool start_of_bag)
+  {
+      if (rosbag_iter->getTopic() == this->params.gps_imu_topic)
+      {
+          imuMsgCount++;
+          auto imu_msg = rosbag_iter->instantiate<geometry_msgs::Vector3Stamped>();
+
+          if (start_of_bag)
+          {
+            initial_heading = -imu_msg->vector.z;
+          }
+
+          wave::Vec6 rpy_measurement;
+          rpy_measurement << -imu_msg->vector.y, // roll
+                             imu_msg->vector.x - 1.570796327, // pitch (starts at pi/2)
+                             -imu_msg->vector.z - initial_heading, // yaw
+                             0, // cannot use Vec3 in libwave for
+                             0, // measurement containters
+                             0;
+          wave::Vec6 rpy_stdev;
+          rpy_stdev << 10,  // TODO: get real std dev from imu data
+                       10,
+                       100,
+                       0,
+                       0,
+                       0;
+          this->imu_container.emplace(
+                rosTimeToChrono(imu_msg->header),
+                0,
+                std::make_pair(rpy_measurement, rpy_stdev)); // (Vector3, Vector3)
+      }
+      if(end_of_bag)
+      {
+        LOG_INFO("Saved %d IMU Messages.", imuMsgCount);
+      }
+  }
+
   void ICP1ScanMatcher::loadROSBagMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag)
   {
       if (rosbag_iter->getTopic() == this->params.gps_topic)
       {
           gpsMsgCount++;
-          auto gps_msg = rosbag_iter->instantiate<sensor_msgs::NavSatFix>();
-          this->loadGPSDataFromNavSatFix(gps_msg);
+          auto gps_msg_navsatfix = rosbag_iter->instantiate<sensor_msgs::NavSatFix>();
+          auto gps_msg_inspvax = rosbag_iter->instantiate<novatel_msgs::INSPVAX>();
+          if (this->params.gps_type == "NavSatFix")
+          {
+            this->loadGPSDataFromNavSatFix(gps_msg_navsatfix);
+          }
+          else if (this->params.gps_type == "INSPVAX")
+          {
+            this->loadGPSDataFromINSPVAX(gps_msg_inspvax);
+          }
+          else
+          {
+            LOG_ERROR("Improper gps_type entered in config file. input: %s. Use NavSatFix or INSPVAX.", this->params.gps_type);
+          }
+
       }
       else if (rosbag_iter->getTopic() == this->params.lidar_topic)
       {
@@ -495,7 +576,7 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
     // set current scan as reference scan
     this->matcher.setRef(this->lidar_container[pose_scan_map.at(j)].value);
     // display reference scan
-    this->displayPointCloud(this->lidar_container[pose_scan_map.at(j)].value, 0);
+    this->displayPointCloud(this->lidar_container[pose_scan_map.at(j)].value, 0); // white
     auto T_estLj_Li = T_MAP_Lj.inverse() * T_MAP_Li; // calculate init. T from adjacent to current
     pcl::transformPointCloud( *(lidar_container[pose_scan_map.at(i)].value),
                               *(this->cloud_target),
@@ -504,11 +585,11 @@ int pointCloudMsgCount = 0, gpsMsgCount = 0;
                               // current scan frame using initialized T, then
                               // assign to cloud_target
     this->matcher.setTarget(cloud_target);
-    this->displayPointCloud(cloud_target, 1);
+    this->displayPointCloud(cloud_target, 1); // red
     if (matcher.match())
     {
         auto T_estLj_Lj = this->matcher.getResult(); // assign estimated transform to new current position
-        this->displayPointCloud(cloud_target, 2, T_estLj_Lj.inverse());
+        this->displayPointCloud(cloud_target, 2, T_estLj_Lj.inverse()); // blue
         if (this->params.visualize && this->params.step_matches)
         {
             std::cin.get(); // wait for user to hit next

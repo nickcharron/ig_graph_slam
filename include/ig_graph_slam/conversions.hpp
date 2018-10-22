@@ -122,4 +122,15 @@ inline Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,
 
 }
 
+// this is only used for INSPVAX messages
+TimePoint gpsTimeToChrono(const uint32_t gps_week, const uint32_t gps_milliseconds)
+{
+    uint64_t secs = WEEK_TO_SEC * gps_week + (gps_milliseconds / 1000) + EPOCH_OFFSET -
+            LEAP_SECONDS;
+    uint64_t nsecs = (gps_milliseconds % 1000) * 1000000;
+    std::chrono::seconds Secs(secs);
+    std::chrono::nanoseconds Nsecs(nsecs);
+    auto dur = Secs + Nsecs;
+    return TimePoint(dur);
+}
 #endif  // IG_GRAPH_SLAM_CONVERSIONS_HPP

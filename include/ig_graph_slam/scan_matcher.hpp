@@ -4,6 +4,8 @@
 #include <Eigen/Dense>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/NavSatFix.h>
+#include <geometry_msgs/Vector3Stamped.h>
+#include <novatel_msgs/INSPVAX.h>
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_cloud.h>
@@ -36,7 +38,8 @@
 struct Params
 {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    std::string bag_file_path, lidar_topic, gps_topic, matcher_type, matcher_config;
+    std::string bag_file_path, lidar_topic, gps_topic, gps_imu_topic,
+    gps_type, matcher_type, matcher_config;
     int knn, iterations;
     float trajectory_sampling_dist, distance_match_limit, distance_match_min,
           input_downsample_size, downsample_cell_size,
@@ -98,11 +101,23 @@ struct ScanMatcher
          }
      }
 
+    /***
+      * Loads IMU RPY data into container from a geometry_msgs/Vector3Stamped ROS msg
+      * @param rosbag_iter
+      */
+     virtual void loadIMUMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag, bool start_of_bag) = 0;
+
    /***
-    * Loads GPS data into scan matcher from an NavSatFix ROS msg
+    * Loads GPS data into measurement container from an NavSatFix ROS msg
     * @param gps_msg NavSatFix ROS msg
     */
    void loadGPSDataFromNavSatFix(boost::shared_ptr<sensor_msgs::NavSatFix> gps_msg);
+
+   /***
+    * Loads GPS data into measurement container from an INSPVAX ROS msg
+    * @param gps_msg INSPVAX ROS msg
+    */
+   void loadGPSDataFromINSPVAX(boost::shared_ptr<novatel_msgs::INSPVAX> gps_msg);
 
    /***
     * Load ROS Bag message into their appropriate container
@@ -169,6 +184,7 @@ struct ScanMatcher
    wave::PointCloudDisplay init_display;
    wave::PCLPointCloudPtr cloud_temp_display;
    wave::MeasurementContainer<wave::Measurement<std::pair<wave::Vec6, wave::Vec6>, uint>> gps_container;
+   wave::MeasurementContainer<wave::Measurement<std::pair<wave::Vec6, wave::Vec6>, uint>> imu_container;
    InitPose<double> init_pose; // see kdtreetype.hpp
    std::vector<int> pose_scan_map;
    std::vector<wave::Measurement<Eigen::Affine3d, uint>> final_poses;
@@ -180,6 +196,7 @@ class ICP1ScanMatcher : public ScanMatcher
   public:
     ICP1ScanMatcher(Params &p_);
     ~ICP1ScanMatcher() {}
+    void loadIMUMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag, bool start_of_bag);
     void loadROSBagMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag);
     void loadPCLPointCloudFromPointCloud2(boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg);
     void createPoseScanMap();

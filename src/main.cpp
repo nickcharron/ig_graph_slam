@@ -11,9 +11,10 @@
 #include <rosbag/view.h>
 #include <ros/ros.h>
 #include <ros/time.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <sensor_msgs/PointCloud2.h>
-// #include <novatel_msgs/INSPVAX.h
+//#include <geometry_msgs/PoseStamped.h>
+//#include <sensor_msgs/PointCloud2.h>
+//#include <geometry_msgs/Vector3Stamped.h>
+//#include <novatel_msgs/INSPVAX.h>
 
 // PCL Headers
 #include <pcl/io/pcd_io.h>
@@ -46,8 +47,11 @@ using TimePoint = std::chrono::time_point<Clock>;
 
 void outputParams(Params p_)
 {
+  LOG_INFO("Outputting all parameters:");
   std::cout << "lidar_topic: " << p_.lidar_topic << std::endl;
   std::cout << "gps_topic: " << p_.gps_topic << std::endl;
+  std::cout << "gps_imu_topic: " << p_.gps_imu_topic << std::endl;
+  std::cout << "gps_type: " << p_.gps_type << std::endl;
   std::cout << "k_nearest_neighbours: " << p_.knn << std::endl;
   std::cout << "trajectory_sampling_distance: " << p_.trajectory_sampling_dist << std::endl;
   std::cout << "distance_match_min: " << p_.distance_match_min << std::endl;
@@ -116,12 +120,42 @@ int main()
     }
     p_.topics.push_back(p_.lidar_topic);
     p_.topics.push_back(p_.gps_topic);
+    p_.topics.push_back(p_.gps_imu_topic);
 
   // iterate through bag file and save messages
     int bag_counter = 0;
     bool end_of_bag = false;
+    bool start_of_bag = true;
     rosbag::View view(bag, rosbag::TopicQuery(p_.topics), ros::TIME_MIN, ros::TIME_MAX, true);
     int total_messages = view.size();
+    if (total_messages == 0)
+    {
+      LOG_ERROR("No messages read. Check your topics in config file.");
+      outputParams(p_);
+    }
+
+    // iterate through bag messages and save imu messages only
+    if( !(p_.gps_imu_topic == ""))
+    {
+      LOG_INFO("Loading IMU messages...");
+      for (auto iter = view.begin(); iter != view.end(); iter++)
+      {
+        bag_counter++;
+        if (bag_counter == total_messages)
+        {
+          end_of_bag = true;
+        }
+
+        scan_matcher->loadIMUMessage(iter, end_of_bag, start_of_bag);
+        start_of_bag = false;
+      }
+    }
+    end_of_bag = false;
+    bag_counter = 0;;
+
+    // iterate through bag and save GPS and Scan messages
+        //-> we need to do this after filling imu container because GPS relies
+        //   on imu for rotation information
     for (auto iter = view.begin(); iter != view.end(); iter++)
     {
       bag_counter++;
@@ -197,14 +231,10 @@ int main()
                   // this next bit is a major gotcha, whole thing blows up
                   // without it. This just rearranges the info matrix to the correct form
                     // block starting at 0,0 of size 3x3
-                  mgtsam.block(0, 0, 3, 3) =
-                          info.block(3, 3, 3, 3);  // rotation
-                  mgtsam.block(3, 3, 3, 3) =
-                          info.block(0, 0, 3, 3);  // translation
-                  mgtsam.block(0, 3, 3, 3) =
-                          info.block(0, 3, 3, 3);  // off diagonal
-                  mgtsam.block(3, 0, 3, 3) =
-                          info.block(3, 0, 3, 3);  // off diagonal
+                  mgtsam.block(0, 0, 3, 3) = info.block(3, 3, 3, 3);  // rotation
+                  mgtsam.block(3, 3, 3, 3) = info.block(0, 0, 3, 3);  // translation
+                  mgtsam.block(0, 3, 3, 3) = info.block(0, 3, 3, 3);  // off diagonal
+                  mgtsam.block(3, 0, 3, 3) = info.block(3, 0, 3, 3);  // off diagonal
                   graph.addFactor(*iter, j, T_Liter_Lj, mgtsam);
                   LOG_INFO("Match no %d of %d", cnt_match, scan_matcher->total_matches);
                   cnt_match++;
@@ -231,8 +261,8 @@ int main()
       }
       LOG_INFO("Done building graph.");
       graph.print();
-      std::cout << "Hit 'Enter' to continue" << std::endl;
-      std::cin.get(); // wait for user to hit next
+      //std::cout << "Hit 'Enter' to continue" << std::endl;
+      //std::cin.get(); // wait for user to hit next
       graph.optimize();
 
       // Loop through and get final alignment
