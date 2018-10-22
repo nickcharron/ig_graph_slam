@@ -8,18 +8,31 @@ Note: This package assumes you have install the package inspector_gadget
 (https://github.com/nickcharron/inspector_gadget) and all its dependencies
 before installing ig_graph_slam.
 
-1. Clone this repo to your catkin workspace:
+1. Install novatel span driver
+
+		Note: this is only needed to work with novatel gps data, however you will
+		need it to build the ig_graph_slam node (for now)
+
+		TODO: Make two branches, one for Moose and one for IG so we don't need to
+		use this novatel span driver
+
+		```
+		cd /path/to/catkin_ws/src
+		git clone https://github.com/nickcharron/novatel_span_driver.git
+		```
+
+2. Clone this repo to your catkin workspace:
 
 ```
 cd /path/to/catkin_ws/src
 git clone https://github.com/nickcharron/ig_graph_slam.git
 ```
 
-2. Download and install Intel MKL from https://software.intel.com/en-us/mkl
+3. Download and install Intel MKL from https://software.intel.com/en-us/mkl
 
 	 Note: this is not required, but having it yields better performance with gtsam
 
-3. Install all dependencies:
+4. Install all dependencies:
 
 ```
 cd /ig_graph_slam
