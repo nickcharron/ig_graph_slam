@@ -508,8 +508,6 @@ double initial_heading = 0;
       Eigen::Affine3d T_ECEF_GPS, T_MAP_LIDAR;
       for (uint64_t iter = 0; iter < this->lidar_container.size(); iter++)
       {  // this ierates through the lidar measurements
-        //std::cout << "Hit 'Enter' to continue" << std::endl;
-        //std::cin.get(); // wait for user to hit next
           try
           {
               // extract gps measurement at the same timepoint as the current lidar message

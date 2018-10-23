@@ -11,10 +11,6 @@
 #include <rosbag/view.h>
 #include <ros/ros.h>
 #include <ros/time.h>
-//#include <geometry_msgs/PoseStamped.h>
-//#include <sensor_msgs/PointCloud2.h>
-//#include <geometry_msgs/Vector3Stamped.h>
-//#include <novatel_msgs/INSPVAX.h>
 
 // PCL Headers
 #include <pcl/io/pcd_io.h>

@@ -1,11 +1,12 @@
+# ------------------------------------------------------------------------------
 # Bag information:
-# ---------------
+# ------------------------------------------------------------------------------
   # For IG:
 gps_type: "NavSatFix" # For IG use "NavSatFix", for Moose use "INSPVAX"
 gps_topic: "/piksi/navsatfix_best_fix"
 gps_imu_topic: "/imu/rpy/filtered" # imu topic used to fill gps_container rotation
                                   # NOTE: rpy depends on mounting position. Check in void ICP1ScanMatcher::loadIMUMessage()
-                                  # For IG: +x = +pitch, +y = -roll, +z = -yaw
+                                  # For IG: +x = +pitch, +y = -roll, +z = -yaw                                  
 lidar_topic: "/hvlp/velodyne_points"   # CHANGE THIS TO COMBINED CLOUD
 bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-07-06-09-15-39-short1.bag"
 T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization
@@ -30,8 +31,9 @@ T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose ini
 #          0.00130787978818302, -0.0202027735432893, 0.999795047693085, -1.21218592853368,
 #          -0, 0, -0, 1]
 
+# ------------------------------------------------------------------------------
 # Filters:
-# -------
+# ------------------------------------------------------------------------------
 # PassThrough Filter: set min and max in each direction for input cloud
 use_pass_through_filter: true
 x_upper_threshold: 60
@@ -58,34 +60,37 @@ ground_segment: false               # Whether to remove the ground points. This
 # Voxel filtering
 downsample_cell_size: 0.2          # Voxel cell length for final downsampling of aggregate map
 
+# ------------------------------------------------------------------------------
 # Mapping Parameters:
-# -------------------
+# ------------------------------------------------------------------------------
+
+# Graph Parameters:
 scanreg_init_icp_distance_max: 25   # distance limit between two initial scan locations to be considered for nearest neighbours
 k_nearest_neighbours: 15            # maximum number of nearest neighbours for graph links
-trajectory_sampling_distance: 2     # Minimum distance in m at which we should take new scans
+trajectory_sampling_distance: 0.5     # Minimum distance in m at which we should take new scans
 distance_match_min: 0               # specify minimum and maximum distance between scans to
 distance_match_limit: 20            # use for scan registration
-iterations: 1                       # How many times to update initial estimates and redo matches
+iterations: 30                       # How many times to update initial estimates and redo matches
 use_gps: false                      # Whether to use GPS priors in graph optimization. Even if set false, GPS will be
                                     # TODO: KEEP FALSE UNTIL WE HAVE RPY IN GPS MESSAGE
                                     # used to supply initial estimates for the matcher.
 optimize_gps_lidar: false           # NOT IMPLEMENTED-whether to optimize extrinsic GPS - lidar transform.
-visualize: true                     # Whether to visualize matches as they happen
-                                    # White: initial post estimate of current scan  (j)
-                                    # Red: adjacent scan (i) transfered into estimate pose J
-                                    # Blue: scan i after registration against j
-step_matches: true
-matcher_type: "icp1"    # icp1: point to plane icp in PCL, icp2: point to plane in PCL
-matcher_config_path: "/home/nick/ig_catkin_ws/src/ig_graph_slam/config/icp1.yaml"
-# Use this if you want to set a given cov to the scan registrations.
-# Otherwise, it will use the wave::ICPMatcher::estimateInfo() function
-fixed_scan_transform_cov: false
-scan_transform_cov:
-  rows: 6
-  cols: 6
+fixed_scan_transform_cov: false         # Use this if you want to set a given
+scan_transform_cov:                     # cov to the scan registrations.
+  rows: 6                               # Otherwise, it will use the function:
+  cols: 6                               # wave::ICPMatcher::estimateInfo()
   data: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
          0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
          0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
          0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
          0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
          0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+# Scan Matcher Parameters:
+visualize: false                     # Whether to visualize matches as they happen
+                                    # White: initial post estimate of current scan  (j)
+                                    # Red: adjacent scan (i) transfered into estimate pose J
+                                    # Blue: scan i after registration against j
+step_matches: false
+matcher_type: "icp1"    # icp1: point to plane icp in PCL, icp2: point to plane in PCL
+matcher_config_path: "/home/nick/ig_catkin_ws/src/ig_graph_slam/config/icp1.yaml"

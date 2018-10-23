@@ -51,8 +51,6 @@ ADD_EXECUTABLE(${PROJECT_NAME}_node
         src/main.cpp
         src/gtsam_graph.cpp
         src/scan_matcher.cpp
-        #src/main.cpp
-        #src/test2.cpp
         )
 
 # Uncomment once we have at least one exec.

@@ -3,9 +3,9 @@
   <arg name="publish_rate" value="10"/>
   <arg name="frame_id" value="/map"/>
   <!-- IG Results: -->
-    <!-- <arg name="pcd_file" value="/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2018-07-06-09-15-39/2018_10_22-13-38.pcd"/> -->
+    <arg name="pcd_file" value="/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2018-07-06-09-15-39/2018_10_22-19-44.pcd"/>
   <!-- Moose Results: -->
-    <arg name="pcd_file" value="/home/nick/results/moose_maps/Colby-Drive-Snowy-2018-03-07-15-Short-noimu.pcd"/>
+    <!-- <arg name="pcd_file" value="/home/nick/results/moose_maps/Colby-Drive-Snowy-2018-03-07-15-Short-noimu.pcd"/> -->
 <!-- Start RVIZ -->
   <node name="rviz_mapping" pkg="rviz" type="rviz"
         args="-d $(find ig_graph_slam)/config/view_results_config.rviz" />
