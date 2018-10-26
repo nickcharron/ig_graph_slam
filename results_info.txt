@@ -1,0 +1,46 @@
+--------------------------------------------------------------------------------
+                              Results Info
+--------------------------------------------------------------------------------
+by: Nick Charron
+
+This doc will serve as a summary of the parameters used for the map results
+contained in the results folder. Include things such as bag processing step and
+graph slam parameters used.
+
+2018_10_20-18-51:
+  - Initial try. Results are very bad
+  - Initialized with GPS and no orientation estimates
+  - Scan matches did not converge
+
+2018_10_22-13-38:
+  - Second try. Results are very bad
+  - Initialized with GPS and orientation from the filtered IMU topic
+  - Scan matches still did not converge, initial estimates of orientation
+    were too bad
+
+2018_10_22-19-44:
+  - Same as last map
+  - Just tried to iterate 30 times to see the initial poses would eventually
+    improve but they did not
+
+2018_10_20-14-15:
+  - Results look good!
+  - Here I used the odometry from the ekf to init. the poses (/odometry/filtered_odom)
+  - Other params:
+    lidar_topic: "/hvlp/velodyne_points"
+    bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-07-06-09-15-39-short1-processed.bag"
+    use_pass_through_filter: true
+    x_upper_threshold: 60
+    x_lower_threshold: -60
+    y_upper_threshold: 60
+    y_lower_threshold: -60
+    z_upper_threshold: 15
+    z_lower_threshold: -1
+    downsample_input: true
+    input_downsample_size: 0.2
+    scanreg_init_icp_distance_max: 25
+    k_nearest_neighbours: 15
+    trajectory_sampling_distance: 0.5
+    distance_match_min: 0
+    distance_match_limit: 20
+    iterations: 30

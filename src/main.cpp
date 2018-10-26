@@ -47,6 +47,8 @@ void outputParams(Params p_)
   std::cout << "lidar_topic: " << p_.lidar_topic << std::endl;
   std::cout << "gps_topic: " << p_.gps_topic << std::endl;
   std::cout << "gps_imu_topic: " << p_.gps_imu_topic << std::endl;
+  std::cout << "odom_topic: " << p_.odom_topic << std::endl;
+  std::cout << "init_method: " << p_.init_method << std::endl;
   std::cout << "gps_type: " << p_.gps_type << std::endl;
   std::cout << "k_nearest_neighbours: " << p_.knn << std::endl;
   std::cout << "trajectory_sampling_distance: " << p_.trajectory_sampling_dist << std::endl;
@@ -117,6 +119,7 @@ int main()
     p_.topics.push_back(p_.lidar_topic);
     p_.topics.push_back(p_.gps_topic);
     p_.topics.push_back(p_.gps_imu_topic);
+    p_.topics.push_back(p_.odom_topic);
 
   // iterate through bag file and save messages
     int bag_counter = 0;

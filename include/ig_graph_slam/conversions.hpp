@@ -1,6 +1,9 @@
 #ifndef IG_GRAPH_SLAM_CONVERSIONS_HPP
 #define IG_GRAPH_SLAM_CONVERSIONS_HPP
 
+// #include <iostream>
+// #include <chrono>
+// #include <ctime>
 #include <wave/containers/measurement_container.hpp>
 #include <wave/utils/math.hpp>
 #include <wave_spatial_utils/world_frame_conversions.hpp>
@@ -17,6 +20,13 @@ using TimePoint = std::chrono::time_point<Clock>;
 const uint32_t WEEK_TO_SEC = 604800;
 const uint32_t EPOCH_OFFSET = 315964800;
 const uint32_t LEAP_SECONDS = 18;
+
+//void outputTimePoint(TimePoint time_point, std::string caption)
+// void outputTimePoint(TimePoint time_point)
+// {
+//   std::time_t tp = std::chrono::time_point<Clock>::to_time_t(time_point);
+//   std::cout << "Time: " << std::ctime(&tp);
+// }
 
 void outputTransform(Eigen::Affine3d T, std::string name)
 {

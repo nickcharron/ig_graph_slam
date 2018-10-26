@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/NavSatFix.h>
+#include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Vector3Stamped.h>
 #include <novatel_msgs/INSPVAX.h>
 
@@ -38,9 +39,9 @@
 struct Params
 {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    std::string bag_file_path, lidar_topic, gps_topic, gps_imu_topic,
+    std::string bag_file_path, lidar_topic, gps_topic, gps_imu_topic, odom_topic,
     gps_type, matcher_type, matcher_config;
-    int knn, iterations;
+    int knn, iterations, init_method;
     float trajectory_sampling_dist, distance_match_limit, distance_match_min,
           input_downsample_size, downsample_cell_size,
           set_search_radius, set_min_neighbours,
@@ -114,6 +115,12 @@ struct ScanMatcher
    void loadGPSDataFromNavSatFix(boost::shared_ptr<sensor_msgs::NavSatFix> gps_msg);
 
    /***
+    * Loads Odometry data into measurement container from a Odometry ROS msg
+    * @param odom_msg Odometry ROS msg
+    */
+   void loadOdomDataFromNavMsgsOdometry(boost::shared_ptr<nav_msgs::Odometry> odom_msg);
+
+   /***
     * Loads GPS data into measurement container from an INSPVAX ROS msg
     * @param gps_msg INSPVAX ROS msg
     */
@@ -126,7 +133,7 @@ struct ScanMatcher
    virtual void loadROSBagMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag) = 0;
 
    /***
-    * Creates pose scan map
+    * Creates pose scan map with GPS data
     */
    virtual void createPoseScanMap() = 0;
 
@@ -185,6 +192,7 @@ struct ScanMatcher
    wave::PCLPointCloudPtr cloud_temp_display;
    wave::MeasurementContainer<wave::Measurement<std::pair<wave::Vec6, wave::Vec6>, uint>> gps_container;
    wave::MeasurementContainer<wave::Measurement<std::pair<wave::Vec6, wave::Vec6>, uint>> imu_container;
+   wave::MeasurementContainer<wave::Measurement<std::pair<wave::Mat4, wave::Vec6>, uint>> odom_container;
    InitPose<double> init_pose; // see kdtreetype.hpp
    std::vector<int> pose_scan_map;
    std::vector<wave::Measurement<Eigen::Affine3d, uint>> final_poses;

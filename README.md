@@ -38,6 +38,16 @@ git clone https://github.com/nickcharron/ig_graph_slam.git
 cd /ig_graph_slam
 bash ./scritps/install_deps.sh
 ```
+**NOTE:** For now, the interpolation function needs to be disabled in the measurement
+containers used from libwave. To do this:
+a) open /path_to/libwave/wave_containers/include/wave/containers/impl/measurement_container.hpp
+b) comment out line 162 (return interpolate(std::prev(i_next), i_next, t);)
+c) add return i_next->value; in its place
+
+**TODO:** Add an overload function to redefine the interpolation function. See
+this example in the anm_localizer:
+ 	https://github.com/wavelab/autonomoose/blob/master/rospackages/autonomoose_core/anm_localizer/include/anm_localizer/utils/measurement_types.hpp#L115
+	https://github.com/wavelab/autonomoose/blob/master/rospackages/autonomoose_core/anm_localizer/include/anm_localizer/anm_localizer.hpp#L309
 
 ## Additional Information and Useful Resources
 

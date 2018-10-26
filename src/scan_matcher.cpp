@@ -4,6 +4,7 @@
 #include <ros/time.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/NavSatFix.h>
+#include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Vector3Stamped.h>
 #include <novatel_msgs/INSPVAX.h>
 #include <unistd.h>
@@ -28,7 +29,7 @@
 #include "measurementtypes.hpp"
 #include "kdtreetype.hpp"
 
-int pointCloudMsgCount = 0, gpsMsgCount = 0, imuMsgCount = 0;
+int pointCloudMsgCount = 0, gpsMsgCount = 0, imuMsgCount = 0, odomMsgCount = 0;
 double initial_heading = 0;
 
 // General Functions
@@ -39,6 +40,8 @@ double initial_heading = 0;
       parser.addParam("lidar_topic", &(params.lidar_topic));
       parser.addParam("gps_topic", &(params.gps_topic));
       parser.addParam("gps_imu_topic", &(params.gps_imu_topic));
+      parser.addParam("odom_topic", &(params.odom_topic));
+      parser.addParam("init_method", &(params.init_method));
       parser.addParam("gps_type", &(params.gps_type));
       parser.addParam("k_nearest_neighbours", &(params.knn));
       parser.addParam("trajectory_sampling_distance", &(params.trajectory_sampling_dist));
@@ -109,41 +112,9 @@ double initial_heading = 0;
       }
   }
 
+// TODO: Move all measurement container functions to other cpp + hpp files
+
 // Scan Matcher (parent Class) Functions
-  void ScanMatcher::loadGPSDataFromNavSatFix(boost::shared_ptr<sensor_msgs::NavSatFix> gps_msg)
-  {
-    // get rpy from imu container:
-    TimePoint imu_msg_time = rosTimeToChrono(gps_msg->header);
-    auto rpy_msg = this->imu_container.get(imu_msg_time, 0); // (vector3, vector3)
-
-    wave::Vec6 gps_measurement; // LLA, RPY
-    gps_measurement << gps_msg->latitude,
-                       gps_msg->longitude,
-                       gps_msg->altitude,
-                       rpy_msg.first(0), // roll
-                       rpy_msg.first(1), // pitch
-                       rpy_msg.first(2); // yaw
-
-    wave::Vec6 gps_stdev;
-    gps_stdev << sqrt(gps_msg->position_covariance[0]),
-                 sqrt(gps_msg->position_covariance[4]),
-                 sqrt(gps_msg->position_covariance[8]),
-                 rpy_msg.second(0), // roll stddev
-                 rpy_msg.second(1), // pitch stddev
-                 rpy_msg.second(2); // yaw stddev
-
-    // This sets your initial transform from map frame to earth-centered earth-fixed frame
-    if (!this->have_GPS_datum)
-    {
-      this->have_GPS_datum = true;
-      this->T_ECEF_MAP = gpsToEigen(gps_measurement, false);
-    }
-    this->gps_container.emplace(
-          rosTimeToChrono(gps_msg->header),
-          0,
-          std::make_pair(gps_measurement, gps_stdev)); // (Vector6, Vector6)
-  }
-
   void ScanMatcher::loadGPSDataFromINSPVAX(boost::shared_ptr<novatel_msgs::INSPVAX> gps_msg)
   {
       wave::Vec6 gps_measurement; // LLA, RPY
@@ -172,6 +143,86 @@ double initial_heading = 0;
                               gps_msg->header.gps_week_seconds),
               0,
               std::make_pair(gps_measurement, gps_stdev)); // (Vector6, Vector6)
+  }
+
+  void ScanMatcher::loadGPSDataFromNavSatFix(boost::shared_ptr<sensor_msgs::NavSatFix> gps_msg)
+  {
+    try
+    {
+      // get rpy from imu container:
+      TimePoint imu_msg_time = rosTimeToChrono(gps_msg->header);
+      //std::cout << "TimePoint" << imu_msg_time.time_since_epoch().count()<< std::endl;
+      auto rpy_msg = this->imu_container.get(imu_msg_time, 1); // (vector6, vector6)
+      wave::Vec6 gps_measurement; // LLA, RPY
+      gps_measurement << gps_msg->latitude,
+                         gps_msg->longitude,
+                         gps_msg->altitude,
+                         rpy_msg.first(0), // roll
+                         rpy_msg.first(1), // pitch
+                         rpy_msg.first(2); // yaw
+
+      wave::Vec6 gps_stdev;
+      gps_stdev << sqrt(gps_msg->position_covariance[0]),
+                   sqrt(gps_msg->position_covariance[4]),
+                   sqrt(gps_msg->position_covariance[8]),
+                   rpy_msg.second(0), // roll stddev
+                   rpy_msg.second(1), // pitch stddev
+                   rpy_msg.second(2); // yaw stddev
+
+      // This sets your initial transform from map frame to earth-centered earth-fixed frame
+      if (!this->have_GPS_datum)
+      {
+        this->have_GPS_datum = true;
+        this->T_ECEF_MAP = gpsToEigen(gps_measurement, false);
+      }
+      this->gps_container.emplace(
+            rosTimeToChrono(gps_msg->header),
+            1,
+            std::make_pair(gps_measurement, gps_stdev)); // (Vector6, Vector6)
+    }
+    catch(const std::out_of_range &e)
+    {
+        LOG_INFO("No IMU orientation for time of gps measurement, may happen at edges of recorded data.");
+    }
+
+  }
+
+  void ScanMatcher::loadOdomDataFromNavMsgsOdometry(boost::shared_ptr<nav_msgs::Odometry> odom_msg)
+  {
+      // get quaternion from odom msg:
+      Eigen::Quaterniond q(odom_msg->pose.pose.orientation.w,
+                           odom_msg->pose.pose.orientation.x,
+                           odom_msg->pose.pose.orientation.y,
+                           odom_msg->pose.pose.orientation.z);
+
+      // Get transform
+      // TODO: Add calibrations - this is technically T_MAP_BaseLink
+      Eigen::Matrix3d R_MAP_LIDAR = q.toRotationMatrix();
+      Eigen::Vector4d t_MAP_LIDAR;
+      t_MAP_LIDAR << odom_msg->pose.pose.position.x,
+                     odom_msg->pose.pose.position.y,
+                     odom_msg->pose.pose.position.z,
+                     1;
+
+      wave::Mat4 T_MAP_LIDAR;
+      T_MAP_LIDAR.setIdentity();
+      T_MAP_LIDAR.block<3,3>(0,0) = R_MAP_LIDAR;
+      T_MAP_LIDAR.rightCols<1>() = t_MAP_LIDAR;
+
+      // Get covariances
+      wave::Vec6 odom_stdev;
+      odom_stdev << sqrt(odom_msg->pose.covariance[0]),
+                    sqrt(odom_msg->pose.covariance[7]),
+                    sqrt(odom_msg->pose.covariance[14]),
+                    sqrt(odom_msg->pose.covariance[21]),
+                    sqrt(odom_msg->pose.covariance[28]),
+                    sqrt(odom_msg->pose.covariance[35]);
+
+      // Add to measurement container
+       this->odom_container.emplace(
+               rosTimeToChrono(odom_msg->header),
+               2,
+               std::make_pair(T_MAP_LIDAR, odom_stdev)); // (Mat4, Vec6)
   }
 
   void ScanMatcher::findAdjacentScans()
@@ -418,7 +469,7 @@ double initial_heading = 0;
                        0;
           this->imu_container.emplace(
                 rosTimeToChrono(imu_msg->header),
-                0,
+                1,
                 std::make_pair(rpy_measurement, rpy_stdev)); // (Vector3, Vector3)
       }
       if(end_of_bag)
@@ -446,7 +497,6 @@ double initial_heading = 0;
           {
             LOG_ERROR("Improper gps_type entered in config file. input: %s. Use NavSatFix or INSPVAX.", this->params.gps_type);
           }
-
       }
       else if (rosbag_iter->getTopic() == this->params.lidar_topic)
       {
@@ -454,10 +504,17 @@ double initial_heading = 0;
           auto lidar_msg = rosbag_iter->instantiate<sensor_msgs::PointCloud2>();
           this->loadPCLPointCloudFromPointCloud2(lidar_msg);
       }
+      else if (rosbag_iter->getTopic() == this->params.odom_topic)
+      {
+          odomMsgCount++;
+          auto odom_msg = rosbag_iter->instantiate<nav_msgs::Odometry>();
+          this->loadOdomDataFromNavMsgsOdometry(odom_msg);
+      }
       if(end_of_bag)
       {
         LOG_INFO("Saved %d GPS Messages.", gpsMsgCount);
         LOG_INFO("Saved %d Point Cloud Messages.", pointCloudMsgCount);
+        LOG_INFO("Saved %d Odometry Messages.", odomMsgCount);
       }
   }
 
@@ -508,41 +565,58 @@ double initial_heading = 0;
       Eigen::Affine3d T_ECEF_GPS, T_MAP_LIDAR;
       for (uint64_t iter = 0; iter < this->lidar_container.size(); iter++)
       {  // this ierates through the lidar measurements
-          try
+          switch(this->params.init_method)
           {
-              // extract gps measurement at the same timepoint as the current lidar message
-              auto gps_pose = this->gps_container.get(this->lidar_container[iter].time_point, 0);
-              T_ECEF_GPS = gpsToEigen(gps_pose.first, true); // true: apply T_ENU_GPS
-                  // TODO: check this ^ might need to change this to false
-              T_MAP_LIDAR =  this->T_ECEF_MAP.inverse() * T_ECEF_GPS * this->params.T_LIDAR_GPS.inverse();
+            case 1 :
+              try
+              {
+                  // extract gps measurement at the same timepoint as the current lidar message
+                  auto gps_pose = this->gps_container.get(this->lidar_container[iter].time_point, 0);
+                  T_ECEF_GPS = gpsToEigen(gps_pose.first, true); // true: apply T_ENU_GPS
+                  T_MAP_LIDAR =  this->T_ECEF_MAP.inverse() * T_ECEF_GPS * this->params.T_LIDAR_GPS.inverse();
+              }
+              catch (const std::out_of_range &e)
+              {
+                  LOG_INFO("No gps pose for time of scan, may happen at edges of recorded data");
+                  break;
+              }
+            case 2 :
+              try
+              {
+                  // extract odometry pose at the same timepoint as current lidar message
+                  auto odom_pose = this->odom_container.get(this->lidar_container[iter].time_point, 2);
+                  T_MAP_LIDAR = odom_pose.first;
+              }
+              catch (const std::out_of_range &e)
+              {
+                  LOG_INFO("No odometry message for time of scan, may happen at edges of recorded data");
+                  break;
+              }
+          }
 
-              // If i > 0 then check to see if the distance between current scan and
-              // last scan is greater than the minimum, if so then save this pose
-              // If i = 0, then save the scan - first scan
-              if ( i > 0 )
-              {
-                bool take_new_scan;
-                take_new_scan = takeNewScan(T_MAP_LIDAR, init_pose.poses[i - 1],
-                                        this->params.trajectory_sampling_dist);
-                if (take_new_scan)
-                {
-                  this->init_pose.poses.push_back(T_MAP_LIDAR);
-                  this->pose_scan_map.push_back(iter);
-                  ++i;
-                  LOG_INFO("Stored scan pose %d of %d available.", i, this->lidar_container.size());
-                }
-              }
-              else
-              {
-                this->init_pose.poses.push_back(T_MAP_LIDAR);
-                this->pose_scan_map.push_back(iter);
-                ++i;
-              }
-          }
-          catch (const std::out_of_range &e)
+          // If i > 0 then check to see if the distance between current scan and
+          // last scan is greater than the minimum, if so then save this pose
+          // If i = 0, then save the scan - first scan
+          if ( i > 0 )
           {
-              LOG_INFO("No gps pose for time of scan, may happen at edges of recorded data");
+            bool take_new_scan;
+            take_new_scan = takeNewScan(T_MAP_LIDAR, init_pose.poses[i - 1],
+                                    this->params.trajectory_sampling_dist);
+            if (take_new_scan)
+            {
+              this->init_pose.poses.push_back(T_MAP_LIDAR);
+              this->pose_scan_map.push_back(iter);
+              ++i;
+              LOG_INFO("Stored scan pose %d of %d available.", i, this->lidar_container.size());
+            }
           }
+          else
+          {
+            this->init_pose.poses.push_back(T_MAP_LIDAR);
+            this->pose_scan_map.push_back(iter);
+            ++i;
+          }
+
       }
   }
 
@@ -579,7 +653,7 @@ double initial_heading = 0;
     pcl::transformPointCloud( *(lidar_container[pose_scan_map.at(i)].value),
                               *(this->cloud_target),
                               T_estLj_Li );
-                              // transform adjacent scan (i) to estimate
+                              // transform adjacent scan (i) to estimated
                               // current scan frame using initialized T, then
                               // assign to cloud_target
     this->matcher.setTarget(cloud_target);
