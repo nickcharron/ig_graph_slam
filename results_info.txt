@@ -44,3 +44,16 @@ graph slam parameters used.
     distance_match_min: 0
     distance_match_limit: 20
     iterations: 30
+
+2018_10_26-15-54
+  - Same as above but 1 iteration
+  - Results look identical
+
+2018_10_26-16-01:
+  - same as above but smapling distance = 0.25
+  - similar results, just more dense map
+
+2018_10_28-17-13:
+  - same as above
+  - used both horizontal and vertical lidar
+  - results look good, but could use filtering of map scans

@@ -29,7 +29,8 @@
 #include "measurementtypes.hpp"
 #include "kdtreetype.hpp"
 
-int pointCloudMsgCount = 0, gpsMsgCount = 0, imuMsgCount = 0, odomMsgCount = 0;
+int gpsMsgCount = 0, imuMsgCount = 0, odomMsgCount = 0,
+pointCloudMsgCount = 0, pointCloudMsgCountMap = 0;
 double initial_heading = 0;
 
 // General Functions
@@ -37,12 +38,17 @@ double initial_heading = 0;
   {
       wave::ConfigParser parser;
       parser.addParam("bag_file_path", &(params.bag_file_path));
-      parser.addParam("lidar_topic", &(params.lidar_topic));
+      parser.addParam("lidar_topic_loc", &(params.lidar_topic_loc));
+      parser.addParam("lidar_topic_map", &(params.lidar_topic_map));
+      parser.addParam("mapping_method", &(params.mapping_method));
       parser.addParam("gps_topic", &(params.gps_topic));
       parser.addParam("gps_imu_topic", &(params.gps_imu_topic));
       parser.addParam("odom_topic", &(params.odom_topic));
       parser.addParam("init_method", &(params.init_method));
       parser.addParam("gps_type", &(params.gps_type));
+      parser.addParam("int_map_size", &(params.int_map_size));
+      parser.addParam("T_LIDAR_GPS", &(params.T_LIDAR_GPS.matrix()));
+      parser.addParam("T_LMAP_LLOC", &(params.T_LMAP_LLOC.matrix()));
       parser.addParam("k_nearest_neighbours", &(params.knn));
       parser.addParam("trajectory_sampling_distance", &(params.trajectory_sampling_dist));
       parser.addParam("distance_match_limit", &(params.distance_match_limit));
@@ -70,8 +76,6 @@ double initial_heading = 0;
       parser.addParam("optimize_gps_lidar", &(params.optimize_gps_lidar));
       parser.addParam("fixed_scan_transform_cov", &(params.fixed_scan_transform_cov));
       parser.addParam("scan_transform_cov", &(params.scan_transform_cov));
-
-      parser.addParam("T_LIDAR_GPS", &(params.T_LIDAR_GPS.matrix()));
 
       //TODO find a better way to specify the path to config file
       /*
@@ -296,16 +300,46 @@ double initial_heading = 0;
       int i = 0;
       for (uint64_t k = 0; k < graph.poses.size(); k++)
       { // iterate through all poses in graph
-          // transform current scan to target cloud using T_Map_Pk
-          pcl::transformPointCloud(*(this->lidar_container[this->pose_scan_map.at(graph.poses.at(k))].value),
-                                   *this->cloud_target,
-                                   this->final_poses.at(graph.poses.at(k)).value);
+        Eigen::Affine3d T_MAP_LLOCk, T_LMAP_LLOC, T_MAP_LMAP;
+        T_MAP_LLOCk = this->final_poses.at(graph.poses.at(k)).value;
+        T_LMAP_LLOC = this->params.T_LMAP_LLOC;
+        T_MAP_LMAP = T_MAP_LLOCk * T_LMAP_LLOC.inverse();
+
+        switch(this->params.mapping_method)
+        {
+          case 1 :
+            // transform current localization scan to target cloud using T_Map_Pk
+            pcl::transformPointCloud(*(this->lidar_container[this->pose_scan_map.at(graph.poses.at(k))].value),
+                                     *this->cloud_target,
+                                     T_MAP_LLOCk);
+            break;
+          case 2 :
+            // transform current map scan to target cloud
+            pcl::transformPointCloud(*(this->lidar_container_map[this->pose_scan_map.at(graph.poses.at(k))].value),
+                                     *this->cloud_target,
+                                     T_MAP_LMAP);
+            break;
+          case 3 :
+            pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tmp (new pcl::PointCloud<pcl::PointXYZ>);
+
+            // transform current map scan to tmp cloud
+            pcl::transformPointCloud(*(this->lidar_container_map[this->pose_scan_map.at(graph.poses.at(k))].value),
+                                     *cloud_tmp,
+                                     T_MAP_LMAP);
+            // transform current localization scan to target cloud
+            pcl::transformPointCloud(*(this->lidar_container[this->pose_scan_map.at(graph.poses.at(k))].value),
+                                     *this->cloud_target,
+                                     T_MAP_LLOCk);
+            // Add tmp cloud to target cloud
+              *this->cloud_target+=*cloud_tmp;
+            break;
+          }
 
           // this block makes sure every intermediate map is made up of 15 scans.
           // each scan is filtered individually, then the whole set of 15
           // combined scans is filtered once
           // TODO: Make this and all other filtering a param in the yaml.
-          if ((k % 15) == 0)
+          if ((k % this->params.int_map_size) == 0)
           { // every 15th pose, filter the intermediate map
               if (i != 0) // if not first intermediate map, then filter it and
               {           // move to the next intermediate map
@@ -498,11 +532,17 @@ double initial_heading = 0;
             LOG_ERROR("Improper gps_type entered in config file. input: %s. Use NavSatFix or INSPVAX.", this->params.gps_type);
           }
       }
-      else if (rosbag_iter->getTopic() == this->params.lidar_topic)
+      else if (rosbag_iter->getTopic() == this->params.lidar_topic_loc)
       {
           pointCloudMsgCount++;
           auto lidar_msg = rosbag_iter->instantiate<sensor_msgs::PointCloud2>();
           this->loadPCLPointCloudFromPointCloud2(lidar_msg);
+      }
+      else if (rosbag_iter->getTopic() == this->params.lidar_topic_map)
+      {
+          pointCloudMsgCountMap++;
+          auto lidar_msg = rosbag_iter->instantiate<sensor_msgs::PointCloud2>();
+          this->loadPCLPointCloudFromPointCloud2Map(lidar_msg);
       }
       else if (rosbag_iter->getTopic() == this->params.odom_topic)
       {
@@ -513,7 +553,8 @@ double initial_heading = 0;
       if(end_of_bag)
       {
         LOG_INFO("Saved %d GPS Messages.", gpsMsgCount);
-        LOG_INFO("Saved %d Point Cloud Messages.", pointCloudMsgCount);
+        LOG_INFO("Saved %d Point Cloud Messages For Localization.", pointCloudMsgCount);
+        LOG_INFO("Saved %d Point Cloud Messages For Mapping.", pointCloudMsgCountMap);
         LOG_INFO("Saved %d Odometry Messages.", odomMsgCount);
       }
   }
@@ -555,6 +596,45 @@ double initial_heading = 0;
       wave::PCLPointCloudPtr temp = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
       *temp = *this->cloud_ref;
       this->lidar_container.emplace_back(rosTimeToChrono(lidar_msg->header), 0, temp);
+  }
+
+  void ICP1ScanMatcher::loadPCLPointCloudFromPointCloud2Map(boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg)
+  {
+      pcl_conversions::toPCL(*lidar_msg, *this->pcl_pc2);
+      pcl::fromPCLPointCloud2(*this->pcl_pc2, *this->cloud_ref);
+
+      // check this, it might not be implemented correctly! See how CropXY is used
+      if (this->params.use_pass_through_filter)
+      {
+          this->pass_filter_x.setInputCloud(this->cloud_ref);
+          this->pass_filter_x.filter(*this->cloud_ref);
+          this->pass_filter_y.setInputCloud(this->cloud_ref);
+          this->pass_filter_y.filter(*this->cloud_ref);
+          this->pass_filter_z.setInputCloud(this->cloud_ref);
+          this->pass_filter_z.filter(*this->cloud_ref);
+      }
+      //cropXY(this->centre, this->bounds, this->cloud_ref, this->cloud_ref, true);
+
+      // ***Add ground segmenter here?
+
+      if (this->params.downsample_input)
+      {
+          this->downsampler.setLeafSize(this->params.input_downsample_size,
+                                        this->params.input_downsample_size,
+                                        this->params.input_downsample_size);
+          this->downsampler.setInputCloud(this->cloud_ref);
+          this->downsampler.filter(*this->cloud_ref);
+      }
+
+      if(this->params.use_rad_filter)
+      {
+        this->radfilter.setInputCloud(this->cloud_ref);
+        this->radfilter.filter(*this->cloud_ref);
+      }
+
+      wave::PCLPointCloudPtr temp = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+      *temp = *this->cloud_ref;
+      this->lidar_container_map.emplace_back(rosTimeToChrono(lidar_msg->header), 0, temp);
   }
 
   void ICP1ScanMatcher::createPoseScanMap()
@@ -666,7 +746,6 @@ double initial_heading = 0;
         {
             std::cin.get(); // wait for user to hit next
         }
-
         double delta = T_estLj_Lj.matrix().block(0, 3, 3, 1).norm();
         double total = T_estLj_Li.matrix().block(0, 3, 3, 1).norm();
 

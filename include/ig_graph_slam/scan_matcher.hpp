@@ -39,9 +39,9 @@
 struct Params
 {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    std::string bag_file_path, lidar_topic, gps_topic, gps_imu_topic, odom_topic,
+    std::string bag_file_path, lidar_topic_loc, lidar_topic_map, gps_topic, gps_imu_topic, odom_topic,
     gps_type, matcher_type, matcher_config;
-    int knn, iterations, init_method;
+    int knn, iterations, init_method, mapping_method, int_map_size;
     float trajectory_sampling_dist, distance_match_limit, distance_match_min,
           input_downsample_size, downsample_cell_size,
           set_search_radius, set_min_neighbours,
@@ -52,7 +52,7 @@ struct Params
     bool ground_segment, use_gps, visualize, downsample_input, step_matches,
             optimize_gps_lidar, fixed_scan_transform_cov,
             use_rad_filter, use_pass_through_filter;
-    Eigen::Affine3d T_LIDAR_GPS;
+    Eigen::Affine3d T_LIDAR_GPS, T_LMAP_LLOC;
     wave::MatX scan_transform_cov;
     std::vector<std::string> topics;
 };
@@ -207,6 +207,7 @@ class ICP1ScanMatcher : public ScanMatcher
     void loadIMUMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag, bool start_of_bag);
     void loadROSBagMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag);
     void loadPCLPointCloudFromPointCloud2(boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg);
+    void loadPCLPointCloudFromPointCloud2Map(boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg);
     void createPoseScanMap();
     TimePoint getLidarScanTimePoint(int index);
     bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid);
@@ -219,6 +220,7 @@ class ICP1ScanMatcher : public ScanMatcher
     pcl::RadiusOutlierRemoval<pcl::PointXYZ> radfilter;
     wave::ICPMatcher matcher;
     std::vector<wave::Measurement<wave::PCLPointCloudPtr, uint>> lidar_container;
+    std::vector<wave::Measurement<wave::PCLPointCloudPtr, uint>> lidar_container_map;
     std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> intermediaries;
     wave::PCLPointCloudPtr aggregate;
 

@@ -44,11 +44,14 @@ using TimePoint = std::chrono::time_point<Clock>;
 void outputParams(Params p_)
 {
   LOG_INFO("Outputting all parameters:");
-  std::cout << "lidar_topic: " << p_.lidar_topic << std::endl;
+  std::cout << "lidar_topic_map: " << p_.lidar_topic_map << std::endl;
+  std::cout << "lidar_topic_loc: " << p_.lidar_topic_loc << std::endl;
   std::cout << "gps_topic: " << p_.gps_topic << std::endl;
   std::cout << "gps_imu_topic: " << p_.gps_imu_topic << std::endl;
   std::cout << "odom_topic: " << p_.odom_topic << std::endl;
   std::cout << "init_method: " << p_.init_method << std::endl;
+  std::cout << "mapping_method: " << p_.mapping_method << std::endl;
+  std::cout << "int_map_size: " << p_.int_map_size << std::endl;
   std::cout << "gps_type: " << p_.gps_type << std::endl;
   std::cout << "k_nearest_neighbours: " << p_.knn << std::endl;
   std::cout << "trajectory_sampling_distance: " << p_.trajectory_sampling_dist << std::endl;
@@ -116,7 +119,8 @@ int main()
     {
         LOG_ERROR("Bag exception : %s", ex.what());
     }
-    p_.topics.push_back(p_.lidar_topic);
+    p_.topics.push_back(p_.lidar_topic_loc);
+    p_.topics.push_back(p_.lidar_topic_map);
     p_.topics.push_back(p_.gps_topic);
     p_.topics.push_back(p_.gps_imu_topic);
     p_.topics.push_back(p_.odom_topic);
