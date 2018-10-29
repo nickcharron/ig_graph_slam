@@ -305,7 +305,7 @@ double initial_heading = 0;
                                     this->params.downsample_cell_size,
                                     this->params.downsample_cell_size);
       int i = 0;
-      for (uint64_t k = 0; k < graph.poses.size(); k++)
+      for (uint64_t k = 0; k < graph.poses.size()-1; k++) // NOTE: Sometimes I get seg fault on the last scan
       { // iterate through all poses in graph
         Eigen::Affine3d T_MAP_LLOCk, T_LMAP_LLOC, T_MAP_LMAP;
         T_MAP_LLOCk = this->final_poses.at(graph.poses.at(k)).value;
@@ -379,6 +379,7 @@ double initial_heading = 0;
           // TODO: Add option to visualize the map building
           *this->aggregate += *(this->intermediaries.at(iter));
       }
+
   }
 
   void ICP1ScanMatcher::outputAggregateMap(GTSAMGraph &graph)
@@ -413,46 +414,50 @@ double initial_heading = 0;
       }
       bias_file.close();
 
-      // This file contains the input traj to the GTSAM since we want to compare
-      // the pose difference betweem the input and the output of GTSAM
-      std::ofstream gt_file;
-      gt_file.open(std::to_string(timestamp) + "GTSAMinputTraj.txt");
-      for (uint64_t j = 0; j < adjacency->size(); j++)
+      // TODO: Make this work even without GPS data
+      if(this->params.init_method == 1)
       {
-          Eigen::Affine3d T_ECEF_GPSIMU = getGPSTransform(getLidarScanTimePoint(pose_scan_map.at(j)), true);
-          Eigen::Affine3d T_MAP_GPSIMU, T_MAP_LIDAR;
-          T_MAP_GPSIMU = T_ECEF_MAP.inverse() * T_ECEF_GPSIMU;
-          if (this->params.optimize_gps_lidar)
-          {
-              auto result = graph.result.at<gtsam::Pose3>(6000000);
-              T_MAP_LIDAR = T_MAP_GPSIMU * result.matrix();
-          }
-          else
-          {
-              auto result = params.T_LIDAR_GPS.inverse();
-              T_MAP_LIDAR = T_MAP_GPSIMU * result.matrix();
-          }
-          gt_file << getLidarScanTimePoint(pose_scan_map.at(j)).time_since_epoch().count() << ", ";
-          gt_file << T_MAP_LIDAR.matrix().format(CSVFormat);
-          gt_file << std::endl;
-      }
-      gt_file.close();
+        // This file contains the input traj to the GTSAM since we want to compare
+        // the pose difference betweem the input and the output of GTSAM
+        std::ofstream gt_file;
+        gt_file.open(std::to_string(timestamp) + "GTSAMinputTraj.txt");
+        for (uint64_t j = 0; j < adjacency->size(); j++)
+        {
+            Eigen::Affine3d T_ECEF_GPSIMU = getGPSTransform(getLidarScanTimePoint(pose_scan_map.at(j)), true);
+            Eigen::Affine3d T_MAP_GPSIMU, T_MAP_LIDAR;
+            T_MAP_GPSIMU = T_ECEF_MAP.inverse() * T_ECEF_GPSIMU;
+            if (this->params.optimize_gps_lidar)
+            {
+                auto result = graph.result.at<gtsam::Pose3>(6000000);
+                T_MAP_LIDAR = T_MAP_GPSIMU * result.matrix();
+            }
+            else
+            {
+                auto result = params.T_LIDAR_GPS.inverse();
+                T_MAP_LIDAR = T_MAP_GPSIMU * result.matrix();
+            }
+            gt_file << getLidarScanTimePoint(pose_scan_map.at(j)).time_since_epoch().count() << ", ";
+            gt_file << T_MAP_LIDAR.matrix().format(CSVFormat);
+            gt_file << std::endl;
+        }
+        gt_file.close();
 
-      std::ofstream datumfile;
-      using dbl = std::numeric_limits<double>;
-      datumfile.open(std::to_string(timestamp) + "map_ecef_datum" + ".txt");
-      datumfile.precision(dbl::max_digits10);
-      datumfile << T_ECEF_MAP.matrix().format(CSVFormat);
-      datumfile.close();
-      if (this->params.optimize_gps_lidar)
-      {
-          auto result = graph.result.at<gtsam::Pose3>(6000000);
-          std::ofstream datumfile;
-          using dbl = std::numeric_limits<double>;
-          datumfile.open(std::to_string(timestamp) + "T_LIDAR_GPS" + ".txt");
-          datumfile.precision(dbl::max_digits10);
-          datumfile << result.inverse().matrix().format(CSVFormat);
-          datumfile.close();
+        std::ofstream datumfile;
+        using dbl = std::numeric_limits<double>;
+        datumfile.open(std::to_string(timestamp) + "map_ecef_datum" + ".txt");
+        datumfile.precision(dbl::max_digits10);
+        datumfile << T_ECEF_MAP.matrix().format(CSVFormat);
+        datumfile.close();
+        if (this->params.optimize_gps_lidar)
+        {
+            auto result = graph.result.at<gtsam::Pose3>(6000000);
+            std::ofstream datumfile;
+            using dbl = std::numeric_limits<double>;
+            datumfile.open(std::to_string(timestamp) + "T_LIDAR_GPS" + ".txt");
+            datumfile.precision(dbl::max_digits10);
+            datumfile << result.inverse().matrix().format(CSVFormat);
+            datumfile.close();
+        }
       }
   }
 

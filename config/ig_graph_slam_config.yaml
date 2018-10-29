@@ -3,8 +3,8 @@
 # ------------------------------------------------------------------------------
   # For IG:
 gps_type: "NavSatFix" # For IG use "NavSatFix", for Moose use "INSPVAX"
-#gps_topic: "/piksi/navsatfix_best_fix"
-gps_topic: "/gps/filtered"
+gps_topic: "/piksi/navsatfix_best_fix"
+#gps_topic: "/gps/filtered"
 gps_imu_topic: "/imu/rpy/filtered" # imu topic used to fill gps_container rotation
                                   # NOTE: rpy depends on mounting position. Check in void ICP1ScanMatcher::loadIMUMessage()
                                   # For IG: +x = +pitch, +y = -roll, +z = -yaw
@@ -12,8 +12,8 @@ odom_topic: "/odometry/filtered_odom"
 init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
-mapping_method: 2                 # Build map with (1) localization scans, (2) mapping scans, (3) both
-bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-07-06-09-15-39-short1-processed.bag"
+mapping_method: 3                 # Build map with (1) localization scans, (2) mapping scans, (3) both
+bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-07-06-09-15-39-long-processed.bag"
 int_map_size: 15                  # Scans are combined into intermediate maps
                                   # each intermediate map is filtered once. Default: 15
 T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization

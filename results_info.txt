@@ -57,3 +57,25 @@ graph slam parameters used.
   - same as above
   - used both horizontal and vertical lidar
   - results look good, but could use filtering of map scans
+
+2018_10_28-20-21:
+  - changed sampling distance and filter for map scans to:
+      x_upper_threshold_map: 15
+      x_lower_threshold_map: -15
+      y_upper_threshold_map: 20
+      y_lower_threshold_map: -20
+      z_upper_threshold_map: 5
+      z_lower_threshold_map: -5
+  - just testing filter settings
+
+2018_10_29-9-10:
+  - mapping method 1 with full bag from 2018-07-06-09-15
+  - results look great
+
+2018_10_29-9-30:
+  - same as above but mapping method 2
+  - beginning registrations have some visible eror
+
+  2018_10_29-9-35:
+    - same as above but mapping method 3
+    - Vertical scans show some error - probably due to poor L2L calibration 
