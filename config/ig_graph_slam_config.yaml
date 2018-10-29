@@ -76,6 +76,15 @@ ground_segment: false               # Whether to remove the ground points. This
 # Voxel filtering
 downsample_cell_size: 0.2          # Voxel cell length for final downsampling of aggregate map
 
+# PassThrough Filter for the Map scans: set min and max in each direction for input cloud
+use_pass_through_filter_map: true
+x_upper_threshold_map: 15
+x_lower_threshold_map: -15
+y_upper_threshold_map: 20
+y_lower_threshold_map: -20
+z_upper_threshold_map: 5
+z_lower_threshold_map: -5
+
 # ------------------------------------------------------------------------------
 # Mapping Parameters:
 # ------------------------------------------------------------------------------
@@ -83,7 +92,7 @@ downsample_cell_size: 0.2          # Voxel cell length for final downsampling of
 # Graph Parameters:
 scanreg_init_icp_distance_max: 25   # distance limit between two initial scan locations to be considered for nearest neighbours
 k_nearest_neighbours: 15            # maximum number of nearest neighbours for graph links
-trajectory_sampling_distance: 0.25     # Minimum distance in m at which we should take new scans
+trajectory_sampling_distance: 1     # Minimum distance in m at which we should take new scans
 distance_match_min: 0               # specify minimum and maximum distance between scans to
 distance_match_limit: 20            # use for scan registration
 iterations: 1                       # How many times to update initial estimates and redo matches

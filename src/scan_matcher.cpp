@@ -60,6 +60,13 @@ double initial_heading = 0;
       parser.addParam("z_lower_threshold", &(params.z_lower_threshold));
       parser.addParam("z_upper_threshold", &(params.z_upper_threshold));
       parser.addParam("use_pass_through_filter", &(params.use_pass_through_filter));
+      parser.addParam("x_lower_threshold_map", &(params.x_lower_threshold_map));
+      parser.addParam("x_upper_threshold_map", &(params.x_upper_threshold_map));
+      parser.addParam("y_lower_threshold_map", &(params.y_lower_threshold_map));
+      parser.addParam("y_upper_threshold_map", &(params.y_upper_threshold_map));
+      parser.addParam("z_lower_threshold_map", &(params.z_lower_threshold_map));
+      parser.addParam("z_upper_threshold_map", &(params.z_upper_threshold));
+      parser.addParam("use_pass_through_filter_map", &(params.use_pass_through_filter_map));
       parser.addParam("downsample_input", &(params.downsample_input));
       parser.addParam("input_downsample_size", &(params.input_downsample_size));
       parser.addParam("use_rad_filter", &(params.use_rad_filter));
@@ -459,9 +466,7 @@ double initial_heading = 0;
       this->pass_filter_x.setFilterFieldName("x");
       this->pass_filter_y.setFilterFieldName("y");
       this->pass_filter_z.setFilterFieldName("z");
-      this->pass_filter_x.setFilterLimits(this->params.x_lower_threshold, this->params.x_upper_threshold);
-      this->pass_filter_y.setFilterLimits(this->params.y_lower_threshold, this->params.y_upper_threshold);
-      this->pass_filter_z.setFilterLimits(this->params.z_lower_threshold, this->params.z_upper_threshold);
+
       // this->centre.setZero();
       // this->bounds << 1.8, 1.8;
       // this->groundCloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
@@ -567,6 +572,9 @@ double initial_heading = 0;
       // check this, it might not be implemented correctly! See how CropXY is used
       if (this->params.use_pass_through_filter)
       {
+          this->pass_filter_x.setFilterLimits(this->params.x_lower_threshold, this->params.x_upper_threshold);
+          this->pass_filter_y.setFilterLimits(this->params.y_lower_threshold, this->params.y_upper_threshold);
+          this->pass_filter_z.setFilterLimits(this->params.z_lower_threshold, this->params.z_upper_threshold);
           this->pass_filter_x.setInputCloud(this->cloud_ref);
           this->pass_filter_x.filter(*this->cloud_ref);
           this->pass_filter_y.setInputCloud(this->cloud_ref);
@@ -604,8 +612,11 @@ double initial_heading = 0;
       pcl::fromPCLPointCloud2(*this->pcl_pc2, *this->cloud_ref);
 
       // check this, it might not be implemented correctly! See how CropXY is used
-      if (this->params.use_pass_through_filter)
+      if (this->params.use_pass_through_filter_map)
       {
+          this->pass_filter_x.setFilterLimits(this->params.x_lower_threshold_map, this->params.x_upper_threshold_map);
+          this->pass_filter_y.setFilterLimits(this->params.y_lower_threshold_map, this->params.y_upper_threshold_map);
+          this->pass_filter_z.setFilterLimits(this->params.z_lower_threshold_map, this->params.z_upper_threshold_map);
           this->pass_filter_x.setInputCloud(this->cloud_ref);
           this->pass_filter_x.filter(*this->cloud_ref);
           this->pass_filter_y.setInputCloud(this->cloud_ref);

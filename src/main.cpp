@@ -64,6 +64,13 @@ void outputParams(Params p_)
   std::cout << "z_lower_threshold: " << p_.z_lower_threshold << std::endl;
   std::cout << "z_upper_threshold: " << p_.z_upper_threshold << std::endl;
   std::cout << "use_pass_through_filter: " << p_.use_pass_through_filter << std::endl;
+  std::cout << "x_lower_threshold_map: " << p_.x_lower_threshold_map << std::endl;
+  std::cout << "x_upper_threshold_map: " << p_.x_upper_threshold_map << std::endl;
+  std::cout << "y_lower_threshold_map: " << p_.y_lower_threshold_map << std::endl;
+  std::cout << "y_upper_threshold_map: " << p_.y_upper_threshold_map << std::endl;
+  std::cout << "z_lower_threshold_map: " << p_.z_lower_threshold_map << std::endl;
+  std::cout << "z_upper_threshold_map: " << p_.z_upper_threshold_map << std::endl;
+  std::cout << "use_pass_through_filter_map: " << p_.use_pass_through_filter_map << std::endl;
   std::cout << "downsample_input: " << p_.downsample_input << std::endl;
   std::cout << "input_downsample_size: " << p_.input_downsample_size << std::endl;
   std::cout << "use_rad_filter: " << p_.use_rad_filter << std::endl;

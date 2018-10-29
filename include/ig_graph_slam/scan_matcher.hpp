@@ -47,11 +47,14 @@ struct Params
           set_search_radius, set_min_neighbours,
           x_lower_threshold, x_upper_threshold,
           y_lower_threshold, y_upper_threshold,
-          z_lower_threshold, z_upper_threshold;
+          z_lower_threshold, z_upper_threshold,
+          x_lower_threshold_map, x_upper_threshold_map,
+          y_lower_threshold_map, y_upper_threshold_map,
+          z_lower_threshold_map, z_upper_threshold_map;
 
     bool ground_segment, use_gps, visualize, downsample_input, step_matches,
             optimize_gps_lidar, fixed_scan_transform_cov,
-            use_rad_filter, use_pass_through_filter;
+            use_rad_filter, use_pass_through_filter, use_pass_through_filter_map;
     Eigen::Affine3d T_LIDAR_GPS, T_LMAP_LLOC;
     wave::MatX scan_transform_cov;
     std::vector<std::string> topics;
