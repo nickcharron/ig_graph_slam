@@ -92,7 +92,7 @@ z_lower_threshold_map: -5
 # Graph Parameters:
 scanreg_init_icp_distance_max: 25   # distance limit between two initial scan locations to be considered for nearest neighbours
 k_nearest_neighbours: 15            # maximum number of nearest neighbours for graph links
-trajectory_sampling_distance: 0.15    # Minimum distance in m at which we should take new scans
+trajectory_sampling_distance: 0.5    # Minimum distance in m at which we should take new scans
 distance_match_min: 0               # specify minimum and maximum distance between scans to
 distance_match_limit: 20            # use for scan registration
 iterations: 1                       # How many times to update initial estimates and redo matches

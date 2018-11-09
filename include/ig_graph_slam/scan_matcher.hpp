@@ -1,35 +1,19 @@
 #ifndef IG_GRAPH_SLAM_SCAN_MATCHER_HPP
 #define IG_GRAPH_SLAM_SCAN_MATCHER_HPP
 
-#include <Eigen/Dense>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <nav_msgs/Odometry.h>
-#include <geometry_msgs/Vector3Stamped.h>
-#include <novatel_msgs/INSPVAX.h>
-
-#include <pcl/io/pcd_io.h>
+// PCL headers
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/filters/passthrough.h>
-#include <pcl/filters/radius_outlier_removal.h>
-#include <pcl/filters/conditional_removal.h>
 
-#include <wave/containers/measurement_container.hpp>
-#include <wave/containers/measurement.hpp>
-#include <wave/utils/math.hpp>
-#include <wave/utils/config.hpp>
+// WAVE headers
 #include <wave/utils/log.hpp>
 #include <wave/matching/icp.hpp>
-#include <wave/matching/gicp.hpp>
 #include <wave/matching/pointcloud_display.hpp>
-#include <wave/matching/ground_segmentation.hpp>
 
+// IG Graph SLAM headers
 #include "load_ros_data.hpp"
 #include "kdtreetype.hpp"
 #include "gtsam_graph.hpp"
-#include "pcl_filters.hpp"
 
 // Declare some templates:
   using Clock = std::chrono::steady_clock;

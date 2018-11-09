@@ -15,15 +15,10 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <pcl/filters/passthrough.h>
-#include <pcl/filters/radius_outlier_removal.h>
-#include <pcl/filters/conditional_removal.h>
 
 // WAVE specific headers
 #include <wave/containers/measurement_container.hpp>
 #include <wave/containers/measurement.hpp>
-#include <wave/utils/math.hpp>
-#include <wave/utils/config.hpp>
 #include <wave/utils/log.hpp>
 
 // IG Graph SLAM specific headers

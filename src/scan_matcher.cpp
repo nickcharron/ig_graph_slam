@@ -1,28 +1,18 @@
 // ROS and other Headers
-#include <rosbag/bag.h>
-#include <rosbag/view.h>
-#include <ros/time.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <nav_msgs/Odometry.h>
-#include <geometry_msgs/Vector3Stamped.h>
-#include <novatel_msgs/INSPVAX.h>
 #include <unistd.h>
 #include <sstream>
 #include <string>
 #include <math.h>
 
+// PCL headers
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/io/pcd_io.h>
+
 // WAVE Headers
-#include <wave/containers/measurement_container.hpp>
-#include <wave/utils/math.hpp>
-#include <wave/utils/config.hpp>
 #include <wave/utils/log.hpp>
 #include <wave/matching/icp.hpp>
-#include <wave/matching/gicp.hpp>
 #include <wave/matching/pointcloud_display.hpp>
-#include <wave/matching/ground_segmentation.hpp>
-#include <wave_spatial_utils/world_frame_conversions.hpp>
-
 
 // IG Graph SLAM Headers
 #include "gtsam_graph.hpp"

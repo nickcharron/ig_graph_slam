@@ -10,8 +10,6 @@
 
 #include "conversions.hpp"
 
-#define DEG_TO_RAD 0.0174532925199433
-#define RAD_TO_DEG 57.2957795130823209
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;

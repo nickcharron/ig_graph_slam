@@ -4,7 +4,7 @@
   <arg name="frame_id" value="/map"/>
   <!-- IG Results: -->
     <arg name="pcd_file"
-    value="/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2018-07-06-09-15-39/2018_11_8-22-30.pcd"/>
+    value="/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2018-07-06-09-15-39/1541738222433919701aggregate_map.pcd"/>
   <!-- Moose Results: -->
     <!-- <arg name="pcd_file" value="/home/nick/results/moose_maps/Colby-Drive-Snowy-2018-03-07-15-Short-noimu.pcd"/> -->
 <!-- Start RVIZ -->

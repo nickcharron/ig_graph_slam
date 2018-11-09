@@ -13,23 +13,12 @@
 #include <ros/time.h>
 
 // PCL Headers
-#include <pcl/io/pcd_io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/filters/passthrough.h>
-#include <pcl/filters/radius_outlier_removal.h>
-#include <pcl/filters/conditional_removal.h>
 
 // WAVE Headers
-#include <wave/containers/measurement_container.hpp>
-#include <wave/utils/math.hpp>
-#include <wave/utils/config.hpp>
 #include <wave/utils/log.hpp>
 #include <wave/matching/icp.hpp>
-#include <wave/matching/gicp.hpp>
-#include <wave/matching/pointcloud_display.hpp>
-#include <wave/matching/ground_segmentation.hpp>
 
 // IG Graph SLAM Headers
 #include "gtsam_graph.hpp"
