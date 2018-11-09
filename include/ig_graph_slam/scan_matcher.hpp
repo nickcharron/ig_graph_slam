@@ -28,7 +28,8 @@ struct Params
     std::string bag_file_path, lidar_topic_loc, lidar_topic_map, gps_topic, gps_imu_topic, odom_topic,
     gps_type, matcher_type, matcher_config;
     int knn, iterations, init_method, mapping_method, int_map_size;
-    float trajectory_sampling_dist, distance_match_limit, distance_match_min,
+    float trajectory_sampling_dist, map_sampling_dist,
+          distance_match_limit, distance_match_min,
           input_downsample_size, downsample_cell_size,
           set_search_radius, set_min_neighbours,
           x_lower_threshold, x_upper_threshold,

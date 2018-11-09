@@ -42,6 +42,7 @@
       parser.addParam("T_LMAP_LLOC", &(params.T_LMAP_LLOC.matrix()));
       parser.addParam("k_nearest_neighbours", &(params.knn));
       parser.addParam("trajectory_sampling_distance", &(params.trajectory_sampling_dist));
+      parser.addParam("map_sampling_distance", &(params.map_sampling_distance));
       parser.addParam("distance_match_limit", &(params.distance_match_limit));
       parser.addParam("distance_match_min", &(params.distance_match_min));
       parser.addParam("x_lower_threshold", &(params.x_lower_threshold));
@@ -152,13 +153,16 @@
 
   void ICP1ScanMatcher::createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data)
   {
-      int i = 0;
+      int i =0;
       for (uint64_t k = 0; k < graph.poses.size()-1; k++) // NOTE: Sometimes I get seg fault on the last scan
+      //for (uint64_t k = 0; k < ros_data->lidar_container_map.size()-1; k++)
       { // iterate through all poses in graph
         Eigen::Affine3d T_MAP_LLOCk, T_LMAP_LLOC, T_MAP_LMAP;
         T_MAP_LLOCk = this->final_poses.at(graph.poses.at(k)).value;
         T_LMAP_LLOC = this->params.T_LMAP_LLOC;
         T_MAP_LMAP = T_MAP_LLOCk * T_LMAP_LLOC.inverse();
+
+        wave::
 
         switch(this->params.mapping_method)
         {
@@ -190,10 +194,9 @@
             break;
           }
 
-          // this block makes sure every intermediate map is made up of 15 scans.
-          // each scan is filtered individually, then the whole set of 15
-          // combined scans is filtered once
-          // TODO: Make this and all other filtering a param in the yaml.
+          // this block makes sure every intermediate map is made up of n scans.
+          // each scan is filtered individually, then the whole set of n
+          // combined scans is filtered once (default, n=15)
           if ((k % this->params.int_map_size) == 0)
           { // every 15th pose, filter the intermediate map
               if (i != 0) // if not first intermediate map, then filter it and
