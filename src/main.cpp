@@ -32,120 +32,126 @@
 #include <wave/matching/ground_segmentation.hpp>
 
 // IG Graph SLAM Headers
-#include <gtsam_graph.hpp>
+#include "gtsam_graph.hpp"
 #include "scan_matcher.hpp"
-//#include "kdtreetype.hpp"
-
+#include "load_ros_data.hpp"
+#include "kdtreetype.hpp"
+#include "conversions.hpp"
+#include "pcl_filters.hpp"
+#include "measurementtypes.hpp"
 
 const uint64_t bias_offset = 1000000;
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;
 
-void outputParams(Params p_)
+void outputParams(boost::shared_ptr<Params> p_)
 {
   LOG_INFO("Outputting all parameters:");
-  std::cout << "lidar_topic_map: " << p_.lidar_topic_map << std::endl;
-  std::cout << "lidar_topic_loc: " << p_.lidar_topic_loc << std::endl;
-  std::cout << "gps_topic: " << p_.gps_topic << std::endl;
-  std::cout << "gps_imu_topic: " << p_.gps_imu_topic << std::endl;
-  std::cout << "odom_topic: " << p_.odom_topic << std::endl;
-  std::cout << "init_method: " << p_.init_method << std::endl;
-  std::cout << "mapping_method: " << p_.mapping_method << std::endl;
-  std::cout << "int_map_size: " << p_.int_map_size << std::endl;
-  std::cout << "gps_type: " << p_.gps_type << std::endl;
-  std::cout << "k_nearest_neighbours: " << p_.knn << std::endl;
-  std::cout << "trajectory_sampling_distance: " << p_.trajectory_sampling_dist << std::endl;
-  std::cout << "distance_match_min: " << p_.distance_match_min << std::endl;
-  std::cout << "distance_match_limit: " << p_.distance_match_limit << std::endl;
-  std::cout << "x_lower_threshold: " << p_.x_lower_threshold << std::endl;
-  std::cout << "x_upper_threshold: " << p_.x_upper_threshold << std::endl;
-  std::cout << "y_lower_threshold: " << p_.y_lower_threshold << std::endl;
-  std::cout << "y_upper_threshold: " << p_.y_upper_threshold << std::endl;
-  std::cout << "z_lower_threshold: " << p_.z_lower_threshold << std::endl;
-  std::cout << "z_upper_threshold: " << p_.z_upper_threshold << std::endl;
-  std::cout << "use_pass_through_filter: " << p_.use_pass_through_filter << std::endl;
-  std::cout << "x_lower_threshold_map: " << p_.x_lower_threshold_map << std::endl;
-  std::cout << "x_upper_threshold_map: " << p_.x_upper_threshold_map << std::endl;
-  std::cout << "y_lower_threshold_map: " << p_.y_lower_threshold_map << std::endl;
-  std::cout << "y_upper_threshold_map: " << p_.y_upper_threshold_map << std::endl;
-  std::cout << "z_lower_threshold_map: " << p_.z_lower_threshold_map << std::endl;
-  std::cout << "z_upper_threshold_map: " << p_.z_upper_threshold_map << std::endl;
-  std::cout << "use_pass_through_filter_map: " << p_.use_pass_through_filter_map << std::endl;
-  std::cout << "downsample_input: " << p_.downsample_input << std::endl;
-  std::cout << "input_downsample_size: " << p_.input_downsample_size << std::endl;
-  std::cout << "use_rad_filter: " << p_.use_rad_filter << std::endl;
-  std::cout << "set_min_neighbours: " << p_.set_min_neighbours << std::endl;
-  std::cout << "set_search_radius: " << p_.set_search_radius << std::endl;
-  std::cout << "matcher_config_path: " << p_.matcher_config << std::endl;
-  std::cout << "ground_segment: " << p_.ground_segment << std::endl;
-  std::cout << "use_gps: " << p_.use_gps << std::endl;
-  std::cout << "downsample_cell_size: " << p_.downsample_cell_size << std::endl;
-  std::cout << "iterations: " << p_.iterations << std::endl;
-  std::cout << "visualize: " << p_.visualize << std::endl;
-  std::cout << "step_matches: " << p_.step_matches << std::endl;
-  std::cout << "optimize_gps_lidar: " << p_.optimize_gps_lidar << std::endl;
-  std::cout << "fixed_scan_transform_cov: " << p_.fixed_scan_transform_cov << std::endl;
-  std::cout << "scan_transform_cov: " << p_.scan_transform_cov << std::endl;
+  std::cout << "lidar_topic_map: " << p_->lidar_topic_map << std::endl;
+  std::cout << "lidar_topic_loc: " << p_->lidar_topic_loc << std::endl;
+  std::cout << "gps_topic: " << p_->gps_topic << std::endl;
+  std::cout << "gps_imu_topic: " << p_->gps_imu_topic << std::endl;
+  std::cout << "odom_topic: " << p_->odom_topic << std::endl;
+  std::cout << "init_method: " << p_->init_method << std::endl;
+  std::cout << "mapping_method: " << p_->mapping_method << std::endl;
+  std::cout << "int_map_size: " << p_->int_map_size << std::endl;
+  std::cout << "gps_type: " << p_->gps_type << std::endl;
+  std::cout << "k_nearest_neighbours: " << p_->knn << std::endl;
+  std::cout << "trajectory_sampling_distance: " << p_->trajectory_sampling_dist << std::endl;
+  std::cout << "distance_match_min: " << p_->distance_match_min << std::endl;
+  std::cout << "distance_match_limit: " << p_->distance_match_limit << std::endl;
+  std::cout << "x_lower_threshold: " << p_->x_lower_threshold << std::endl;
+  std::cout << "x_upper_threshold: " << p_->x_upper_threshold << std::endl;
+  std::cout << "y_lower_threshold: " << p_->y_lower_threshold << std::endl;
+  std::cout << "y_upper_threshold: " << p_->y_upper_threshold << std::endl;
+  std::cout << "z_lower_threshold: " << p_->z_lower_threshold << std::endl;
+  std::cout << "z_upper_threshold: " << p_->z_upper_threshold << std::endl;
+  std::cout << "use_pass_through_filter: " << p_->use_pass_through_filter << std::endl;
+  std::cout << "x_lower_threshold_map: " << p_->x_lower_threshold_map << std::endl;
+  std::cout << "x_upper_threshold_map: " << p_->x_upper_threshold_map << std::endl;
+  std::cout << "y_lower_threshold_map: " << p_->y_lower_threshold_map << std::endl;
+  std::cout << "y_upper_threshold_map: " << p_->y_upper_threshold_map << std::endl;
+  std::cout << "z_lower_threshold_map: " << p_->z_lower_threshold_map << std::endl;
+  std::cout << "z_upper_threshold_map: " << p_->z_upper_threshold_map << std::endl;
+  std::cout << "use_pass_through_filter_map: " << p_->use_pass_through_filter_map << std::endl;
+  std::cout << "downsample_input: " << p_->downsample_input << std::endl;
+  std::cout << "input_downsample_size: " << p_->input_downsample_size << std::endl;
+  std::cout << "use_rad_filter: " << p_->use_rad_filter << std::endl;
+  std::cout << "set_min_neighbours: " << p_->set_min_neighbours << std::endl;
+  std::cout << "set_search_radius: " << p_->set_search_radius << std::endl;
+  std::cout << "matcher_config_path: " << p_->matcher_config << std::endl;
+  std::cout << "ground_segment: " << p_->ground_segment << std::endl;
+  std::cout << "use_gps: " << p_->use_gps << std::endl;
+  std::cout << "downsample_cell_size: " << p_->downsample_cell_size << std::endl;
+  std::cout << "iterations: " << p_->iterations << std::endl;
+  std::cout << "visualize: " << p_->visualize << std::endl;
+  std::cout << "step_matches: " << p_->step_matches << std::endl;
+  std::cout << "optimize_gps_lidar: " << p_->optimize_gps_lidar << std::endl;
+  std::cout << "fixed_scan_transform_cov: " << p_->fixed_scan_transform_cov << std::endl;
+  std::cout << "scan_transform_cov: " << p_->scan_transform_cov << std::endl;
 }
 
 int main()
 {
   // Load parameters from ig_graph_slam_config:
-    Params p_;
-    fillparams(p_);
-    std::cout << "Input Bag File: " << p_.bag_file_path <<std::endl;
-    //outputParams(p_);
+    Params p__;
+    fillparams(p__);
+    boost::shared_ptr<Params> p_;
+    p_ = boost::shared_ptr<Params>(&p__);
+    std::cout << "Input Bag File: " << p_->bag_file_path << std::endl;
     rosbag::Bag bag;
     boost::shared_ptr<ScanMatcher> scan_matcher;
+    boost::shared_ptr<ROSBag> load_ros_data;
+    ROSBag load_ros_data_;
+    load_ros_data = boost::shared_ptr<ROSBag>(&load_ros_data_);
     //ros::Time time_limit_s = ros::TIME_MIN + ros::Duration(1521829591);
 
   // Init pointer to scan matcher based on type
-    if (p_.matcher_type == "icp1")
+    if (p_->matcher_type == "icp1")
     {
-        scan_matcher = boost::make_shared<ICP1ScanMatcher>(p_);
+        scan_matcher = boost::make_shared<ICP1ScanMatcher>(p__);
     }
-    else if (p_.matcher_type == "icp2")
+    else if (p_->matcher_type == "icp2")
     {
-        LOG_ERROR("%s matcher type is not yet implemented. Coming soon.", p_.matcher_type);
+        LOG_ERROR("%s matcher type is not yet implemented. Coming soon.", p_->matcher_type);
         // TODO: implement the same scan matcher but with point to plane
         //scan_matcher = boost::make_shared<ICP2ScanMatcher>(p_);
         return -1;
     }
     else
     {
-        LOG_ERROR("%s is not a valid matcher type. Change matcher type in ig_graph_slam_config.yaml", p_.matcher_type);
+        LOG_ERROR("%s is not a valid matcher type. Change matcher type in ig_graph_slam_config.yaml", p_->matcher_type);
         return -1;
     }
 
   // Read bag file
     try
     {
-        bag.open(p_.bag_file_path, rosbag::bagmode::Read);
+        bag.open(p_->bag_file_path, rosbag::bagmode::Read);
     }
     catch (rosbag::BagException &ex)
     {
         LOG_ERROR("Bag exception : %s", ex.what());
     }
-    p_.topics.push_back(p_.lidar_topic_loc);
-    p_.topics.push_back(p_.lidar_topic_map);
-    p_.topics.push_back(p_.gps_topic);
-    p_.topics.push_back(p_.gps_imu_topic);
-    p_.topics.push_back(p_.odom_topic);
+    p_->topics.push_back(p_->lidar_topic_loc);
+    p_->topics.push_back(p_->lidar_topic_map);
+    p_->topics.push_back(p_->gps_topic);
+    p_->topics.push_back(p_->gps_imu_topic);
+    p_->topics.push_back(p_->odom_topic);
 
   // iterate through bag file and save messages
     int bag_counter = 0;
     bool end_of_bag = false;
     bool start_of_bag = true;
-    rosbag::View view(bag, rosbag::TopicQuery(p_.topics), ros::TIME_MIN, ros::TIME_MAX, true);
+    rosbag::View view(bag, rosbag::TopicQuery(p_->topics), ros::TIME_MIN, ros::TIME_MAX, true);
     int total_messages = view.size();
     if (total_messages == 0)
     {
       LOG_ERROR("No messages read. Check your topics in config file.");
       outputParams(p_);
     }
-
     // iterate through bag messages and save imu messages only
-    if( !(p_.gps_imu_topic == ""))
+    if( !(p_->gps_imu_topic == ""))
     {
       LOG_INFO("Loading IMU messages...");
       for (auto iter = view.begin(); iter != view.end(); iter++)
@@ -155,8 +161,7 @@ int main()
         {
           end_of_bag = true;
         }
-
-        scan_matcher->loadIMUMessage(iter, end_of_bag, start_of_bag);
+        load_ros_data->loadIMUMessage(iter, end_of_bag, start_of_bag, p_->gps_imu_topic);
         start_of_bag = false;
       }
     }
@@ -174,12 +179,12 @@ int main()
         end_of_bag = true;
       }
       LOG_INFO("Loading message No. %d of %d", bag_counter, total_messages);
-      scan_matcher->loadROSBagMessage(iter, end_of_bag);
+      load_ros_data->loadROSBagMessage(iter, end_of_bag, p_);
     }
     bag.close();
-
+std::cout << "TEST4" << std::endl;
   // Select scans to store and savae their respective poses based on gps measurements
-    scan_matcher->createPoseScanMap();
+    scan_matcher->createPoseScanMap(load_ros_data);
 
   // Determine how many scans to register against for each pose and save
     scan_matcher->findAdjacentScans();
@@ -194,7 +199,7 @@ int main()
     bool correction_norm_valid;
 
     // build graph
-    for (int outer_loops = 0; outer_loops < p_.iterations; outer_loops++)
+    for (int outer_loops = 0; outer_loops < p_->iterations; outer_loops++)
     { // Iterate to update initial estimates and redo matches
       cnt_match = 0;
 
@@ -202,7 +207,7 @@ int main()
       graph.clear();
       graph.result.clear();
 
-      if (p_.optimize_gps_lidar)
+      if (p_->optimize_gps_lidar)
       { // optimize transform from lidar to gps
           // THIS IS NOT YET IMPLEMENTED
           // Cannot use Ben's code because the way our T_LIDAR_GPS is
@@ -215,7 +220,7 @@ int main()
           if (j == 0)
           {
               last_timestamp =
-                scan_matcher->getLidarScanTimePoint(scan_matcher->pose_scan_map.at(j));
+                load_ros_data->getLidarScanTimePoint(scan_matcher->pose_scan_map.at(j));
           }
 
           // iterate over all scans adjacent to scan j
@@ -230,7 +235,7 @@ int main()
 
               // Attempts to match the scans and checks the correction norm
               // between scan transformation and GPS
-              match_success = scan_matcher->matchScans(*iter, j, T_Liter_Lj, info, correction_norm_valid);
+              match_success = scan_matcher->matchScans(*iter, j, T_Liter_Lj, info, correction_norm_valid, load_ros_data);
               if (!correction_norm_valid) // WHAT IS THIS??
               {
                   continue;
@@ -256,7 +261,7 @@ int main()
 
           }
 
-          if (p_.use_gps)
+          if (p_->use_gps)
           { // only if we want to use gps priors
             // TODO: Implement the gps priors.
             // Careful because currently GPS has no rotation info
@@ -286,7 +291,7 @@ int main()
           scan_matcher->init_pose.poses.at(graph.poses.at(k)) = temp_trans;
 
           // Add result to final pose measurement container
-          scan_matcher->final_poses.emplace_back(scan_matcher->getLidarScanTimePoint(graph.poses.at(k)), 0, temp_trans);
+          scan_matcher->final_poses.emplace_back(load_ros_data->getLidarScanTimePoint(graph.poses.at(k)), 0, temp_trans);
 
           // this seems to be useless?
           prev = temp_trans;
@@ -295,7 +300,7 @@ int main()
     }
 
     // build and output map
-    scan_matcher->createAggregateMap(graph);
-    scan_matcher->outputAggregateMap(graph);
+    scan_matcher->createAggregateMap(graph, load_ros_data);
+    scan_matcher->outputAggregateMap(graph, load_ros_data);
 
 }

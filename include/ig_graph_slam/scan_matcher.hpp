@@ -26,8 +26,10 @@
 #include <wave/matching/pointcloud_display.hpp>
 #include <wave/matching/ground_segmentation.hpp>
 
+#include "load_ros_data.hpp"
 #include "kdtreetype.hpp"
 #include "gtsam_graph.hpp"
+#include "pcl_filters.hpp"
 
 // Declare some templates:
   using Clock = std::chrono::steady_clock;
@@ -66,16 +68,7 @@ struct Params
  */
 void fillparams(Params &params);
 
-/***
- * Takes new scan if the distance between the scans are more than dist
- * @param p1 pose of first scan
- * @param p2 pose of second scan
- * @param dist minimum distance between scans
- * @return
- */
-bool takeNewScan(const Eigen::Affine3d &p1,
-                 const Eigen::Affine3d &p2,
-                 const double &dist);
+struct ROSBag;
 
 struct ScanMatcher
 {
@@ -93,8 +86,6 @@ struct ScanMatcher
              this->init_display.startSpin();
          }
          this->cloud_temp_display = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-         this->T_ECEF_MAP.setIdentity();
-         this->have_GPS_datum = false;
          //this->total_matches = 0;
      }
      ~ScanMatcher()
@@ -105,48 +96,13 @@ struct ScanMatcher
          }
      }
 
-    /***
-      * Loads IMU RPY data into container from a geometry_msgs/Vector3Stamped ROS msg
-      * @param rosbag_iter
-      */
-     virtual void loadIMUMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag, bool start_of_bag) = 0;
-
-   /***
-    * Loads GPS data into measurement container from an NavSatFix ROS msg
-    * @param gps_msg NavSatFix ROS msg
-    */
-   void loadGPSDataFromNavSatFix(boost::shared_ptr<sensor_msgs::NavSatFix> gps_msg);
-
-   /***
-    * Loads Odometry data into measurement container from a Odometry ROS msg
-    * @param odom_msg Odometry ROS msg
-    */
-   void loadOdomDataFromNavMsgsOdometry(boost::shared_ptr<nav_msgs::Odometry> odom_msg);
-
-   /***
-    * Loads GPS data into measurement container from an INSPVAX ROS msg
-    * @param gps_msg INSPVAX ROS msg
-    */
-   void loadGPSDataFromINSPVAX(boost::shared_ptr<novatel_msgs::INSPVAX> gps_msg);
-
-   /***
-    * Load ROS Bag message into their appropriate container
-    * @param rosbag_iter
-    */
-   virtual void loadROSBagMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag) = 0;
 
    /***
     * Creates pose scan map with GPS data
+    * @param ros_data
     */
-   virtual void createPoseScanMap() = 0;
-
-   /***
-     * Get TimePoint object of the LIDAR scan at the specified index. Needed for
-     * decoupling matcher from GTSAM stuff
-     * @param index index in lidar container
-     * @return
-     */
-    virtual TimePoint getLidarScanTimePoint(int index) = 0;
+   //virtual void createPoseScanMap() = 0;
+   virtual void createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) = 0;
 
    /***
     * Find Adjacent scans for all scans. Adjacent scans will only consist of
@@ -163,43 +119,33 @@ struct ScanMatcher
      * @param [out] correction_norm_valid bool to check if correction_norm is below a specified threshold
      * @return
      */
-    virtual bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid) = 0;
+    virtual bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid,  boost::shared_ptr<ROSBag> ros_data) = 0;
 
    /***
      * Creates the aggregate map pointcloud. All the pointclouds are downsampled
      * and concatenated into intermediate pointclouds. The intermeditae pointclouds
      * are then downsampled and concatenated into an aggregate pointcloud.
      * @param graph
+     * @param ros_data
      */
-    virtual void createAggregateMap(GTSAMGraph &graph) = 0;
+    virtual void createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data) = 0;
 
     /***
      * Outputs the aggregate pointcloud map as a pcd file
      * @param graph
      */
-    virtual void outputAggregateMap(GTSAMGraph &graph) = 0;
+    virtual void outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data) = 0;
 
-   /***
-     * Gets the GPS Transform at a certain time point
-     * @param time_point
-     * @param applyT_ENU_GPS
-     * @return
-     */
-    Eigen::Affine3d getGPSTransform(const TimePoint &time_point, bool applyT_ENU_GPS);
-
-   bool have_GPS_datum;
    int total_matches;
-   Eigen::Affine3d T_ECEF_MAP;
+   //Eigen::Affine3d T_ECEF_MAP; // TODO: is this needed?
    Params params;
    wave::PointCloudDisplay init_display;
    wave::PCLPointCloudPtr cloud_temp_display;
-   wave::MeasurementContainer<wave::Measurement<std::pair<wave::Vec6, wave::Vec6>, uint>> gps_container;
-   wave::MeasurementContainer<wave::Measurement<std::pair<wave::Vec6, wave::Vec6>, uint>> imu_container;
-   wave::MeasurementContainer<wave::Measurement<std::pair<wave::Mat4, wave::Vec6>, uint>> odom_container;
    InitPose<double> init_pose; // see kdtreetype.hpp
    std::vector<int> pose_scan_map;
    std::vector<wave::Measurement<Eigen::Affine3d, uint>> final_poses;
    boost::shared_ptr<std::vector<std::vector<uint64_t>>> adjacency;
+
 };
 
 class ICP1ScanMatcher : public ScanMatcher
@@ -207,23 +153,14 @@ class ICP1ScanMatcher : public ScanMatcher
   public:
     ICP1ScanMatcher(Params &p_);
     ~ICP1ScanMatcher() {}
-    void loadIMUMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag, bool start_of_bag);
-    void loadROSBagMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag);
-    void loadPCLPointCloudFromPointCloud2(boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg);
-    void loadPCLPointCloudFromPointCloud2Map(boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg);
-    void createPoseScanMap();
-    TimePoint getLidarScanTimePoint(int index);
-    bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid);
-    void displayPointCloud(wave::PCLPointCloudPtr cloud_display, int color, const Eigen::Affine3d &transform = Eigen::Affine3d::Identity());
-    void createAggregateMap(GTSAMGraph &graph);
-    void outputAggregateMap(GTSAMGraph &graph);
 
-    pcl::PassThrough<pcl::PointXYZ> pass_filter_x, pass_filter_y, pass_filter_z;
-    pcl::VoxelGrid<pcl::PointXYZ> downsampler;
-    pcl::RadiusOutlierRemoval<pcl::PointXYZ> radfilter;
+    void createPoseScanMap(boost::shared_ptr<ROSBag> ros_data);
+    bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid,  boost::shared_ptr<ROSBag> ros_data);
+    void displayPointCloud(wave::PCLPointCloudPtr cloud_display, int color, const Eigen::Affine3d &transform = Eigen::Affine3d::Identity());
+    void createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data);
+    void outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data);
+
     wave::ICPMatcher matcher;
-    std::vector<wave::Measurement<wave::PCLPointCloudPtr, uint>> lidar_container;
-    std::vector<wave::Measurement<wave::PCLPointCloudPtr, uint>> lidar_container_map;
     std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> intermediaries;
     wave::PCLPointCloudPtr aggregate;
 

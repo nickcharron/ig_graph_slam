@@ -49,8 +49,11 @@ LINK_DIRECTORIES(
 
 ADD_EXECUTABLE(${PROJECT_NAME}_node
         src/main.cpp
+        src/load_ros_data.cpp
         src/gtsam_graph.cpp
         src/scan_matcher.cpp
+        src/conversions.cpp
+        src/pcl_filters.cpp
         )
 
 # Uncomment once we have at least one exec.

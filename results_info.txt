@@ -78,4 +78,12 @@ graph slam parameters used.
 
   2018_10_29-9-35:
     - same as above but mapping method 3
-    - Vertical scans show some error - probably due to poor L2L calibration 
+    - Vertical scans show some error - probably due to poor L2L calibration
+
+2018_10_29-22-00:
+    - same as above but sampling distance of 0.15
+    - map slowly goes upwards - seems to be same issue as EKF before Pt2Pl
+
+2018_11_8-22-30
+    - same as above but with new code implementation (see Nov 8 commit)
+    - results look identical

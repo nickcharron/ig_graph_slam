@@ -60,9 +60,9 @@ GTSAM primer: https://bitbucket.org/gtborg/gtsam/wiki/Home
 GTSAM extra install instructions: https://bitbucket.org/gtborg/gtsam/src/90f688d94c720ac859689e62d6a003dabc79bc42/INSTALL?fileviewer=file-view-default
 
 ## TO DO LIST
+- add point to plane ICP
 - add calibrations
 - add T_base_lidar for horizontal localization
 - add ability to localize off vertical scans or both
-- move all functions for filling measurement containers to new file  
 - add interpolation overload function for transforms
 - change output directory for maps

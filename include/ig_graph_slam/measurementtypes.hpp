@@ -21,7 +21,7 @@ using TimeType = std::chrono::steady_clock::time_point;
 namespace wave
 {
 
-  double wrapToPI(double theta)
+  inline double wrapToPI(double theta)
   {
       double retval = theta;
       if (theta > M_PI)
@@ -35,7 +35,7 @@ namespace wave
       return retval;
   }
 
-  decltype(GPSMeasurement::value) interpolate(const GPSMeasurement &m1,
+  inline decltype(GPSMeasurement::value) interpolate(const GPSMeasurement &m1,
                                               const GPSMeasurement &m2,
                                               const TimeType &t)
   {
