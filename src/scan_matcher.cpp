@@ -42,7 +42,7 @@
       parser.addParam("T_LMAP_LLOC", &(params.T_LMAP_LLOC.matrix()));
       parser.addParam("k_nearest_neighbours", &(params.knn));
       parser.addParam("trajectory_sampling_distance", &(params.trajectory_sampling_dist));
-      parser.addParam("map_sampling_distance", &(params.map_sampling_distance));
+      parser.addParam("map_sampling_distance", &(params.map_sampling_dist));
       parser.addParam("distance_match_limit", &(params.distance_match_limit));
       parser.addParam("distance_match_min", &(params.distance_match_min));
       parser.addParam("x_lower_threshold", &(params.x_lower_threshold));
@@ -157,38 +157,75 @@
       for (uint64_t k = 0; k < graph.poses.size()-1; k++) // NOTE: Sometimes I get seg fault on the last scan
       //for (uint64_t k = 0; k < ros_data->lidar_container_map.size()-1; k++)
       { // iterate through all poses in graph
-        Eigen::Affine3d T_MAP_LLOCk, T_LMAP_LLOC, T_MAP_LMAP;
-        T_MAP_LLOCk = this->final_poses.at(graph.poses.at(k)).value;
-        T_LMAP_LLOC = this->params.T_LMAP_LLOC;
-        T_MAP_LMAP = T_MAP_LLOCk * T_LMAP_LLOC.inverse();
 
-        wave::
+        // Define transforms we will need
+        Eigen::Affine3d T_MAP_LLOC_k, T_MAP_LLOC_kp1, T_LMAP_LLOC, T_MAP_LMAP_k, T_MAP_LMAP_kp1;
+        T_MAP_LLOC_k = this->final_poses.at(graph.poses.at(k)).value;  // for pose k
+        T_MAP_LLOC_kp1 = this->final_poses.at(graph.poses.at(k+1)).value;  // for pose k + 1
+        T_LMAP_LLOC = this->params.T_LMAP_LLOC;                       // static
+        T_MAP_LMAP_k = T_MAP_LLOC_k * T_LMAP_LLOC.inverse();
+        T_MAP_LMAP_kp1 = T_MAP_LLOC_kp1 * T_LMAP_LLOC.inverse();
+
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_interp (new pcl::PointCloud<pcl::PointXYZ>);
+
+        // get timepoint of current pose then get associated map scan
+        TimePoint curr_pose_time = ros_data->lidar_container[k].time_point;
+        TimePoint next_pose_time = ros_data->lidar_container[k+1].time_point;
+
+        std::pair<int, int> scan_range;
+        scan_range = getLidarTimeWindow(ros_data->lidar_container,
+                                        curr_pose_time, next_pose_time);
 
         switch(this->params.mapping_method)
         {
           case 1 :
             // transform current localization scan to target cloud using T_Map_Pk
-            pcl::transformPointCloud(*(ros_data->lidar_container[this->pose_scan_map.at(graph.poses.at(k))].value),
+            pcl::transformPointCloud(*(ros_data->lidar_container[scan_range.first].value),
                                      *this->cloud_target,
-                                     T_MAP_LLOCk);
+                                     T_MAP_LLOC_k);
+
+            // iterate through all scans between pose k and k+1
+            if ( this->params.trajectory_sampling_dist > this->params.map_sampling_dist)
+            {
+              for (int j = scan_range.first + 1; j< scan_range.second; j++)
+              {
+                Eigen::Affine3d T_MAP_LLOC_J;  // interpolated scan pose
+                T_MAP_LLOC_J.matrix()  = interpolateTransform(T_MAP_LLOC_k.matrix(), curr_pose_time,
+                                                            T_MAP_LLOC_kp1.matrix(), next_pose_time,
+                                                            ros_data->lidar_container[j].time_point);
+
+                bool take_new_map_scan = takeNewScan(T_MAP_LLOC_k, T_MAP_LLOC_J, this->params.map_sampling_dist);
+
+                // interpolate pose and add new scan to current target cloud
+                if(take_new_map_scan)
+                {
+                  pcl::transformPointCloud( *(ros_data->lidar_container[j].value),
+                                            *cloud_interp,
+                                            T_MAP_LLOC_J);
+                  *cloud_target += *cloud_interp;
+                }
+              }
+            }
+
+
             break;
           case 2 :
             // transform current map scan to target cloud
-            pcl::transformPointCloud(*(ros_data->lidar_container_map[this->pose_scan_map.at(graph.poses.at(k))].value),
+            pcl::transformPointCloud(*(ros_data->lidar_container_map[scan_range.first].value),
                                      *this->cloud_target,
-                                     T_MAP_LMAP);
+                                     T_MAP_LMAP_k);
             break;
           case 3 :
             pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tmp (new pcl::PointCloud<pcl::PointXYZ>);
 
             // transform current map scan to tmp cloud
-            pcl::transformPointCloud(*(ros_data->lidar_container_map[this->pose_scan_map.at(graph.poses.at(k))].value),
+            pcl::transformPointCloud(*(ros_data->lidar_container_map[scan_range.first].value),
                                      *cloud_tmp,
-                                     T_MAP_LMAP);
+                                     T_MAP_LMAP_k);
             // transform current localization scan to target cloud
-            pcl::transformPointCloud(*(ros_data->lidar_container[this->pose_scan_map.at(graph.poses.at(k))].value),
+            pcl::transformPointCloud(*(ros_data->lidar_container[scan_range.first].value),
                                      *this->cloud_target,
-                                     T_MAP_LLOCk);
+                                     T_MAP_LLOC_k);
             // Add tmp cloud to target cloud
               *this->cloud_target+=*cloud_tmp;
             break;

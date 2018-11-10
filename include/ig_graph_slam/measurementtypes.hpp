@@ -4,7 +4,6 @@
 #include <utility>
 #include <chrono>
 #include <math.h>
-#include <unsupported/Eigen/MatrixFunctions>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -15,9 +14,12 @@
 using GPSMeasurement = wave::Measurement<std::pair<wave::Vec6, wave::Vec6>, uint>;
 using TransformMeasurement = wave::Measurement<std::pair<wave::Mat4, wave::Vec6>, uint>;
 using PCLLidarMeasurement = wave::Measurement<wave::PCLPointCloudPtr, uint>;
+using LidarContainer = std::vector<wave::Measurement<wave::PCLPointCloudPtr, uint>>;
+
 //using LPMLidarMeasurement = wave::Measurement<boost::shared_ptr<PointMatcher<double>::DataPoints>, uint>;
 using PoseMeasurement = wave::Measurement<Eigen::Affine3d, uint>;
 using TimeType = std::chrono::steady_clock::time_point;
+using TimePoint = std::chrono::time_point<Clock>;
 
 namespace wave
 {
@@ -82,6 +84,42 @@ namespace wave
     return std::make_pair(T, std_dev);
   }
 
+  inline std::pair<int, int> getLidarTimeWindow(const LidarContainer &lidar_container_,
+                                                const TimePoint T1,
+                                                const TimePoint T2)
+  {
+    int start_index, end_index;
+    for (size_t i = 0; i<lidar_container_.size(); i++)
+    {
+      if(lidar_container_[i].time_point == T1)
+      {
+        start_index = i;
+      }
+      else if (lidar_container_[i].time_point > T1)
+      {
+        start_index = i;
+      }
+      else if(i==lidar_container_.size())
+      {
+        LOG_ERROR("Cannot find lidar time window. Time inputs invalid.");
+        std::pair<int, int> timewindow(0, 0);
+        return timewindow;
+      }
+    }
+    for (size_t i = start_index; i<lidar_container_.size(); i++)
+    {
+      if(lidar_container_[i].time_point == T2)
+      {
+        end_index = i;
+      }
+      else if (lidar_container_[i].time_point > T2)
+      {
+        end_index = i-1;
+      }
+    }
+    std::pair<int, int> timewindow(start_index, end_index);
+    return timewindow;
+  }
 }  // namespace wave
 
 #endif //IG_GRAPH_SLAM_MEASUREMENTTYPES_HPP

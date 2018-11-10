@@ -47,7 +47,7 @@ void outputParams(boost::shared_ptr<Params> p_)
   std::cout << "gps_type: " << p_->gps_type << std::endl;
   std::cout << "k_nearest_neighbours: " << p_->knn << std::endl;
   std::cout << "trajectory_sampling_distance: " << p_->trajectory_sampling_dist << std::endl;
-  std::cout << "map_sampling_distance: " << p_->map_sampling_distance << std::endl;
+  std::cout << "map_sampling_distance: " << p_->map_sampling_dist << std::endl;
   std::cout << "distance_match_min: " << p_->distance_match_min << std::endl;
   std::cout << "distance_match_limit: " << p_->distance_match_limit << std::endl;
   std::cout << "x_lower_threshold: " << p_->x_lower_threshold << std::endl;
