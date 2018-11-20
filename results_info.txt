@@ -87,3 +87,26 @@ graph slam parameters used.
 2018_11_8-22-30
     - same as above but with new code implementation (see Nov 8 commit)
     - results look identical
+
+** Interpolation finally working here:
+(only for horizontal scans)
+
+2018_11_20_15_39
+    - no output downsampling
+    - traj sampling: 5
+    - no interpolation
+
+2018_11_20_16_35
+    - no output downsampling
+    - traj sampling: 5
+    - map sampling: 2.4
+
+2018_11_20_16_41
+    - no output downsampling
+    - traj sampling: 0.25
+    - map sampling: 0.15
+
+2018_11_20_16_41
+    - no output downsampling
+    - traj sampling: 0.25
+    - map sampling: 0.05

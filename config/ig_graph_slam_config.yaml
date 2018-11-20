@@ -14,8 +14,7 @@ lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
 mapping_method: 1                 # Build map with (1) localization scans, (2) mapping scans, (3) both
 bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-07-06-09-15-39-short2-processed.bag"
-int_map_size: 15                  # Scans are combined into intermediate maps
-                                  # each intermediate map is filtered once. Default: 15
+
 T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization
   rows: 4
   cols: 4
@@ -74,7 +73,12 @@ ground_segment: false               # Whether to remove the ground points. This
                                     # reduce elevation accuracy of final map
 
 # Voxel filtering
-downsample_cell_size: 0.2          # Voxel cell length for final downsampling of aggregate map
+downsample_output_method: 3       # [1] downsample each scan before aggregating + each intermediate map
+                                  # [2] downsample only intermediate maps (default)
+                                  # [3] do not down sample output map
+downsample_cell_size: 0.05        # Voxel cell length for final downsampling of aggregate map
+int_map_size: 15                  # Scans are combined into intermediate maps
+                                  # each intermediate map is filtered once. Default: 15
 
 # PassThrough Filter for the Map scans: set min and max in each direction for input cloud
 use_pass_through_filter_map: true
@@ -92,8 +96,8 @@ z_lower_threshold_map: -5
 # Graph Parameters:
 scanreg_init_icp_distance_max: 25   # distance limit between two initial scan locations to be considered for nearest neighbours
 k_nearest_neighbours: 15            # maximum number of nearest neighbours for graph links
-trajectory_sampling_distance: 0.25  # Minimum distance in m at which we should take new scans for localization
-map_sampling_distance: 0.25          # Minimum distance in m at which we should take new scans for mapping
+trajectory_sampling_distance: 0.25   # Minimum distance in m at which we should take new scans for localization
+map_sampling_distance: 0.05          # Minimum distance in m at which we should take new scans for mapping
 distance_match_min: 0               # specify minimum and maximum distance between scans to
 distance_match_limit: 20            # use for scan registration
 iterations: 1                       # How many times to update initial estimates and redo matches

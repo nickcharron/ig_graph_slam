@@ -1,10 +1,12 @@
 <launch>
 <!-- Arguments: -->
-  <arg name="publish_rate" value="10"/>
+  <arg name="publish_rate" value="1"/>
   <arg name="frame_id" value="/map"/>
   <!-- IG Results: -->
-    <arg name="pcd_file"
-    value="/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2018-07-06-09-15-39/1541827984847268154aggregate_map.pcd"/>
+    <arg name="pcd_file1"
+    value="/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2018-07-06-09-15-39/1542749931066657942aggregate_map.pcd"/>
+    <arg name="pcd_file2"
+    value="/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2018-07-06-09-15-39/1542750364728767651aggregate_map.pcd"/>
   <!-- Moose Results: -->
     <!-- <arg name="pcd_file" value="/home/nick/results/moose_maps/Colby-Drive-Snowy-2018-03-07-15-Short-noimu.pcd"/> -->
 <!-- Start RVIZ -->
@@ -12,7 +14,14 @@
         args="-d $(find ig_graph_slam)/config/view_results_config.rviz" />
 
 <!-- Run pcl_ros with pcd -->
-  <node name="gs_view_results" pkg="pcl_ros" type="pcd_to_pointcloud"
-    args="$(arg pcd_file) $(arg publish_rate) _frame_id:=$(arg frame_id)" />
+
+  <group ns="/cloud_1" >
+    <node name="gs_view_results1" pkg="pcl_ros" type="pcd_to_pointcloud"
+    args="$(arg pcd_file1) $(arg publish_rate) _frame_id:=$(arg frame_id)" />
+  </group>
+  <group ns="/cloud_2" >
+  <node name="gs_view_results2" pkg="pcl_ros" type="pcd_to_pointcloud"
+    args="$(arg pcd_file2) $(arg publish_rate) _frame_id:=$(arg frame_id)" />
+  </group>
 
 </launch>

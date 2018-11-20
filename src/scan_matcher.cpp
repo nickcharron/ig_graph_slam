@@ -164,19 +164,24 @@
       { // iterate through all poses in graph
 
         // Define transforms we will need
-        Eigen::Affine3d T_MAP_LLOC_k, T_MAP_LLOC_kp1, T_MAP_LMAP_k, T_MAP_LMAP_kp1, T_LMAP_LLOC;
+        Eigen::Affine3d T_MAP_LLOC_k, T_MAP_LLOC_kp1, T_MAP_LMAP_k,
+                        T_MAP_LMAP_kp1, T_LMAP_LLOC, T_MAP_LLOC_Jprev;
         T_MAP_LLOC_k = this->final_poses.at(graph.poses.at(k)).value;  // for pose k
         T_LMAP_LLOC = this->params.T_LMAP_LLOC;                       // static
         T_MAP_LMAP_k = T_MAP_LLOC_k * T_LMAP_LLOC.inverse();
 
-        TimePoint curr_pose_time = this->final_poses.at(graph.poses.at(k)).time_point;
+        int curr_index = this->pose_scan_map.at(graph.poses.at(k));
+        TimePoint curr_pose_time = ros_data->lidar_container[curr_index].time_point;
+        int next_index;
         TimePoint next_pose_time;
 
         if(!(k == graph.poses.size()-1))
         {
           T_MAP_LLOC_kp1 = this->final_poses.at(graph.poses.at(k+1)).value;  // for pose k + 1
           T_MAP_LMAP_kp1 = T_MAP_LLOC_kp1 * T_LMAP_LLOC.inverse();
-          next_pose_time = this->final_poses.at(graph.poses.at(k+1)).time_point;
+          T_MAP_LLOC_Jprev = T_MAP_LLOC_k;
+          next_index = this->pose_scan_map.at(graph.poses.at(k+1));
+          next_pose_time = ros_data->lidar_container[next_index].time_point;
         }
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_interp (new pcl::PointCloud<pcl::PointXYZ>);
 
@@ -199,7 +204,7 @@
             //                          *this->cloud_target,
             //                          T_MAP_LLOC_k);
            // THIS IS THE PROBLEM!!!
-           pcl::transformPointCloud(*(ros_data->lidar_container[this->pose_scan_map.at(graph.poses.at(k))].value),
+           pcl::transformPointCloud(*(ros_data->lidar_container[curr_index].value),
                                     *this->cloud_target,
                                     T_MAP_LLOC_k);
            std::cout << "Current Scan Size: " << this->cloud_target->size() << std::endl;
@@ -213,17 +218,15 @@
               {
                 j++;
                 Eigen::Affine3d T_MAP_LLOC_J;  // interpolated scan pose
-                int curr_index = this->pose_scan_map.at(graph.poses.at(k))+j;
-                TimePoint time_point_J = ros_data->lidar_container[curr_index].time_point;
+                TimePoint time_point_J = ros_data->lidar_container[curr_index+j].time_point;
+
+                // std::cout << "Prev time point: " << curr_pose_time.time_since_epoch().count() << std::endl;
+                // std::cout << "Time Point J:    " << time_point_J.time_since_epoch().count() << std::endl;
+                // std::cout << "Next time point: " << next_pose_time.time_since_epoch().count() << std::endl;
 
                 if( time_point_J >= next_pose_time)
                 {
                   std::cout << "Breaking interpolation" << std::endl;
-                  std::cout << "Time Point J: " << time_point_J.time_since_epoch().count() << std::endl;
-                  std::cout << "Next time point: " << next_pose_time.time_since_epoch().count() << std::endl;
-                  std::cout << "Index J: " << curr_index << std::endl;
-                  std::cout << "Prev Index: " << this->pose_scan_map.at(graph.poses.at(k)) << std::endl;
-                  std::cout << "Next Index: " << this->pose_scan_map.at(graph.poses.at(k+1)) << std::endl;
                   break;
                 }
 
@@ -231,18 +234,27 @@
                                                             T_MAP_LLOC_kp1.matrix(), next_pose_time,
                                                             time_point_J);
 
-                bool take_new_map_scan = takeNewScan(T_MAP_LLOC_k, T_MAP_LLOC_J, this->params.map_sampling_dist);
+                bool take_new_map_scan = takeNewScan(T_MAP_LLOC_Jprev, T_MAP_LLOC_J, this->params.map_sampling_dist);
 
                 // interpolate pose and add new scan to current target cloud
                 if(take_new_map_scan)
                 {
                   std::cout << "Adding interpolated scan No. " << j << std::endl;
-                  pcl::transformPointCloud( *(ros_data->lidar_container[curr_index].value),
+
+                  std::cout << "Prev Index: " << curr_index << std::endl;
+                  std::cout << "Index J:    " << curr_index+j << std::endl;
+                  std::cout << "Next Index: " << next_index << std::endl;
+                  std::cout << "Prev time point: " << ros_data->lidar_container[curr_index].time_point.time_since_epoch().count() << std::endl;
+                  std::cout << "Time Point J:    " << ros_data->lidar_container[curr_index+j].time_point.time_since_epoch().count() << std::endl;
+                  std::cout << "Next time point: " << ros_data->lidar_container[next_index].time_point.time_since_epoch().count() << std::endl;
+
+                  pcl::transformPointCloud( *(ros_data->lidar_container[curr_index+j].value),
                                             *cloud_interp,
                                             T_MAP_LLOC_J);
                   *cloud_target += *cloud_interp;
                   std::cout << "Interpolated Scan Size: " << cloud_interp->size() << std::endl;
                   std::cout << "New Cloud Size: " << this->cloud_target->size() << std::endl;
+                  T_MAP_LLOC_Jprev = T_MAP_LLOC_J;
                 }
               }
             }
@@ -319,7 +331,7 @@
       long timestamp = std::chrono::system_clock::now().time_since_epoch().count();
       pcl::io::savePCDFileBinary(std::to_string(timestamp) + "aggregate_map.pcd", *this->aggregate);
       std::cout << "outputting map at time: " << std::to_string(timestamp) << std::endl;
-      
+
       //now save trajectory to file
       std::ofstream file;
       const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", ", ");
