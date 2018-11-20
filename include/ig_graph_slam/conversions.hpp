@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <ctime>
+#include <cmath>
 #include <wave/utils/math.hpp>
 #include <wave_spatial_utils/world_frame_conversions.hpp>
 #include <GeographicLib/Geocentric.hpp>
@@ -17,6 +18,25 @@ using TimePoint = std::chrono::time_point<Clock>;
 const uint32_t WEEK_TO_SEC = 604800;
 const uint32_t EPOCH_OFFSET = 315964800;
 const uint32_t LEAP_SECONDS = 18;
+
+inline void outputTimePoint(const TimePoint t, std::string output_text)
+{
+  std::cout << output_text << t.time_since_epoch().count() << std::endl;
+}
+
+inline void outputPercentComplete(int current_, int total_, std::string message_)
+{
+  int out25, out50, out75;
+  out25 = round(0.25*total_);
+  out50 = round(0.5*total_);
+  out75 = round(0.75*total_);
+
+    if(current_ == 1){LOG_INFO("%s", message_.c_str());}
+    else if (current_ == out25){LOG_INFO("25 %% complete (%d of %d) ...", current_, total_);}
+    else if (current_ == out50){LOG_INFO("50 %% complete (%d of %d) ...", current_, total_);}
+    else if (current_ == out75){LOG_INFO("75 %% complete (%d of %d) ...", current_, total_);}
+    else if (current_ == total_){LOG_INFO("100 %% complete (%d of %d)", current_, total_);}
+}
 
 inline void outputTransform(Eigen::Affine3d T, std::string name)
 {

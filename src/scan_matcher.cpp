@@ -3,6 +3,8 @@
 #include <sstream>
 #include <string>
 #include <math.h>
+#include <chrono>
+#include <ctime>
 
 // PCL headers
 #include <pcl/point_cloud.h>
@@ -69,6 +71,7 @@
       parser.addParam("ground_segment", &(params.ground_segment));
       parser.addParam("use_gps", &(params.use_gps));
       parser.addParam("downsample_cell_size", &(params.downsample_cell_size));
+      parser.addParam("downsample_output_method", &(params.downsample_output_method));
       parser.addParam("iterations", &(params.iterations));
       parser.addParam("visualize", &(params.visualize));
       parser.addParam("step_matches", &(params.step_matches));
@@ -92,6 +95,9 @@
       params.distance_match_limit *= params.distance_match_limit;
       params.distance_match_min *= params.distance_match_min;
   }
+
+  using Clock = std::chrono::steady_clock;
+  using TimePoint = std::chrono::time_point<Clock>;
 
 // Scan Matcher (parent Class) Functions
   void ScanMatcher::findAdjacentScans()
@@ -154,55 +160,89 @@
   void ICP1ScanMatcher::createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data)
   {
       int i =0;
-      for (uint64_t k = 0; k < graph.poses.size()-1; k++) // NOTE: Sometimes I get seg fault on the last scan
-      //for (uint64_t k = 0; k < ros_data->lidar_container_map.size()-1; k++)
+      for (uint64_t k = 0; k < graph.poses.size(); k++) // NOTE: Sometimes I get seg fault on the last scan
       { // iterate through all poses in graph
 
         // Define transforms we will need
-        Eigen::Affine3d T_MAP_LLOC_k, T_MAP_LLOC_kp1, T_LMAP_LLOC, T_MAP_LMAP_k, T_MAP_LMAP_kp1;
+        Eigen::Affine3d T_MAP_LLOC_k, T_MAP_LLOC_kp1, T_MAP_LMAP_k, T_MAP_LMAP_kp1, T_LMAP_LLOC;
         T_MAP_LLOC_k = this->final_poses.at(graph.poses.at(k)).value;  // for pose k
-        T_MAP_LLOC_kp1 = this->final_poses.at(graph.poses.at(k+1)).value;  // for pose k + 1
         T_LMAP_LLOC = this->params.T_LMAP_LLOC;                       // static
         T_MAP_LMAP_k = T_MAP_LLOC_k * T_LMAP_LLOC.inverse();
-        T_MAP_LMAP_kp1 = T_MAP_LLOC_kp1 * T_LMAP_LLOC.inverse();
 
+        TimePoint curr_pose_time = this->final_poses.at(graph.poses.at(k)).time_point;
+        TimePoint next_pose_time;
+
+        if(!(k == graph.poses.size()-1))
+        {
+          T_MAP_LLOC_kp1 = this->final_poses.at(graph.poses.at(k+1)).value;  // for pose k + 1
+          T_MAP_LMAP_kp1 = T_MAP_LLOC_kp1 * T_LMAP_LLOC.inverse();
+          next_pose_time = this->final_poses.at(graph.poses.at(k+1)).time_point;
+        }
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_interp (new pcl::PointCloud<pcl::PointXYZ>);
 
-        // get timepoint of current pose then get associated map scan
-        TimePoint curr_pose_time = ros_data->lidar_container[k].time_point;
-        TimePoint next_pose_time = ros_data->lidar_container[k+1].time_point;
+        // std::pair<int, int> scan_range;
+        //scan_range = getLidarTimeWindow(ros_data->lidar_container,
+        //                                curr_pose_time, next_pose_time);
 
-        std::pair<int, int> scan_range;
-        scan_range = getLidarTimeWindow(ros_data->lidar_container,
-                                        curr_pose_time, next_pose_time);
+        // outputTimePoint(curr_pose_time, "Current Pose Time:  ");
+        // outputTimePoint(ros_data->lidar_container[scan_range.first].time_point, "Current Lidar Time: ");
+        // std::cout << "Time Window " << scan_range.first
+        //           << " To " << scan_range.second << std::endl;
+        // std::cout << "Pose Index:  " <<  this->pose_scan_map.at(graph.poses.at(k)) << std::endl;
+
 
         switch(this->params.mapping_method)
         {
           case 1 :
             // transform current localization scan to target cloud using T_Map_Pk
-            pcl::transformPointCloud(*(ros_data->lidar_container[scan_range.first].value),
-                                     *this->cloud_target,
-                                     T_MAP_LLOC_k);
-
+            // pcl::transformPointCloud(*(ros_data->lidar_container[scan_range.first].value),
+            //                          *this->cloud_target,
+            //                          T_MAP_LLOC_k);
+           // THIS IS THE PROBLEM!!!
+           pcl::transformPointCloud(*(ros_data->lidar_container[this->pose_scan_map.at(graph.poses.at(k))].value),
+                                    *this->cloud_target,
+                                    T_MAP_LLOC_k);
+           std::cout << "Current Scan Size: " << this->cloud_target->size() << std::endl;
             // iterate through all scans between pose k and k+1
-            if ( this->params.trajectory_sampling_dist > this->params.map_sampling_dist)
+            if ( (this->params.trajectory_sampling_dist > this->params.map_sampling_dist)
+                  && !(k == graph.poses.size()-1) )
             {
-              for (int j = scan_range.first + 1; j< scan_range.second; j++)
+              std::cout << "Interpolating poses for map building." << std::endl;
+              int j = 0;
+              while (true)
               {
+                j++;
                 Eigen::Affine3d T_MAP_LLOC_J;  // interpolated scan pose
+                int curr_index = this->pose_scan_map.at(graph.poses.at(k))+j;
+                TimePoint time_point_J = ros_data->lidar_container[curr_index].time_point;
+
+                if( time_point_J >= next_pose_time)
+                {
+                  std::cout << "Breaking interpolation" << std::endl;
+                  std::cout << "Time Point J: " << time_point_J.time_since_epoch().count() << std::endl;
+                  std::cout << "Next time point: " << next_pose_time.time_since_epoch().count() << std::endl;
+                  std::cout << "Index J: " << curr_index << std::endl;
+                  std::cout << "Prev Index: " << this->pose_scan_map.at(graph.poses.at(k)) << std::endl;
+                  std::cout << "Next Index: " << this->pose_scan_map.at(graph.poses.at(k+1)) << std::endl;
+                  break;
+                }
+
                 T_MAP_LLOC_J.matrix()  = interpolateTransform(T_MAP_LLOC_k.matrix(), curr_pose_time,
                                                             T_MAP_LLOC_kp1.matrix(), next_pose_time,
-                                                            ros_data->lidar_container[j].time_point);
+                                                            time_point_J);
 
                 bool take_new_map_scan = takeNewScan(T_MAP_LLOC_k, T_MAP_LLOC_J, this->params.map_sampling_dist);
 
                 // interpolate pose and add new scan to current target cloud
                 if(take_new_map_scan)
                 {
-                  pcl::transformPointCloud( *(ros_data->lidar_container[j].value),
+                  std::cout << "Adding interpolated scan No. " << j << std::endl;
+                  pcl::transformPointCloud( *(ros_data->lidar_container[curr_index].value),
                                             *cloud_interp,
                                             T_MAP_LLOC_J);
                   *cloud_target += *cloud_interp;
+                  std::cout << "Interpolated Scan Size: " << cloud_interp->size() << std::endl;
+                  std::cout << "New Cloud Size: " << this->cloud_target->size() << std::endl;
                 }
               }
             }
@@ -211,33 +251,35 @@
             break;
           case 2 :
             // transform current map scan to target cloud
-            pcl::transformPointCloud(*(ros_data->lidar_container_map[scan_range.first].value),
-                                     *this->cloud_target,
-                                     T_MAP_LMAP_k);
+            //pcl::transformPointCloud(*(ros_data->lidar_container_map[scan_range.first].value),
+            //                         *this->cloud_target,
+            //                         T_MAP_LMAP_k);
             break;
           case 3 :
             pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tmp (new pcl::PointCloud<pcl::PointXYZ>);
 
             // transform current map scan to tmp cloud
-            pcl::transformPointCloud(*(ros_data->lidar_container_map[scan_range.first].value),
-                                     *cloud_tmp,
-                                     T_MAP_LMAP_k);
+            //pcl::transformPointCloud(*(ros_data->lidar_container_map[scan_range.first].value),
+            //                          *cloud_tmp,
+            //                          T_MAP_LMAP_k);
             // transform current localization scan to target cloud
-            pcl::transformPointCloud(*(ros_data->lidar_container[scan_range.first].value),
-                                     *this->cloud_target,
-                                     T_MAP_LLOC_k);
+            //pcl::transformPointCloud(*(ros_data->lidar_container[scan_range.first].value),
+                                     // *this->cloud_target,
+                                     // T_MAP_LLOC_k);
             // Add tmp cloud to target cloud
               *this->cloud_target+=*cloud_tmp;
             break;
           }
 
           // this block makes sure every intermediate map is made up of n scans.
-          // each scan is filtered individually, then the whole set of n
+          // each scan is filtered individually when saved in measurements
+          // containers, then the whole set of n
           // combined scans is filtered once (default, n=15)
           if ((k % this->params.int_map_size) == 0)
-          { // every 15th pose, filter the intermediate map
-              if (i != 0) // if not first intermediate map, then filter it and
-              {           // move to the next intermediate map
+          { // every nth pose, filter the intermediate map if specified then move to next
+              if ((i != 0) && !(this->params.downsample_output_method ==3) )
+              {   // if not first intermediate map, then filter it and
+                  // move to the next intermediate map
                   *this->intermediaries.at(i) = downSampleFilterIG(this->intermediaries.at(i), this->params.downsample_cell_size);
                   i++;
               }
@@ -254,8 +296,11 @@
               this->intermediaries.emplace_back(new pcl::PointCloud<pcl::PointXYZ>);
           }
 
-          // filter each new cloud
-          *cloud_target = downSampleFilterIG(this->cloud_target, this->params.downsample_cell_size);
+          // filter each new cloud if specified in config
+          if (this->params.downsample_output_method == 1)
+          {
+              *cloud_target = downSampleFilterIG(this->cloud_target, this->params.downsample_cell_size);
+          }
 
           // add each new cloud to current intermediate map
           *(this->intermediaries.at(i)) += *this->cloud_target;
@@ -263,7 +308,6 @@
 
       for (uint64_t iter = 0; iter < this->intermediaries.size(); iter++)
       {
-          // TODO: Add option to visualize the map building
           *this->aggregate += *(this->intermediaries.at(iter));
       }
 
@@ -275,8 +319,8 @@
       long timestamp = std::chrono::system_clock::now().time_since_epoch().count();
       pcl::io::savePCDFileBinary(std::to_string(timestamp) + "aggregate_map.pcd", *this->aggregate);
       std::cout << "outputting map at time: " << std::to_string(timestamp) << std::endl;
-
-      // now save trajectory to file
+      
+      //now save trajectory to file
       std::ofstream file;
       const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", ", ");
       file.open(std::to_string(timestamp) + "opt_traj" + ".txt");
@@ -342,6 +386,7 @@
             datumfile.close();
         }
       }
+
   }
 
 // ICP1ScanMatcher (Child Class) Functions
@@ -365,6 +410,7 @@
 
   void ICP1ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data)
   {
+      LOG_INFO("Storing pose scans...");
       // save initial poses of the lidar scans based on GPS data and save iterators
       // corresponding to these scans
       int i = 0;
@@ -413,7 +459,6 @@
               this->init_pose.poses.push_back(T_MAP_LIDAR);
               this->pose_scan_map.push_back(iter);
               ++i;
-              LOG_INFO("Stored scan pose %d of %d available.", i, ros_data->lidar_container.size());
             }
           }
           else
@@ -422,8 +467,8 @@
             this->pose_scan_map.push_back(iter);
             ++i;
           }
-
       }
+      LOG_INFO("Stored %d pose scans of %d available scans.", i, ros_data->lidar_container.size());
   }
 
   void ICP1ScanMatcher::displayPointCloud(wave::PCLPointCloudPtr cloud_display,

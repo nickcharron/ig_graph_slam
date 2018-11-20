@@ -73,6 +73,7 @@ void outputParams(boost::shared_ptr<Params> p_)
   std::cout << "ground_segment: " << p_->ground_segment << std::endl;
   std::cout << "use_gps: " << p_->use_gps << std::endl;
   std::cout << "downsample_cell_size: " << p_->downsample_cell_size << std::endl;
+  std::cout << "downsample_output_method: " << p_->downsample_output_method << std::endl;
   std::cout << "iterations: " << p_->iterations << std::endl;
   std::cout << "visualize: " << p_->visualize << std::endl;
   std::cout << "step_matches: " << p_->step_matches << std::endl;
@@ -83,23 +84,19 @@ void outputParams(boost::shared_ptr<Params> p_)
 
 int main()
 {
-  // Load parameters from ig_graph_slam_config:
-    Params p__;
-    fillparams(p__);
-    boost::shared_ptr<Params> p_;
-    p_ = boost::shared_ptr<Params>(&p__);
+  // create shared pointers for parameters and ros data
+    boost::shared_ptr<Params> p_(new Params);
+    fillparams(*p_);
     std::cout << "Input Bag File: " << p_->bag_file_path << std::endl;
     rosbag::Bag bag;
-    boost::shared_ptr<ScanMatcher> scan_matcher;
-    boost::shared_ptr<ROSBag> load_ros_data;
-    ROSBag load_ros_data_;
-    load_ros_data = boost::shared_ptr<ROSBag>(&load_ros_data_);
+    boost::shared_ptr<ROSBag> load_ros_data(new ROSBag);
     //ros::Time time_limit_s = ros::TIME_MIN + ros::Duration(1521829591);
 
   // Init pointer to scan matcher based on type
+    boost::shared_ptr<ScanMatcher> scan_matcher;
     if (p_->matcher_type == "icp1")
     {
-        scan_matcher = boost::make_shared<ICP1ScanMatcher>(p__);
+        scan_matcher = boost::make_shared<ICP1ScanMatcher>(*p_);
     }
     else if (p_->matcher_type == "icp2")
     {
@@ -140,13 +137,14 @@ int main()
       LOG_ERROR("No messages read. Check your topics in config file.");
       outputParams(p_);
     }
-    // iterate through bag messages and save imu messages only
+
+  //iterate through bag messages and save imu messages only
     if( !(p_->gps_imu_topic == ""))
     {
-      LOG_INFO("Loading IMU messages...");
       for (auto iter = view.begin(); iter != view.end(); iter++)
       {
         bag_counter++;
+        outputPercentComplete(bag_counter, total_messages, "Loading IMU messages...");
         if (bag_counter == total_messages)
         {
           end_of_bag = true;
@@ -168,7 +166,7 @@ int main()
       {
         end_of_bag = true;
       }
-      LOG_INFO("Loading message No. %d of %d", bag_counter, total_messages);
+      outputPercentComplete(bag_counter, total_messages, "Loading all other messages...");
       load_ros_data->loadROSBagMessage(iter, end_of_bag, p_);
     }
     bag.close();
@@ -181,7 +179,7 @@ int main()
 
   // perform graph optimization:
 
-    // init. variables:
+    //init. variables:
     GTSAMGraph graph;
     bool no_GPS = true;
     int cnt_match = 0;
@@ -206,7 +204,7 @@ int main()
 
       for (uint64_t j = 0; j < scan_matcher->adjacency->size(); j++)
       { // iterate over all j scans
-          LOG_INFO("Matching scan %d of %d", j+1, scan_matcher->adjacency->size());
+          //LOG_INFO("Matching scan %d of %d", j+1, scan_matcher->adjacency->size());
           if (j == 0)
           {
               last_timestamp =
@@ -241,7 +239,8 @@ int main()
                   mgtsam.block(0, 3, 3, 3) = info.block(0, 3, 3, 3);  // off diagonal
                   mgtsam.block(3, 0, 3, 3) = info.block(3, 0, 3, 3);  // off diagonal
                   graph.addFactor(*iter, j, T_Liter_Lj, mgtsam);
-                  LOG_INFO("Match no %d of %d", cnt_match, scan_matcher->total_matches);
+                  outputPercentComplete(cnt_match, scan_matcher->total_matches, "Matching scans between nearest neighbours...");
+                  //LOG_INFO("Match no %d of %d", cnt_match, scan_matcher->total_matches);
                   cnt_match++;
               }
               else
@@ -265,7 +264,7 @@ int main()
           graph.fixFirstPose();
       }
       LOG_INFO("Done building graph.");
-      graph.print();
+      //graph.print();
       //std::cout << "Hit 'Enter' to continue" << std::endl;
       //std::cin.get(); // wait for user to hit next
       graph.optimize();
