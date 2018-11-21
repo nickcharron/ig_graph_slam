@@ -165,7 +165,7 @@
 
         // Define transforms we will need
         Eigen::Affine3d T_MAP_LLOC_k, T_MAP_LLOC_kp1, T_MAP_LMAP_k,
-                        T_MAP_LMAP_kp1, T_LMAP_LLOC, T_MAP_LLOC_Jprev;
+                        T_MAP_LMAP_kp1, T_LMAP_LLOC, T_MAP_LLOC_Jprev, T_MAP_LMAP_Jprev;
         T_MAP_LLOC_k = this->final_poses.at(graph.poses.at(k)).value;  // for pose k
         T_LMAP_LLOC = this->params.T_LMAP_LLOC;                       // static
         T_MAP_LMAP_k = T_MAP_LLOC_k * T_LMAP_LLOC.inverse();
@@ -173,22 +173,27 @@
         int curr_index = this->pose_scan_map.at(graph.poses.at(k));
         TimePoint curr_pose_time = ros_data->lidar_container[curr_index].time_point;
         int next_index;
-        TimePoint next_pose_time;
+        TimePoint next_pose_time = curr_pose_time;
 
+        // get all time and transforms for next pose for interpolation
         if(!(k == graph.poses.size()-1))
         {
           T_MAP_LLOC_kp1 = this->final_poses.at(graph.poses.at(k+1)).value;  // for pose k + 1
           T_MAP_LMAP_kp1 = T_MAP_LLOC_kp1 * T_LMAP_LLOC.inverse();
           T_MAP_LLOC_Jprev = T_MAP_LLOC_k;
+          T_MAP_LMAP_Jprev = T_MAP_LMAP_k;
           next_index = this->pose_scan_map.at(graph.poses.at(k+1));
           next_pose_time = ros_data->lidar_container[next_index].time_point;
         }
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_interp (new pcl::PointCloud<pcl::PointXYZ>);
+
+        // find scan range for map scans:
+        std::pair<int, int> scan_range_map;
+        scan_range_map = getLidarTimeWindow(ros_data->lidar_container_map, curr_pose_time, next_pose_time);
 
         switch(this->params.mapping_method)
         {
           case 1 :
-
+           // transform current pose scan to target cloud
            pcl::transformPointCloud(*(ros_data->lidar_container[curr_index].value),
                                     *this->cloud_target,
                                     T_MAP_LLOC_k);
@@ -197,6 +202,8 @@
             if ( (this->params.trajectory_sampling_dist > this->params.map_sampling_dist)
                   && !(k == graph.poses.size()-1) )
             {
+              pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_interp (new pcl::PointCloud<pcl::PointXYZ>);
+
               int j = 0;
               while (true)
               {
@@ -227,25 +234,103 @@
             break;
 
           case 2 :
-            // transform current map scan to target cloud
-            //pcl::transformPointCloud(*(ros_data->lidar_container_map[scan_range.first].value),
-            //                         *this->cloud_target,
-            //                         T_MAP_LMAP_k);
+            // transform current pose scan to target cloud
+            pcl::transformPointCloud(*(ros_data->lidar_container_map[scan_range_map.first].value),
+                                    *this->cloud_target,
+                                    T_MAP_LMAP_k);
+
+            // iterate through all scans between pose k and k+1
+            if ( (this->params.trajectory_sampling_dist > this->params.map_sampling_dist)
+                  && !(k == graph.poses.size()-1) )
+            {
+              pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_interp (new pcl::PointCloud<pcl::PointXYZ>);
+
+              int j = 0;
+              while (true)
+              {
+                j++;
+                Eigen::Affine3d T_MAP_LMAP_J;  // interpolated scan pose
+                TimePoint time_point_J = ros_data->lidar_container_map[scan_range_map.first+j].time_point;
+
+                if( time_point_J >= next_pose_time) // stop interpolation
+                {break;}
+
+                T_MAP_LMAP_J.matrix()  = interpolateTransform(T_MAP_LMAP_k.matrix(), curr_pose_time,
+                                                            T_MAP_LMAP_kp1.matrix(), next_pose_time,
+                                                            time_point_J);
+                bool take_new_map_scan = takeNewScan(T_MAP_LMAP_Jprev, T_MAP_LMAP_J, this->params.map_sampling_dist);
+
+                // interpolate pose and add new scan to current target cloud
+                if(take_new_map_scan)
+                {
+                  pcl::transformPointCloud( *(ros_data->lidar_container_map[scan_range_map.first+j].value),
+                                            *cloud_interp,
+                                            T_MAP_LMAP_J);
+                  *cloud_target += *cloud_interp;
+                  T_MAP_LMAP_Jprev = T_MAP_LMAP_J;
+                }
+
+              }
+            }
+
             break;
-
           case 3 :
-            pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tmp (new pcl::PointCloud<pcl::PointXYZ>);
 
-            // transform current map scan to tmp cloud
-            //pcl::transformPointCloud(*(ros_data->lidar_container_map[scan_range.first].value),
-            //                          *cloud_tmp,
-            //                          T_MAP_LMAP_k);
-            // transform current localization scan to target cloud
-            //pcl::transformPointCloud(*(ros_data->lidar_container[scan_range.first].value),
-                                     // *this->cloud_target,
-                                     // T_MAP_LLOC_k);
-            // Add tmp cloud to target cloud
-              *this->cloud_target+=*cloud_tmp;
+            //transform current map scan to tmp cloud
+            pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tmp (new pcl::PointCloud<pcl::PointXYZ>);
+            pcl::transformPointCloud(*(ros_data->lidar_container_map[scan_range_map.first].value),
+                                     *cloud_tmp,
+                                     T_MAP_LMAP_k);
+            //transform current localization scan to target cloud
+            pcl::transformPointCloud(*(ros_data->lidar_container[curr_index].value),
+                                     *this->cloud_target,
+                                     T_MAP_LLOC_k);
+            //Add tmp cloud to target cloud
+             *this->cloud_target+=*cloud_tmp;
+
+             // iterate through all scans between pose k and k+1
+             if ( (this->params.trajectory_sampling_dist > this->params.map_sampling_dist)
+                   && !(k == graph.poses.size()-1) )
+             {
+                pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_interp (new pcl::PointCloud<pcl::PointXYZ>);
+                int j = 0;
+                while (true)
+                {
+                  j++;
+                  Eigen::Affine3d T_MAP_LLOC_J, T_MAP_LMAP_J;  // interpolated scan pose
+                  TimePoint time_point_J = ros_data->lidar_container[curr_index+j].time_point;
+
+                  if( time_point_J >= next_pose_time) // stop interpolation
+                  {break;}
+
+                  T_MAP_LLOC_J.matrix()  = interpolateTransform(T_MAP_LLOC_k.matrix(), curr_pose_time,
+                                                              T_MAP_LLOC_kp1.matrix(), next_pose_time,
+                                                              time_point_J);
+                  T_MAP_LMAP_J.matrix()  = interpolateTransform(T_MAP_LMAP_k.matrix(), curr_pose_time,
+                                                              T_MAP_LMAP_kp1.matrix(), next_pose_time,
+                                                              time_point_J);
+
+                  bool take_new_map_scan = takeNewScan(T_MAP_LLOC_Jprev, T_MAP_LLOC_J, this->params.map_sampling_dist);
+
+                  // interpolate pose and add new scan to current target cloud
+                  if(take_new_map_scan)
+                  {
+                    pcl::transformPointCloud( *(ros_data->lidar_container[curr_index+j].value),
+                                              *cloud_interp,
+                                              T_MAP_LLOC_J);
+                    *cloud_target += *cloud_interp;
+                    pcl::transformPointCloud( *(ros_data->lidar_container_map[scan_range_map.first+j].value),
+                                              *cloud_interp,
+                                              T_MAP_LMAP_J);
+                    *cloud_target += *cloud_interp;
+                    T_MAP_LLOC_Jprev = T_MAP_LLOC_J;
+                    T_MAP_LMAP_Jprev = T_MAP_LMAP_J;
+                  }
+                }
+             }
+
+
+
             break;
           }
 

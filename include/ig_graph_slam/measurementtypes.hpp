@@ -86,56 +86,63 @@ namespace wave
     return std::make_pair(T, std_dev);
   }
 
-  // inline std::pair<int, int> getLidarTimeWindow(const LidarContainer &lidar_container_,
-  //                                               const TimePoint T1,
-  //                                               const TimePoint T2)
-  // {
-  //   // TODO: THIS FUNCTION ISN'T WORKING AS EXPECTED, DO NOT USE!
-  //   int start_index_ = 0, end_index_ = 0;
-  //   std::cout << "No. of Scans: " << lidar_container_.size() << std::endl;
-  //   std::cout << "Looking for time point: " << T1.time_since_epoch().count() << std::endl;
-  //   for (size_t i = 0; i<lidar_container_.size(); i++)
-  //   {
-  //     // std::cout << "i: " << i << std::endl;
-  //     // std::cout << "Current Time Point: " << lidar_container_[i].time_point.time_since_epoch().count() << std::endl;
-  //     {
-  //       if(lidar_container_.get[i].time_point == T1)
-  //       start_index_ = i;
-  //       std::cout << "Saved Start Index: " << i << std::endl;
-  //       std::cout << "Saved Lidar with Timepoint: " << lidar_container_[i].time_point << std::endl;
-  //       break;
-  //     }
-  //     else if (lidar_container_[i].time_point > T1)
-  //     {
-  //       std::cout << "Saved Start Index: " << i << std::endl;
-  //       start_index_ = i;
-  //       break;
-  //     }
-  //     else if(i==lidar_container_.size())
-  //     {
-  //       LOG_ERROR("Cannot find lidar time window. Time inputs invalid.");
-  //       std::pair<int, int> timewindow(0, 0);
-  //       return timewindow;
-  //     }
-  //   }
-  //   for (size_t i = start_index_; i<lidar_container_.size(); i++)
-  //   {
-  //     if(lidar_container_[i].time_point == T2)
-  //     {
-  //       std::cout << "Saved End Index: " << i << std::endl;
-  //       end_index_ = i;
-  //       break;
-  //     }
-  //     else if (lidar_container_[i].time_point > T2)
-  //     {
-  //       std::cout << "Saved End Index: " << i-1 << std::endl;
-  //       end_index_ = i-1;
-  //       break;
-  //     }
-  //   }
-  //   std::pair<int, int> timewindow(start_index_, end_index_);
-  //   return timewindow;
-  // }
+  inline std::pair<int, int> getLidarTimeWindow(const LidarContainer &lidar_container_,
+                                                const TimePoint T1,
+                                                const TimePoint T2)
+  {
+    int start_index_ = 0, end_index_ = 0;
+    for (size_t i = 0; i<lidar_container_.size(); i++)
+    {
+      if(lidar_container_[i].time_point == T1)
+      {
+        start_index_ = i;
+        break;
+      }
+      else if (lidar_container_[i].time_point > T1)
+      {
+        // LOG_INFO("getLidarTimeWindow: Exact scan time not found, using next scan.");
+        // std::cout << "Looking for Time Point:   " << T1.time_since_epoch().count()
+        //           << std::endl
+        //           << "Instead, using timepoint: " << lidar_container_[i].time_point.time_since_epoch().count()
+        //           << std::endl;
+        start_index_ = i;
+        break;
+      }
+      else if(i==lidar_container_.size())
+      {
+        LOG_ERROR("getLidarTimeWindow: Cannot find lidar time window. Time inputs invalid.");
+        std::pair<int, int> timewindow(0, 0);
+        return timewindow;
+      }
+    }
+    for (size_t i = start_index_; i<lidar_container_.size(); i++)
+    {
+      if(lidar_container_[i].time_point == T2)
+      {
+        end_index_ = i;
+        break;
+      }
+      else if (lidar_container_[i].time_point > T2)
+      {
+        // LOG_INFO("getLidarTimeWindow: Exact scan time not found, using prev scan.");
+        // std::cout << "Looking for Time Point:   " << T2.time_since_epoch().count()
+        //           << std::endl
+        //           << "Instead, using timepoint: " << lidar_container_[i].time_point.time_since_epoch().count()
+        //           << std::endl;
+        end_index_ = i-1;
+        break;
+      }
+      else if (i == lidar_container_.size()-1)
+      {
+        LOG_ERROR("getLidarTimeWindow: Cannot find lidar time window. Time inputs invalid.");
+        std::pair<int, int> timewindow(0, 0);
+        return timewindow;
+      }
+    }
+    std::pair<int, int> timewindow(start_index_, end_index_);
+    return timewindow;
+  }
+
 }  // namespace wave
 
 #endif //IG_GRAPH_SLAM_MEASUREMENTTYPES_HPP

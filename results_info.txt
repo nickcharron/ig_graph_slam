@@ -92,6 +92,7 @@ graph slam parameters used.
 (only for horizontal scans)
 
 2018_11_20_15_39
+    - short bag from 2018-07-06-09-15
     - no output downsampling
     - traj sampling: 5
     - no interpolation
@@ -110,3 +111,15 @@ graph slam parameters used.
     - no output downsampling
     - traj sampling: 0.25
     - map sampling: 0.05
+
+2018_11_21_12_18
+    - full bag from 2018-07-06-09-15
+    - traj sampling: 0.3
+    - map sampling: 0.05
+    - mapping method 2
+
+2018_11_21_16_35
+    - full bag from 2018-07-06-09-15
+    - traj sampling: 0.3
+    - map sampling: 0.05
+    - mapping method 3
