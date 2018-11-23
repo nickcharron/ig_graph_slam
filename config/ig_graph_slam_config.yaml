@@ -12,7 +12,6 @@ odom_topic: "/odometry/filtered_odom"
 init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
-mapping_method: 3                 # Build map with (1) localization scans, (2) mapping scans, (3) both
 bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-07-06-09-15-39-short2-processed.bag"
 
 T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization
@@ -36,7 +35,6 @@ T_LMAP_LLOC: # tranformation from localization lidar to map lidar
 # gps_imu_topic: "" # Leave blank, this is already contained in INSPVAX
 # lidar_topic_loc: "/velodyne_points"
 # lidar_topic_map: ""
-# mapping_method: 3                 # Build map with (1) localization scans, (2) mapping scans, (3) both
 # bag_file_path: "/home/nick/bag_files/moose/Colby-Drive-2018-03-07-15-processed-short.bag"
 # T_LIDAR_GPS:
 #   rows: 4

@@ -27,7 +27,7 @@ struct Params
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     std::string bag_file_path, lidar_topic_loc, lidar_topic_map, gps_topic, gps_imu_topic, odom_topic,
     gps_type, matcher_type, matcher_config;
-    int knn, iterations, init_method, mapping_method, int_map_size, downsample_output_method;
+    int knn, iterations, init_method, int_map_size, downsample_output_method;
     float trajectory_sampling_dist, map_sampling_dist,
           distance_match_limit, distance_match_min,
           input_downsample_size, downsample_cell_size,

@@ -42,7 +42,6 @@ void outputParams(boost::shared_ptr<Params> p_)
   std::cout << "gps_imu_topic: " << p_->gps_imu_topic << std::endl;
   std::cout << "odom_topic: " << p_->odom_topic << std::endl;
   std::cout << "init_method: " << p_->init_method << std::endl;
-  std::cout << "mapping_method: " << p_->mapping_method << std::endl;
   std::cout << "int_map_size: " << p_->int_map_size << std::endl;
   std::cout << "gps_type: " << p_->gps_type << std::endl;
   std::cout << "k_nearest_neighbours: " << p_->knn << std::endl;

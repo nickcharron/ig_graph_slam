@@ -33,7 +33,6 @@
       parser.addParam("bag_file_path", &(params.bag_file_path));
       parser.addParam("lidar_topic_loc", &(params.lidar_topic_loc));
       parser.addParam("lidar_topic_map", &(params.lidar_topic_map));
-      parser.addParam("mapping_method", &(params.mapping_method));
       parser.addParam("gps_topic", &(params.gps_topic));
       parser.addParam("gps_imu_topic", &(params.gps_imu_topic));
       parser.addParam("odom_topic", &(params.odom_topic));
