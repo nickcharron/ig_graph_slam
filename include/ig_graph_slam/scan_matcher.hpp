@@ -113,13 +113,13 @@ struct ScanMatcher
      * @param graph
      * @param ros_data
      */
-    virtual void createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data) = 0;
+    virtual void createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method) = 0;
 
     /***
      * Outputs the aggregate pointcloud map as a pcd file
      * @param graph
      */
-    virtual void outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data) = 0;
+    virtual void outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method) = 0;
 
    int total_matches;
    //Eigen::Affine3d T_ECEF_MAP; // TODO: is this needed?
@@ -142,11 +142,10 @@ class ICP1ScanMatcher : public ScanMatcher
     void createPoseScanMap(boost::shared_ptr<ROSBag> ros_data);
     bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid,  boost::shared_ptr<ROSBag> ros_data);
     void displayPointCloud(wave::PCLPointCloudPtr cloud_display, int color, const Eigen::Affine3d &transform = Eigen::Affine3d::Identity());
-    void createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data);
-    void outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data);
+    void createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method);
+    void outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method);
 
     wave::ICPMatcher matcher;
-    std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> intermediaries;
     wave::PCLPointCloudPtr aggregate;
 
     // Declared here to avoid multiple allocation/deallocations

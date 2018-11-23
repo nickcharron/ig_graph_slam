@@ -38,6 +38,23 @@ inline void outputPercentComplete(int current_, int total_, std::string message_
     else if (current_ == total_){LOG_INFO("100 %% complete (%d of %d)", current_, total_);}
 }
 
+inline std::string convertTimeToDate(std::chrono::system_clock::time_point time_)
+{
+  using namespace std;
+  using namespace std::chrono;
+  system_clock::duration tp = time_.time_since_epoch();
+  time_t tt = system_clock::to_time_t(time_);
+  tm local_tm = *localtime(&tt);
+
+  string outputTime = to_string(local_tm.tm_year + 1900) + "_" +
+                      to_string(local_tm.tm_mon + 1) + "_" +
+                      to_string(local_tm.tm_mday) + "_" +
+                      to_string(local_tm.tm_hour) + "_" +
+                      to_string(local_tm.tm_min) + "_" +
+                      to_string(local_tm.tm_sec);
+  return outputTime;
+}
+
 inline wave::Mat4 interpolateTransform(const wave::Mat4 &m1, const TimePoint &t1,
                                        const wave::Mat4 &m2, const TimePoint &t2,
                                        const TimePoint &t)

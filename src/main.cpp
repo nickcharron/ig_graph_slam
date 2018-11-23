@@ -288,8 +288,12 @@ int main()
 
     }
 
-    // build and output map
-    scan_matcher->createAggregateMap(graph, load_ros_data);
-    scan_matcher->outputAggregateMap(graph, load_ros_data);
+    // build and output maps
+    scan_matcher->createAggregateMap(graph, load_ros_data, 1);
+    scan_matcher->outputAggregateMap(graph, load_ros_data, 1);
+    scan_matcher->createAggregateMap(graph, load_ros_data, 2);
+    scan_matcher->outputAggregateMap(graph, load_ros_data, 2);
+    scan_matcher->createAggregateMap(graph, load_ros_data, 3);
+    scan_matcher->outputAggregateMap(graph, load_ros_data, 3);
 
 }

@@ -4,9 +4,9 @@
   <arg name="frame_id" value="/map"/>
   <!-- IG Results: -->
     <arg name="pcd_file1"
-    value="/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2018-07-06-09-15-39/1542933273780105398aggregate_map.pcd"/>
+    value="/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2018-07-06-09-15-39/2018_11_22_22_0_40_loc_map.pcd"/>
     <arg name="pcd_file2"
-    value="/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2018-07-06-09-15-39/1542933273780105398aggregate_map.pcd"/>
+    value="/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2018-07-06-09-15-39/2018_11_22_22_0_42_comb_map.pcd"/>
   <!-- Moose Results: -->
     <!-- <arg name="pcd_file" value="/home/nick/results/moose_maps/Colby-Drive-Snowy-2018-03-07-15-Short-noimu.pcd"/> -->
 <!-- Start RVIZ -->

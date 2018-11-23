@@ -157,8 +157,10 @@
      }
   }
 
-  void ICP1ScanMatcher::createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data)
+  void ICP1ScanMatcher::createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method)
   {
+      std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> intermediaries;
+      this->aggregate->clear();
       int i =0;
       for (uint64_t k = 0; k < graph.poses.size(); k++) // NOTE: Sometimes I get seg fault on the last scan
       { // iterate through all poses in graph
@@ -190,7 +192,7 @@
         std::pair<int, int> scan_range_map;
         scan_range_map = getLidarTimeWindow(ros_data->lidar_container_map, curr_pose_time, next_pose_time);
 
-        switch(this->params.mapping_method)
+        switch(mapping_method)
         {
           case 1 :
            // transform current pose scan to target cloud
@@ -343,7 +345,7 @@
               if ((i != 0) && !(this->params.downsample_output_method ==3) )
               {   // if not first intermediate map, then filter it and
                   // move to the next intermediate map
-                  *this->intermediaries.at(i) = downSampleFilterIG(this->intermediaries.at(i), this->params.downsample_cell_size);
+                  *intermediaries.at(i) = downSampleFilterIG(intermediaries.at(i), this->params.downsample_cell_size);
                   i++;
               }
               else // if first intermediate map
@@ -356,7 +358,7 @@
                   }
               }
               // add new empty point cloud to set of intermediate maps
-              this->intermediaries.emplace_back(new pcl::PointCloud<pcl::PointXYZ>);
+              intermediaries.emplace_back(new pcl::PointCloud<pcl::PointXYZ>);
           }
 
           // filter each new cloud if specified in config
@@ -366,27 +368,40 @@
           }
 
           // add each new cloud to current intermediate map
-          *(this->intermediaries.at(i)) += *this->cloud_target;
+          *(intermediaries.at(i)) += *this->cloud_target;
       }
 
-      for (uint64_t iter = 0; iter < this->intermediaries.size(); iter++)
+      for (uint64_t iter = 0; iter < intermediaries.size(); iter++)
       {
-          *this->aggregate += *(this->intermediaries.at(iter));
+          *this->aggregate += *(intermediaries.at(iter));
       }
 
   }
 
-  void ICP1ScanMatcher::outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data)
+  void ICP1ScanMatcher::outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method)
   {
       *this->aggregate = downSampleFilterIG(this->aggregate, this->params.downsample_cell_size);
-      long timestamp = std::chrono::system_clock::now().time_since_epoch().count();
-      pcl::io::savePCDFileBinary(std::to_string(timestamp) + "aggregate_map.pcd", *this->aggregate);
-      std::cout << "outputting map at time: " << std::to_string(timestamp) << std::endl;
+      std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
+      std::string mapType;
+      switch(mapping_method)
+      {
+        case 1:
+          mapType = "_loc_map.pcd";
+          break;
+        case 2:
+          mapType = "_map.pcd";
+          break;
+        case 3:
+          mapType = "_comb_map.pcd";
+          break;
+      }
+      pcl::io::savePCDFileBinary(dateandtime  + mapType , *this->aggregate);
+      std::cout << "outputting map at time: " << dateandtime << std::endl;
 
       //now save trajectory to file
       std::ofstream file;
       const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", ", ");
-      file.open(std::to_string(timestamp) + "opt_traj" + ".txt");
+      file.open(dateandtime + "opt_traj" + ".txt");
       for (auto iter = final_poses.begin(); iter != final_poses.end(); iter++)
       {
           file << iter->time_point.time_since_epoch().count() << ", ";
@@ -396,7 +411,7 @@
       file.close();
 
       std::ofstream bias_file;
-      bias_file.open(std::to_string(timestamp) + "GPSbias.txt");
+      bias_file.open(dateandtime + "GPSbias.txt");
       for (auto iter = graph.biases.begin(); iter != graph.biases.end(); iter++)
       {
           auto curbias = graph.result.at<gtsam::Point3>(*iter);
@@ -410,7 +425,7 @@
         // This file contains the input traj to the GTSAM since we want to compare
         // the pose difference betweem the input and the output of GTSAM
         std::ofstream gt_file;
-        gt_file.open(std::to_string(timestamp) + "GTSAMinputTraj.txt");
+        gt_file.open(dateandtime + "GTSAMinputTraj.txt");
         for (uint64_t j = 0; j < adjacency->size(); j++)
         {
             Eigen::Affine3d T_ECEF_GPSIMU = ros_data->getGPSTransform(ros_data->getLidarScanTimePoint(pose_scan_map.at(j)), true);
@@ -434,7 +449,7 @@
 
         std::ofstream datumfile;
         using dbl = std::numeric_limits<double>;
-        datumfile.open(std::to_string(timestamp) + "map_ecef_datum" + ".txt");
+        datumfile.open(dateandtime + "map_ecef_datum" + ".txt");
         datumfile.precision(dbl::max_digits10);
         datumfile << ros_data->T_ECEF_MAP.matrix().format(CSVFormat);
         datumfile.close();
@@ -443,7 +458,7 @@
             auto result = graph.result.at<gtsam::Pose3>(6000000);
             std::ofstream datumfile;
             using dbl = std::numeric_limits<double>;
-            datumfile.open(std::to_string(timestamp) + "T_LIDAR_GPS" + ".txt");
+            datumfile.open(dateandtime + "T_LIDAR_GPS" + ".txt");
             datumfile.precision(dbl::max_digits10);
             datumfile << result.inverse().matrix().format(CSVFormat);
             datumfile.close();
