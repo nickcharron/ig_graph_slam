@@ -480,6 +480,7 @@
       Eigen::Affine3d T_ECEF_GPS, T_MAP_LIDAR;
       for (uint64_t iter = 0; iter < ros_data->lidar_container.size(); iter++)
       {  // this ierates through the lidar measurements
+          bool use_next_scan = false;
           switch(this->params.init_method)
           {
             case 1 :
@@ -493,6 +494,7 @@
               catch (const std::out_of_range &e)
               {
                   LOG_INFO("No gps pose for time of scan, may happen at edges of recorded data");
+                  use_next_scan = true;
                   break;
               }
             case 2 :
@@ -505,6 +507,7 @@
               catch (const std::out_of_range &e)
               {
                   LOG_INFO("No odometry message for time of scan, may happen at edges of recorded data");
+                  use_next_scan = true;
                   break;
               }
           }
@@ -517,14 +520,14 @@
             bool take_new_scan;
             take_new_scan = takeNewScan(T_MAP_LIDAR, init_pose.poses[i - 1],
                                     this->params.trajectory_sampling_dist);
-            if (take_new_scan)
+            if (take_new_scan && !use_next_scan)
             {
               this->init_pose.poses.push_back(T_MAP_LIDAR);
               this->pose_scan_map.push_back(iter);
               ++i;
             }
           }
-          else
+          else if (!use_next_scan)
           {
             this->init_pose.poses.push_back(T_MAP_LIDAR);
             this->pose_scan_map.push_back(iter);

@@ -13,7 +13,7 @@ init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odom
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
 mapping_method: 3                 # Build map with (1) localization scans, (2) mapping scans, (3) both
-bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-07-06-09-15-39-long-processed.bag"
+bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-06-28-15-54-27-Processed.bag"
 
 T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization
   rows: 4
