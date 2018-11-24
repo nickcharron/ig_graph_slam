@@ -123,3 +123,24 @@ graph slam parameters used.
     - traj sampling: 0.3
     - map sampling: 0.05
     - mapping method 3
+
+2018_11_22_23_20
+    - full bag from 2018-07-06-09-15
+    - built all 3 maps
+    - map sampling 0.1
+    - traj sampling 0.3
+    - results look great
+
+2018_11_22_22_30
+    - full bag from 2018-06_28_15
+    - built all 3 maps
+    - map sampling 0.1
+    - traj sampling 0.3
+    - results look okay, some bad spots
+
+2018_11_22_22_52
+    - full bag from 2018-06_28_16
+    - built all 3 maps
+    - map sampling 0.1
+    - traj sampling 0.3
+    - results look bad
