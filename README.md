@@ -64,5 +64,3 @@ GTSAM extra install instructions: https://bitbucket.org/gtborg/gtsam/src/90f688d
 - add calibrations
 - add T_base_lidar for horizontal localization
 - add ability to localize off vertical scans or both
-- add interpolation overload function for transforms
-- change output directory for maps
