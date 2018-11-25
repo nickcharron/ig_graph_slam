@@ -143,6 +143,38 @@ namespace wave
     return timewindow;
   }
 
+  inline int getLidarTimeWindow(const LidarContainer &lidar_container_,
+                                                const TimePoint T1)
+  {
+    int start_index_ = 0;
+    for (size_t i = 0; i<lidar_container_.size(); i++)
+    {
+      if(lidar_container_[i].time_point == T1)
+      {
+        start_index_ = i;
+        break;
+      }
+      else if (lidar_container_[i].time_point > T1)
+      {
+        // LOG_INFO("getLidarTimeWindow: Exact scan time not found, using next scan.");
+        // std::cout << "Looking for Time Point:   " << T1.time_since_epoch().count()
+        //           << std::endl
+        //           << "Instead, using timepoint: " << lidar_container_[i].time_point.time_since_epoch().count()
+        //           << std::endl;
+        start_index_ = i;
+        break;
+      }
+      else if(i==lidar_container_.size())
+      {
+        LOG_ERROR("getLidarTimeWindow: Cannot find lidar time window. Time inputs invalid.");
+        int timewindow = 0;
+        return timewindow;
+      }
+    }
+    int timewindow = start_index_;
+    return timewindow;
+  }
+
 }  // namespace wave
 
 #endif //IG_GRAPH_SLAM_MEASUREMENTTYPES_HPP

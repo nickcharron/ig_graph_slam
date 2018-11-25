@@ -76,6 +76,7 @@ void outputParams(boost::shared_ptr<Params> p_)
   std::cout << "iterations: " << p_->iterations << std::endl;
   std::cout << "visualize: " << p_->visualize << std::endl;
   std::cout << "step_matches: " << p_->step_matches << std::endl;
+  std::cout << "combine_scans: " << p_->combine_scans << std::endl;
   std::cout << "optimize_gps_lidar: " << p_->optimize_gps_lidar << std::endl;
   std::cout << "fixed_scan_transform_cov: " << p_->fixed_scan_transform_cov << std::endl;
   std::cout << "scan_transform_cov: " << p_->scan_transform_cov << std::endl;
@@ -188,6 +189,8 @@ int main()
     // build graph
     for (int outer_loops = 0; outer_loops < p_->iterations; outer_loops++)
     { // Iterate to update initial estimates and redo matches
+      LOG_INFO("Iteration No. %d.", outer_loops);
+
       cnt_match = 0;
 
       // clear graph and results between each iteration
@@ -269,6 +272,7 @@ int main()
       graph.optimize();
 
       // Loop through and get final alignment
+      LOG_INFO("Updating Poses for Next Iteration.");
       Eigen::Affine3d temp_trans, prev;
       for (uint64_t k = 0; k < graph.poses.size(); k++)
       {

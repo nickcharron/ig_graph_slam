@@ -39,7 +39,7 @@ struct Params
           y_lower_threshold_map, y_upper_threshold_map,
           z_lower_threshold_map, z_upper_threshold_map;
 
-    bool ground_segment, use_gps, visualize, downsample_input,
+    bool ground_segment, combine_scans, use_gps, visualize, downsample_input,
          step_matches, optimize_gps_lidar, fixed_scan_transform_cov,
          use_rad_filter, use_pass_through_filter, use_pass_through_filter_map;
     Eigen::Affine3d T_LIDAR_GPS, T_LMAP_LLOC;

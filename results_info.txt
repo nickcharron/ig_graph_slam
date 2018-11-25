@@ -131,6 +131,14 @@ graph slam parameters used.
     - traj sampling 0.3
     - results look great
 
+2018_11_22_24_21
+    - full bag from 2018-07-06-09-15
+    - built all 3 maps
+    - map sampling 0.1
+    - traj sampling 0.3
+    - results look great
+    - uses combined scans for registration    
+
 2018_11_22_22_30
     - full bag from 2018-06_28_15
     - built all 3 maps

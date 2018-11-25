@@ -43,6 +43,7 @@
       parser.addParam("T_LMAP_LLOC", &(params.T_LMAP_LLOC.matrix()));
       parser.addParam("k_nearest_neighbours", &(params.knn));
       parser.addParam("trajectory_sampling_distance", &(params.trajectory_sampling_dist));
+      parser.addParam("combine_scans", &(params.combine_scans));
       parser.addParam("map_sampling_distance", &(params.map_sampling_dist));
       parser.addParam("distance_match_limit", &(params.distance_match_limit));
       parser.addParam("distance_match_min", &(params.distance_match_min));
@@ -571,19 +572,50 @@
     auto T_MAP_Lj = init_pose.poses[j]; // set initial guess of current scan
     auto T_MAP_Li = init_pose.poses[i]; // set initial guess of adjacent scan
     correction_norm_valid = true;
+
+    // Get scans
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ref (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tgt (new pcl::PointCloud<pcl::PointXYZ>);
+    *cloud_ref = *ros_data->lidar_container[pose_scan_map.at(j)].value;
+    *cloud_tgt = *ros_data->lidar_container[pose_scan_map.at(i)].value;
+    TimePoint timepoint_j, timepoint_i;
+
+    // Combine sacns if specified
+    if(this->params.combine_scans)
+    {
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ref_tmp (new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tgt_tmp (new pcl::PointCloud<pcl::PointXYZ>);
+        timepoint_j = ros_data->lidar_container[pose_scan_map.at(j)].time_point;
+        timepoint_i = ros_data->lidar_container[pose_scan_map.at(i)].time_point;
+        int map_index_j = getLidarTimeWindow(ros_data->lidar_container_map, timepoint_j);
+        int map_index_i = getLidarTimeWindow(ros_data->lidar_container_map, timepoint_i);
+        pcl::transformPointCloud(*(ros_data->lidar_container_map[map_index_j].value),
+                                 *cloud_ref_tmp,
+                                 this->params.T_LMAP_LLOC.inverse());
+        pcl::transformPointCloud(*(ros_data->lidar_container_map[map_index_i].value),
+                                 *cloud_tgt_tmp,
+                                 this->params.T_LMAP_LLOC.inverse());
+        *cloud_ref += *cloud_ref_tmp;
+        *cloud_tgt += *cloud_tgt_tmp;
+    }
+
     // set current scan as reference scan
-    this->matcher.setRef(ros_data->lidar_container[pose_scan_map.at(j)].value);
+    this->matcher.setRef(cloud_ref);
+
     // display reference scan
-    this->displayPointCloud(ros_data->lidar_container[pose_scan_map.at(j)].value, 0); // white
-    auto T_estLj_Li = T_MAP_Lj.inverse() * T_MAP_Li; // calculate init. T from adjacent to current
-    pcl::transformPointCloud( *(ros_data->lidar_container[pose_scan_map.at(i)].value),
+    this->displayPointCloud(cloud_ref, 0); // white
+
+    // calculate init. T from adjacent to current
+    auto T_estLj_Li = T_MAP_Lj.inverse() * T_MAP_Li;
+
+    // transform adjacent scan (i) to estimated current scan frame using
+    // initialized T, then assign to cloud_target
+    pcl::transformPointCloud( *cloud_tgt,
                               *(this->cloud_target),
                               T_estLj_Li );
-                              // transform adjacent scan (i) to estimated
-                              // current scan frame using initialized T, then
-                              // assign to cloud_target
-    this->matcher.setTarget(cloud_target);
-    this->displayPointCloud(cloud_target, 1); // red
+
+    this->matcher.setTarget(this->cloud_target);
+    this->displayPointCloud(this->cloud_target, 1); // red
     if (matcher.match())
     {
         auto T_estLj_Lj = this->matcher.getResult(); // assign estimated transform to new current position

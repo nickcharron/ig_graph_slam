@@ -12,7 +12,9 @@ odom_topic: "/odometry/filtered_odom"
 init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
-bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-07-06-09-15-39-long-processed.bag"
+#bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-07-06-09-15-39-long-processed.bag"
+#bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-06-28-15-54-27-Processed.bag"
+bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-06-28-16-03-29-processed-odomonly.bag"
 
 T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization
   rows: 4
@@ -120,5 +122,6 @@ visualize: false                     # Whether to visualize matches as they happ
                                     # Red: adjacent scan (i) transfered into estimate frame J
                                     # Blue: scan i after registration against j (shoudl match white)
 step_matches: false
+combine_scans: true     # combine scans  from both lidar for scan registrations. Default false
 matcher_type: "icp1"    # icp1: point to plane icp in PCL, icp2: point to plane in PCL
 matcher_config_path: "/home/nick/ig_catkin_ws/src/ig_graph_slam/config/icp1.yaml"
