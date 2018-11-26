@@ -14,6 +14,7 @@
 // WAVE Headers
 #include <wave/utils/log.hpp>
 #include <wave/matching/icp.hpp>
+#include "wave/matching/gicp.hpp"
 #include <wave/matching/pointcloud_display.hpp>
 
 // IG Graph SLAM Headers
@@ -157,7 +158,21 @@
      }
   }
 
-  void ICP1ScanMatcher::createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method)
+  void ScanMatcher::displayPointCloud(wave::PCLPointCloudPtr cloud_display,
+                                    int color, const Eigen::Affine3d &transform)
+  {
+    if (this->params.visualize)
+    {
+        *this->cloud_temp_display = *cloud_display;
+        if (!transform.matrix().isIdentity())
+        {
+            pcl::transformPointCloud(*cloud_display, *this->cloud_temp_display, transform);
+        }
+        this->init_display.addPointcloud(this->cloud_temp_display, color);
+    }
+  }
+
+  void ScanMatcher::createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method)
   {
       std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> intermediaries;
       this->aggregate->clear();
@@ -378,7 +393,7 @@
 
   }
 
-  void ICP1ScanMatcher::outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method)
+  void ScanMatcher::outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method)
   {
       *this->aggregate = downSampleFilterIG(this->aggregate, this->params.downsample_cell_size);
       std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
@@ -467,26 +482,7 @@
 
   }
 
-// ICP1ScanMatcher (Child Class) Functions
-  ICP1ScanMatcher::ICP1ScanMatcher(Params &p_)
-      : ScanMatcher(p_),
-        //segmenter(this->seg_params),
-        matcher(wave::ICPMatcherParams(p_.matcher_config))
-  {
-      this->params = p_;
-
-      // this->centre.setZero();
-      // this->bounds << 1.8, 1.8;
-      // this->groundCloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-      // this->obsCloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-      // this->drvCloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-      this->pcl_pc2 = boost::make_shared<pcl::PCLPointCloud2>();
-      this->cloud_ref = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-      this->cloud_target = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-      this->aggregate = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  }
-
-  void ICP1ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data)
+  void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data)
   {
       LOG_INFO("Storing pose scans...");
       // save initial poses of the lidar scans based on GPS data and save iterators
@@ -552,18 +548,16 @@
       LOG_INFO("Stored %d pose scans of %d available scans.", i, ros_data->lidar_container.size());
   }
 
-  void ICP1ScanMatcher::displayPointCloud(wave::PCLPointCloudPtr cloud_display,
-                                    int color, const Eigen::Affine3d &transform)
+
+// ICP1ScanMatcher (Child Class) Functions
+  ICP1ScanMatcher::ICP1ScanMatcher(Params &p_)
+      : ScanMatcher(p_),
+        //segmenter(this->seg_params),
+        matcher(wave::ICPMatcherParams(p_.matcher_config))
   {
-    if (this->params.visualize)
-    {
-        *this->cloud_temp_display = *cloud_display;
-        if (!transform.matrix().isIdentity())
-        {
-            pcl::transformPointCloud(*cloud_display, *this->cloud_temp_display, transform);
-        }
-        this->init_display.addPointcloud(this->cloud_temp_display, color);
-    }
+      this->params = p_;
+      this->cloud_ref = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+      this->cloud_tgt = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   }
 
   bool ICP1ScanMatcher::matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &T_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid, boost::shared_ptr<ROSBag> ros_data)
@@ -574,10 +568,10 @@
     correction_norm_valid = true;
 
     // Get scans
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ref (new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tgt (new pcl::PointCloud<pcl::PointXYZ>);
-    *cloud_ref = *ros_data->lidar_container[pose_scan_map.at(j)].value;
-    *cloud_tgt = *ros_data->lidar_container[pose_scan_map.at(i)].value;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ref2 (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tgt2 (new pcl::PointCloud<pcl::PointXYZ>);
+    *cloud_ref2 = *ros_data->lidar_container[pose_scan_map.at(j)].value;
+    *cloud_tgt2 = *ros_data->lidar_container[pose_scan_map.at(i)].value;
     TimePoint timepoint_j, timepoint_i;
 
     // Combine sacns if specified
@@ -595,31 +589,129 @@
         pcl::transformPointCloud(*(ros_data->lidar_container_map[map_index_i].value),
                                  *cloud_tgt_tmp,
                                  this->params.T_LMAP_LLOC.inverse());
-        *cloud_ref += *cloud_ref_tmp;
-        *cloud_tgt += *cloud_tgt_tmp;
+        *cloud_ref2 += *cloud_ref_tmp;
+        *cloud_tgt2 += *cloud_tgt_tmp;
     }
 
     // set current scan as reference scan
-    this->matcher.setRef(cloud_ref);
+    this->matcher.setRef(cloud_ref2);
 
     // display reference scan
-    this->displayPointCloud(cloud_ref, 0); // white
+    this->displayPointCloud(cloud_ref2, 0); // white
 
     // calculate init. T from adjacent to current
     auto T_estLj_Li = T_MAP_Lj.inverse() * T_MAP_Li;
 
     // transform adjacent scan (i) to estimated current scan frame using
     // initialized T, then assign to cloud_target
-    pcl::transformPointCloud( *cloud_tgt,
-                              *(this->cloud_target),
+    pcl::transformPointCloud( *cloud_tgt2,
+                              *(this->cloud_tgt),
                               T_estLj_Li );
 
-    this->matcher.setTarget(this->cloud_target);
-    this->displayPointCloud(this->cloud_target, 1); // red
+    this->matcher.setTarget(this->cloud_tgt);
+    this->displayPointCloud(this->cloud_tgt, 1); // red
     if (matcher.match())
     {
         auto T_estLj_Lj = this->matcher.getResult(); // assign estimated transform to new current position
-        this->displayPointCloud(cloud_target, 2, T_estLj_Lj.inverse()); // blue
+        this->displayPointCloud(cloud_tgt, 2, T_estLj_Lj.inverse()); // blue
+        if (this->params.visualize && this->params.step_matches)
+        {
+            std::cin.get(); // wait for user to hit next
+        }
+        double delta = T_estLj_Lj.matrix().block(0, 3, 3, 1).norm();
+        double total = T_estLj_Li.matrix().block(0, 3, 3, 1).norm();
+
+        if (this->params.use_gps & ((delta / total) > 0.4))
+        {
+            LOG_INFO("Correction norm %f %%", 100.0 * delta / total);
+            correction_norm_valid = false;
+            return false;
+        }
+
+        T_Li_Lj = T_estLj_Li.inverse() * T_estLj_Lj; // correct estimated T by match result
+
+        // try scaling info by how much correction was required
+        if (this->params.fixed_scan_transform_cov)
+        {
+            info = this->params.scan_transform_cov;
+        }
+        else
+        {
+            matcher.estimateInfo();
+            info = this->matcher.getInfo();  //(0.1 / (0.1 + delta)) *
+        }
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+  }
+
+// GICPScanMatcher (Child Class) Functions
+  GICPScanMatcher::GICPScanMatcher(Params &p_)
+      : ScanMatcher(p_),
+        matcher(wave::GICPMatcherParams(p_.matcher_config))
+  {
+      this->params = p_;
+      this->cloud_ref = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+      this->cloud_tgt = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  }
+
+  bool GICPScanMatcher::matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &T_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid, boost::shared_ptr<ROSBag> ros_data)
+  { // j: current, (reference scan)
+    // i: adjacent scan (target)
+    auto T_MAP_Lj = init_pose.poses[j]; // set initial guess of current scan
+    auto T_MAP_Li = init_pose.poses[i]; // set initial guess of adjacent scan
+    correction_norm_valid = true;
+
+    // Get scans
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ref2 (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tgt2 (new pcl::PointCloud<pcl::PointXYZ>);
+    *cloud_ref2 = *ros_data->lidar_container[pose_scan_map.at(j)].value;
+    *cloud_tgt2 = *ros_data->lidar_container[pose_scan_map.at(i)].value;
+    TimePoint timepoint_j, timepoint_i;
+
+    // Combine sacns if specified
+    if(this->params.combine_scans)
+    {
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ref_tmp (new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_tgt_tmp (new pcl::PointCloud<pcl::PointXYZ>);
+        timepoint_j = ros_data->lidar_container[pose_scan_map.at(j)].time_point;
+        timepoint_i = ros_data->lidar_container[pose_scan_map.at(i)].time_point;
+        int map_index_j = getLidarTimeWindow(ros_data->lidar_container_map, timepoint_j);
+        int map_index_i = getLidarTimeWindow(ros_data->lidar_container_map, timepoint_i);
+        pcl::transformPointCloud(*(ros_data->lidar_container_map[map_index_j].value),
+                                 *cloud_ref_tmp,
+                                 this->params.T_LMAP_LLOC.inverse());
+        pcl::transformPointCloud(*(ros_data->lidar_container_map[map_index_i].value),
+                                 *cloud_tgt_tmp,
+                                 this->params.T_LMAP_LLOC.inverse());
+        *cloud_ref2 += *cloud_ref_tmp;
+        *cloud_tgt2 += *cloud_tgt_tmp;
+    }
+
+    // set current scan as reference scan
+    this->matcher.setRef(cloud_ref2);
+
+    // display reference scan
+    this->displayPointCloud(cloud_ref2, 0); // white
+
+    // calculate init. T from adjacent to current
+    auto T_estLj_Li = T_MAP_Lj.inverse() * T_MAP_Li;
+
+    // transform adjacent scan (i) to estimated current scan frame using
+    // initialized T, then assign to cloud_target
+    pcl::transformPointCloud( *cloud_tgt2,
+                              *(this->cloud_tgt),
+                              T_estLj_Li );
+
+    this->matcher.setTarget(this->cloud_tgt);
+    this->displayPointCloud(this->cloud_tgt, 1); // red
+    if (matcher.match())
+    {
+        auto T_estLj_Lj = this->matcher.getResult(); // assign estimated transform to new current position
+        this->displayPointCloud(cloud_tgt, 2, T_estLj_Lj.inverse()); // blue
         if (this->params.visualize && this->params.step_matches)
         {
             std::cin.get(); // wait for user to hit next

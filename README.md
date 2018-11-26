@@ -63,4 +63,3 @@ GTSAM extra install instructions: https://bitbucket.org/gtborg/gtsam/src/90f688d
 - add point to plane ICP
 - add calibrations
 - add T_base_lidar for horizontal localization
-- add ability to localize off vertical scans or both

@@ -105,6 +105,10 @@ int main()
         //scan_matcher = boost::make_shared<ICP2ScanMatcher>(p_);
         return -1;
     }
+    else if (p_->matcher_type == "gicp")
+    {
+        scan_matcher = boost::make_shared<GICPScanMatcher>(*p_);
+    }
     else
     {
         LOG_ERROR("%s is not a valid matcher type. Change matcher type in ig_graph_slam_config.yaml", p_->matcher_type);
@@ -189,7 +193,7 @@ int main()
     // build graph
     for (int outer_loops = 0; outer_loops < p_->iterations; outer_loops++)
     { // Iterate to update initial estimates and redo matches
-      LOG_INFO("Iteration No. %d.", outer_loops);
+      LOG_INFO("Iteration No. %d of %d.", outer_loops+1, p_->iterations);
 
       cnt_match = 0;
 
@@ -219,6 +223,7 @@ int main()
                iter++)
           {
               //LOG_INFO("Matching scan %d of %d, against agjacency %d of %d..", j+1, scan_matcher->adjacency->size(), *iter, *scan_matcher->adjacency->at(j).end());
+              //outputPercentComplete(j+1, scan_matcher->adjacency->size(), "Matching scans...");
               Eigen::Affine3d T_Liter_Lj;
               wave::Mat6 info;
               bool match_success;

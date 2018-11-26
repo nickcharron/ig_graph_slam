@@ -8,6 +8,7 @@
 // WAVE headers
 #include <wave/utils/log.hpp>
 #include <wave/matching/icp.hpp>
+#include "wave/matching/gicp.hpp"
 #include <wave/matching/pointcloud_display.hpp>
 
 // IG Graph SLAM headers
@@ -71,6 +72,9 @@ struct ScanMatcher
              this->init_display.startSpin();
          }
          this->cloud_temp_display = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+         this->aggregate = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+         this->cloud_target = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+         this->pcl_pc2 = boost::make_shared<pcl::PCLPointCloud2>();
          //this->total_matches = 0;
      }
      ~ScanMatcher()
@@ -86,8 +90,7 @@ struct ScanMatcher
     * Creates pose scan map with GPS data
     * @param ros_data
     */
-   //virtual void createPoseScanMap() = 0;
-   virtual void createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) = 0;
+   void createPoseScanMap(boost::shared_ptr<ROSBag> ros_data);
 
    /***
     * Find Adjacent scans for all scans. Adjacent scans will only consist of
@@ -113,24 +116,26 @@ struct ScanMatcher
      * @param graph
      * @param ros_data
      */
-    virtual void createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method) = 0;
+    void createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method);
 
     /***
      * Outputs the aggregate pointcloud map as a pcd file
      * @param graph
      */
-    virtual void outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method) = 0;
+    void outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method);
+
+    void displayPointCloud(wave::PCLPointCloudPtr cloud_display, int color, const Eigen::Affine3d &transform = Eigen::Affine3d::Identity());
 
    int total_matches;
    //Eigen::Affine3d T_ECEF_MAP; // TODO: is this needed?
    Params params;
    wave::PointCloudDisplay init_display;
-   wave::PCLPointCloudPtr cloud_temp_display;
    InitPose<double> init_pose; // see kdtreetype.hpp
    std::vector<int> pose_scan_map;
    std::vector<wave::Measurement<Eigen::Affine3d, uint>> final_poses;
    boost::shared_ptr<std::vector<std::vector<uint64_t>>> adjacency;
-
+   pcl::PCLPointCloud2::Ptr pcl_pc2; // used an intermediate when converting from ROS messages
+   wave::PCLPointCloudPtr cloud_temp_display, aggregate, cloud_target;
 };
 
 class ICP1ScanMatcher : public ScanMatcher
@@ -139,18 +144,26 @@ class ICP1ScanMatcher : public ScanMatcher
     ICP1ScanMatcher(Params &p_);
     ~ICP1ScanMatcher() {}
 
-    void createPoseScanMap(boost::shared_ptr<ROSBag> ros_data);
     bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid,  boost::shared_ptr<ROSBag> ros_data);
-    void displayPointCloud(wave::PCLPointCloudPtr cloud_display, int color, const Eigen::Affine3d &transform = Eigen::Affine3d::Identity());
-    void createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method);
-    void outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method);
 
     wave::ICPMatcher matcher;
-    wave::PCLPointCloudPtr aggregate;
 
     // Declared here to avoid multiple allocation/deallocations
-    pcl::PCLPointCloud2::Ptr pcl_pc2; // used an intermediate when converting from ROS messages
-    wave::PCLPointCloudPtr cloud_ref, cloud_target; // used as intermediates to apply filters/matches
+    wave::PCLPointCloudPtr cloud_ref, cloud_tgt; // used as intermediates to apply filters/matches
+};
+
+class GICPScanMatcher : public ScanMatcher
+{
+  public:
+    GICPScanMatcher(Params &p_);
+    ~GICPScanMatcher() {}
+
+    bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid,  boost::shared_ptr<ROSBag> ros_data);
+
+    wave::GICPMatcher matcher;
+
+    // Declared here to avoid multiple allocation/deallocations
+    wave::PCLPointCloudPtr cloud_ref, cloud_tgt; // used as intermediates to apply filters/matches
 };
 
 #endif //IG_GRAPH_SLAM_SCAN_MATCHER_HPP
