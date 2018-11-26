@@ -13,8 +13,8 @@ init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odom
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
 #bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-07-06-09-15-39-short2-processed.bag"
-bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-06-28-15-54-27-Processed.bag"
-# bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-06-28-16-03-29-processed-odomonly.bag"
+# bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-06-28-15-54-27-Processed.bag"
+bag_file_path: "/home/nick/bag_files/ig_scans/ig_scan_2018-06-28-16-03-29-processed-odomonly.bag"
 
 T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization
   rows: 4
@@ -100,7 +100,7 @@ trajectory_sampling_distance: 0.3   # Minimum distance in m at which we should t
 map_sampling_distance: 0.1          # Minimum distance in m at which we should take new scans for mapping
 distance_match_min: 0               # specify minimum and maximum distance between scans to
 distance_match_limit: 20            # use for scan registration
-iterations: 1                       # How many times to update initial estimates and redo matches
+iterations: 2                       # How many times to update initial estimates and redo matches
 use_gps: false                      # Whether to use GPS priors in graph optimization. Even if set false, GPS will be
                                     # TODO: KEEP FALSE UNTIL WE HAVE RPY IN GPS MESSAGE
                                     # used to supply initial estimates for the matcher.

@@ -31,7 +31,10 @@ inline void outputPercentComplete(int current_, int total_, std::string message_
   out50 = round(0.5*total_);
   out75 = round(0.75*total_);
 
-    if(current_ == 1){LOG_INFO("%s", message_.c_str());}
+    if(current_ == 1){
+      LOG_INFO("%s", message_.c_str());
+      LOG_INFO("0 %% complete (1 of %d) ...", total_);
+      }
     else if (current_ == out25){LOG_INFO("25 %% complete (%d of %d) ...", current_, total_);}
     else if (current_ == out50){LOG_INFO("50 %% complete (%d of %d) ...", current_, total_);}
     else if (current_ == out75){LOG_INFO("75 %% complete (%d of %d) ...", current_, total_);}
