@@ -548,6 +548,7 @@
       LOG_INFO("Stored %d pose scans of %d available scans.", i, ros_data->lidar_container.size());
   }
 
+
 // ICP1ScanMatcher (Child Class) Functions
   ICP1ScanMatcher::ICP1ScanMatcher(Params &p_)
       : ScanMatcher(p_),
