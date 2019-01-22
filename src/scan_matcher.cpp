@@ -508,6 +508,7 @@
                   use_next_scan = true;
                   break;
               }
+              break;
             case 2 :
               try
               {
@@ -521,6 +522,7 @@
                   use_next_scan = true;
                   break;
               }
+              break;
           }
 
           // If i > 0 then check to see if the distance between current scan and
