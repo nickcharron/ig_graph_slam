@@ -26,7 +26,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: Map1
+    SyncSource: Map2
 Visualization Manager:
   Class: ""
   Displays:
@@ -81,8 +81,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 13.8494291
-        Min Value: -5.92771101
+        Max Value: 11.5247383
+        Min Value: -1.52636886
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -101,7 +101,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.0299999993
+      Size (m): 0.0500000007
       Style: Flat Squares
       Topic: /cloud_2/cloud_pcd
       Unreliable: false
@@ -140,25 +140,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 80.7331161
+      Distance: 22.9418755
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 17.7630177
-        Y: -8.33862782
-        Z: 0.991702378
+        X: 7.99792099
+        Y: -8.00765228
+        Z: 4.63539362
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.46979594
+      Pitch: 0.349796772
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.10355496
+      Yaw: 4.16354036
     Saved: ~
 Window Geometry:
   Displays:

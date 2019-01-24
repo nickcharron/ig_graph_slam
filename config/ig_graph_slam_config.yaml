@@ -12,7 +12,7 @@ odom_topic: "/ig/loam/lidar_odom"
 init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
-bag_file_path: "/home/nick/bag_files/OPG_DEMO_JAN2019/ig_scan_loam_OPG_JAN2019.bag"
+bag_file_path: "/home/nick/OPG_DEMO_JAN2019/bags/ig_scan_loam_OPG_JAN2019.bag"
 
 T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization
   rows: 4
