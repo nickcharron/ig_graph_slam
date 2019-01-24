@@ -4,9 +4,9 @@
   <arg name="frame_id" value="/map"/>
   <!-- IG Results: -->
     <arg name="pcd_file1"
-    value="/home/nick/results/moose_maps/Colby_Dr_Filtered_2019_1_22_13_26_35_loc_map.pcd"/>
+    value="/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2018_12_12_17_53/2019_1_23_10_43_7_map.pcd"/>
     <arg name="pcd_file2"
-    value="/home/nick/results/moose_maps/Colby_Dr_Snowy_2019_1_22_14_24_9_loc_map.pcd"/>
+    value="/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2018_12_12_17_53/2019_1_23_12_55_34_map.pcd"/>
 <!-- Start RVIZ -->
   <node name="rviz_mapping" pkg="rviz" type="rviz"
         args="-d $(find ig_graph_slam)/config/view_results_config.rviz" />
@@ -14,11 +14,11 @@
 <!-- Run pcl_ros with pcd -->
 
   <group ns="/cloud_1" >
-    <node name="gs_view_results1" pkg="pcl_ros" type="pcd_to_pointcloud"
+    <node name="gs_view_results1" pkg="pcl_ros" type="pcd_to_pointcloud" output="screen"
     args="$(arg pcd_file1) $(arg publish_rate) _frame_id:=$(arg frame_id)" />
   </group>
   <group ns="/cloud_2" >
-  <node name="gs_view_results2" pkg="pcl_ros" type="pcd_to_pointcloud"
+  <node name="gs_view_results2" pkg="pcl_ros" type="pcd_to_pointcloud" output="screen"
     args="$(arg pcd_file2) $(arg publish_rate) _frame_id:=$(arg frame_id)" />
   </group>
 

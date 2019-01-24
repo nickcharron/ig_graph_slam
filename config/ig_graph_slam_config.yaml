@@ -6,13 +6,13 @@ gps_type: "NavSatFix" # For IG use "NavSatFix", for Moose use "INSPVAX"
 gps_topic: "/piksi/navsatfix_best_fix"
 # gps_topic: "/gps/filtered"
 gps_imu_topic: "/imu/rpy/filtered" # imu topic used to fill gps_container rotation
-                                  NOTE: rpy depends on mounting position. Check in void ICP1ScanMatcher::loadIMUMessage()
-                                  For IG: +x = +pitch, +y = -roll, +z = -yaw
+                                   # NOTE: rpy depends on mounting position. Check in void ICP1ScanMatcher::loadIMUMessage()
+                                   # For IG: +x = +pitch, +y = -roll, +z = -yaw
 odom_topic: "/odometry/filtered_odom"
-init_method: 1                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
+init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
-bag_file_path: "/home/nick/bag_files/ig_scans/2018_12_ATS/processed_2019_01_18/2019-01-18-16-29-27-B-short2.bag"
+bag_file_path: "/home/nick/bag_files/ig_scans/2018_12_ATS/processed_2019_01_18/2019-01-18-16-29-27-B-short3.bag"
 
 T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization
   rows: 4
@@ -24,9 +24,9 @@ T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose ini
 T_LMAP_LLOC: # tranformation from localization lidar to map lidar
   rows: 4
   cols: 4
-  data: [  0.00000,   -0.01620,   0.99987,   -0.25240,
-           0.04099,    0.99903,   0.01619,    0.00000,
-          -0.99916,    0.04098,   0.00066,   -0.24560,
+  data: [  0.00000,    0.00000,   1.00000,   -0.12000,
+           0.00000,   -1.00000,   0.00000,    0.00000,
+           1.00000,    0.00000,   0.00000,    0.13500,
            0.00000,    0.00000,   0.00000,    1.00000 ]
 
   # For Moose:
@@ -100,12 +100,12 @@ z_lower_threshold_map: -5
 # ------------------------------------------------------------------------------
 
 # Graph Parameters:
-scanreg_init_icp_distance_max: 25   # distance limit between two initial scan locations to be considered for nearest neighbours
+scanreg_init_icp_distance_max: 10.0  # distance limit between two initial scan locations to be considered for nearest neighbours
 k_nearest_neighbours: 15            # maximum number of nearest neighbours for graph links
-trajectory_sampling_distance: 1.0   # Minimum distance in m at which we should take new scans for localization
-map_sampling_distance: 0.25          # Minimum distance in m at which we should take new scans for mapping
+trajectory_sampling_distance: 0.5   # Minimum distance in m at which we should take new scans for localization
+map_sampling_distance: 0.05         # Minimum distance in m at which we should take new scans for mapping
 distance_match_min: 0               # specify minimum and maximum distance between scans to
-distance_match_limit: 20            # use for scan registration
+distance_match_limit: 10.0           # use for scan registration
 iterations: 1                       # How many times to update initial estimates and redo matches
 use_gps: false                      # Whether to use GPS priors in graph optimization. Even if set false, GPS will be
                                     # TODO: KEEP FALSE UNTIL WE HAVE RPY IN GPS MESSAGE
@@ -129,6 +129,6 @@ visualize: false                     # Whether to visualize matches as they happ
                                     # Blue: scan i after registration against j (shoudl match white)
 step_matches: false
 combine_scans: false     # combine scans  from both lidar for scan registrations. Default false
-matcher_type: "icp1"    # icp1: point to plane icp in PCL, icp2: point to plane in PCL, gicp: wave::gicp
-matcher_config_path: "/home/nick/ig_catkin_ws/src/ig_graph_slam/config/icp1.yaml"
-#matcher_config_path: "/home/nick/ig_catkin_ws/src/ig_graph_slam/config/gicp.yaml"
+matcher_type: "gicp"    # icp1: point to plane icp in PCL, icp2: point to plane in PCL, gicp: wave::gicp
+# matcher_config_path: "/home/nick/ig_catkin_ws/src/ig_graph_slam/config/icp1.yaml"
+matcher_config_path: "/home/nick/ig_catkin_ws/src/ig_graph_slam/config/gicp.yaml"

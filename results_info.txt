@@ -160,3 +160,60 @@ graph slam parameters used.
     - map sampling 0.1
     - traj sampling 0.3
     - results look better, but piers look bad
+
+2019_1_22_19_6_15
+    - bag: 2018_12_ATS/processed_2019_01_18/2019-01-18-16-29-27-B-short3
+    - scanreg_init_icp_distance_max: 8
+    - k_nearest_neighbours: 10
+    - trajectory_sampling_distance: 0.5
+    - map_sampling_distance: 0.15
+    - distance_match_limit: 10.0
+    - iterations: 1
+    - matcher_type: "gicp"
+    - not much drift
+
+2019_1_23_0_40_42
+    - bag: 2018_12_ATS/processed_2019_01_18/2019-01-18-16-29-27-B-short3
+    - scanreg_init_icp_distance_max: 10
+    - k_nearest_neighbours: 15
+    - trajectory_sampling_distance: 0.25
+    - map_sampling_distance: 0.05
+    - distance_match_limit: 10.0
+    - iterations: 1
+    - matcher_type: "gicp"
+    - lots of drift
+
+2019_1_23_8_41_34
+    - bag: 2018_12_ATS/processed_2019_01_18/2019-01-18-16-29-27-B-short3
+    - scanreg_init_icp_distance_max: 10
+    - k_nearest_neighbours: 15
+    - trajectory_sampling_distance: 0.35
+    - map_sampling_distance: 0.05
+    - distance_match_limit: 10.0
+    - iterations: 2
+    - matcher_type: "gicp"
+    - still quite a bit of drift
+
+2019_1_23_10_43_7
+  - bag: 2018_12_ATS/processed_2019_01_18/2019-01-18-16-29-27-B-short3
+  - scanreg_init_icp_distance_max: 10
+  - k_nearest_neighbours: 15
+  - trajectory_sampling_distance: 0.5
+  - map_sampling_distance: 0.05
+  - distance_match_limit: 10.0
+  - iterations: 2
+  - matcher_type: "gicp"
+  - still quite a bit of drift
+
+2019_1_23_12_55_34_map
+  - bag: 2018_12_ATS/processed_2019_01_18/2019-01-18-16-29-27-B-short3
+  - scanreg_init_icp_distance_max: 10
+  - k_nearest_neighbours: 20
+  - trajectory_sampling_distance: 0.5
+  - map_sampling_distance: 0.05
+  - distance_match_limit: 10.0
+  - iterations: 2
+  - matcher_type: "gicp"
+  - lots of drift
+  - compared to the last one, this helped fix the skew error of the map
+  (it's more rectangular now) but caused more drift in the x direction
