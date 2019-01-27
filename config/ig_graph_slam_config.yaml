@@ -8,6 +8,7 @@ gps_topic: "/piksi/navsatfix_best_fix"
 gps_imu_topic: "/imu/rpy/filtered" # imu topic used to fill gps_container rotation
                                    # NOTE: rpy depends on mounting position. Check in void ICP1ScanMatcher::loadIMUMessage()
                                    # For IG: +x = +pitch, +y = -roll, +z = -yaw
+# odom_topic: "/odometry/filtered_odom"
 odom_topic: "/ig/loam/lidar_odom"
 init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
 lidar_topic_loc: "/hvlp/velodyne_points"
