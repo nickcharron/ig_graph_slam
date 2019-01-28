@@ -35,51 +35,57 @@ using TimePoint = std::chrono::time_point<Clock>;
 
 void outputParams(boost::shared_ptr<Params> p_)
 {
-  LOG_INFO("Outputting all parameters:");
-  std::cout << "lidar_topic_map: " << p_->lidar_topic_map << std::endl;
-  std::cout << "lidar_topic_loc: " << p_->lidar_topic_loc << std::endl;
-  std::cout << "gps_topic: " << p_->gps_topic << std::endl;
-  std::cout << "gps_imu_topic: " << p_->gps_imu_topic << std::endl;
-  std::cout << "odom_topic: " << p_->odom_topic << std::endl;
-  std::cout << "init_method: " << p_->init_method << std::endl;
-  std::cout << "int_map_size: " << p_->int_map_size << std::endl;
-  std::cout << "gps_type: " << p_->gps_type << std::endl;
-  std::cout << "k_nearest_neighbours: " << p_->knn << std::endl;
-  std::cout << "trajectory_sampling_distance: " << p_->trajectory_sampling_dist << std::endl;
-  std::cout << "map_sampling_distance: " << p_->map_sampling_dist << std::endl;
-  std::cout << "distance_match_min: " << p_->distance_match_min << std::endl;
-  std::cout << "distance_match_limit: " << p_->distance_match_limit << std::endl;
-  std::cout << "x_lower_threshold: " << p_->x_lower_threshold << std::endl;
-  std::cout << "x_upper_threshold: " << p_->x_upper_threshold << std::endl;
-  std::cout << "y_lower_threshold: " << p_->y_lower_threshold << std::endl;
-  std::cout << "y_upper_threshold: " << p_->y_upper_threshold << std::endl;
-  std::cout << "z_lower_threshold: " << p_->z_lower_threshold << std::endl;
-  std::cout << "z_upper_threshold: " << p_->z_upper_threshold << std::endl;
-  std::cout << "use_pass_through_filter: " << p_->use_pass_through_filter << std::endl;
-  std::cout << "x_lower_threshold_map: " << p_->x_lower_threshold_map << std::endl;
-  std::cout << "x_upper_threshold_map: " << p_->x_upper_threshold_map << std::endl;
-  std::cout << "y_lower_threshold_map: " << p_->y_lower_threshold_map << std::endl;
-  std::cout << "y_upper_threshold_map: " << p_->y_upper_threshold_map << std::endl;
-  std::cout << "z_lower_threshold_map: " << p_->z_lower_threshold_map << std::endl;
-  std::cout << "z_upper_threshold_map: " << p_->z_upper_threshold_map << std::endl;
-  std::cout << "use_pass_through_filter_map: " << p_->use_pass_through_filter_map << std::endl;
-  std::cout << "downsample_input: " << p_->downsample_input << std::endl;
-  std::cout << "input_downsample_size: " << p_->input_downsample_size << std::endl;
-  std::cout << "use_rad_filter: " << p_->use_rad_filter << std::endl;
-  std::cout << "set_min_neighbours: " << p_->set_min_neighbours << std::endl;
-  std::cout << "set_search_radius: " << p_->set_search_radius << std::endl;
-  std::cout << "matcher_config_path: " << p_->matcher_config << std::endl;
-  std::cout << "ground_segment: " << p_->ground_segment << std::endl;
-  std::cout << "use_gps: " << p_->use_gps << std::endl;
-  std::cout << "downsample_cell_size: " << p_->downsample_cell_size << std::endl;
-  std::cout << "downsample_output_method: " << p_->downsample_output_method << std::endl;
-  std::cout << "iterations: " << p_->iterations << std::endl;
-  std::cout << "visualize: " << p_->visualize << std::endl;
-  std::cout << "step_matches: " << p_->step_matches << std::endl;
-  std::cout << "combine_scans: " << p_->combine_scans << std::endl;
-  std::cout << "optimize_gps_lidar: " << p_->optimize_gps_lidar << std::endl;
-  std::cout << "fixed_scan_transform_cov: " << p_->fixed_scan_transform_cov << std::endl;
-  std::cout << "scan_transform_cov: " << p_->scan_transform_cov << std::endl;
+  std::cout
+  << "----------------------------"<< std::endl
+  << "Outputting all parameters:"<< std::endl
+  << "----------------------------"<< std::endl
+  << "gps_type: " << p_->gps_type << std::endl
+  << "gps_topic: " << p_->gps_topic << std::endl
+  << "gps_imu_topic: " << p_->gps_imu_topic << std::endl
+  << "odom_topic: " << p_->odom_topic << std::endl
+  << "init_method: " << p_->init_method << std::endl
+  << "lidar_topic_loc: " << p_->lidar_topic_loc << std::endl
+  << "lidar_topic_map: " << p_->lidar_topic_map << std::endl
+  << "use_pass_through_filter: " << p_->use_pass_through_filter << std::endl
+  << "x_upper_threshold: " << p_->x_upper_threshold << std::endl
+  << "x_lower_threshold: " << p_->x_lower_threshold << std::endl
+  << "y_upper_threshold: " << p_->y_upper_threshold << std::endl
+  << "y_lower_threshold: " << p_->y_lower_threshold << std::endl
+  << "z_upper_threshold: " << p_->z_upper_threshold << std::endl
+  << "z_lower_threshold: " << p_->z_lower_threshold << std::endl
+  << "downsample_input: " << p_->downsample_input << std::endl
+  << "input_downsample_size: " << p_->input_downsample_size << std::endl
+  << "use_rad_filter: " << p_->use_rad_filter << std::endl
+  << "set_min_neighbours: " << p_->set_min_neighbours << std::endl
+  << "set_search_radius: " << p_->set_search_radius << std::endl
+  << "ground_segment: " << p_->ground_segment << std::endl
+  << "downsample_output_method: " << p_->downsample_output_method << std::endl
+  << "downsample_cell_size: " << p_->downsample_cell_size << std::endl
+  << "int_map_size: " << p_->int_map_size << std::endl
+  << "use_pass_through_filter_map: " << p_->use_pass_through_filter_map << std::endl
+  << "x_upper_threshold_map: " << p_->x_upper_threshold_map << std::endl
+  << "x_lower_threshold_map: " << p_->x_lower_threshold_map << std::endl
+  << "y_upper_threshold_map: " << p_->y_upper_threshold_map << std::endl
+  << "y_lower_threshold_map: " << p_->y_lower_threshold_map << std::endl
+  << "z_upper_threshold_map: " << p_->z_upper_threshold_map << std::endl
+  << "z_lower_threshold_map: " << p_->z_lower_threshold_map << std::endl
+  << "k_nearest_neighbours: " << p_->knn << std::endl
+  << "trajectory_sampling_distance: " << p_->trajectory_sampling_dist << std::endl
+  << "map_sampling_distance: " << p_->map_sampling_dist << std::endl
+  << "distance_match_min: " << p_->distance_match_min << std::endl
+  << "distance_match_limit: " << p_->distance_match_limit << std::endl
+  << "loop_max_distance: " << p_->loop_max_distance << std::endl
+  << "loop_min_travel_distance: " << p_->loop_min_travel_distance << std::endl
+  << "iterations: " << p_->iterations << std::endl
+  << "use_gps: " << p_->use_gps << std::endl
+  << "optimize_gps_lidar: " << p_->optimize_gps_lidar << std::endl
+  << "fixed_scan_transform_cov: " << p_->fixed_scan_transform_cov << std::endl
+  << "visualize: " << p_->visualize << std::endl
+  << "step_matches: " << p_->step_matches << std::endl
+  << "combine_scans: " << p_->combine_scans << std::endl
+  << "matcher_type: " << p_->matcher_type << std::endl
+  << "matcher_config_path: " << p_->matcher_config << std::endl
+  << "----------------------------"<< std::endl;
 }
 
 int main()
@@ -175,11 +181,9 @@ int main()
     }
     bag.close();
 
-  // Select scans to store and savae their respective poses based on gps measurements
-    scan_matcher->createPoseScanMap(load_ros_data);
 
-  // Determine how many scans to register against for each pose and save
-    scan_matcher->findAdjacentScans();
+  // Select scans to store and save their respective poses based on initialization measurements
+    scan_matcher->createPoseScanMap(load_ros_data);
 
   // perform graph optimization:
 
@@ -194,12 +198,15 @@ int main()
     for (int outer_loops = 0; outer_loops < p_->iterations; outer_loops++)
     { // Iterate to update initial estimates and redo matches
       LOG_INFO("Iteration No. %d of %d.", outer_loops+1, p_->iterations);
-
       cnt_match = 0;
-
-      // clear graph and results between each iteration
       graph.clear();
       graph.result.clear();
+
+      // Determine how many scans to register against for each pose and save
+        scan_matcher->findAdjacentScans();
+
+      // Determine how many scans to register against for each pose and save
+        scan_matcher->findLoops();
 
       if (p_->optimize_gps_lidar)
       { // optimize transform from lidar to gps
@@ -235,7 +242,7 @@ int main()
               {
                   continue;
               }
-              if (match_success) // create factor in graph is scan successful
+              if (match_success) // create factor in graph if scan successful
               {
                   wave::Mat6 mgtsam; // Eigen::Matrix<double, 6, 6>
                   // this next bit is a major gotcha, whole thing blows up
@@ -265,6 +272,43 @@ int main()
           }
           graph.addInitialPose(scan_matcher->init_pose.poses.at(j), j);
       }
+
+      for (uint64_t j = 0; j < scan_matcher->loops->size(); j++)
+      { // iterate over all j loop closures
+
+          Eigen::Affine3d T_L1_L2;
+          wave::Mat6 info;
+          bool match_success;
+
+          uint64_t L1 = scan_matcher->loops->at(j)[0];
+          uint64_t L2 = scan_matcher->loops->at(j)[1];
+
+          match_success = scan_matcher->matchScans(L1, L2, T_L1_L2, info, correction_norm_valid, load_ros_data);
+
+          if (!correction_norm_valid) // WHAT IS THIS??
+          {continue;}
+
+          if (match_success) // create factor in graph if scan successful
+          {
+              wave::Mat6 mgtsam; // Eigen::Matrix<double, 6, 6>
+              // this next bit is a major gotcha, whole thing blows up
+              // without it. This just rearranges the info matrix to the correct form
+                // block starting at 0,0 of size 3x3
+              mgtsam.block(0, 0, 3, 3) = info.block(3, 3, 3, 3);  // rotation
+              mgtsam.block(3, 3, 3, 3) = info.block(0, 0, 3, 3);  // translation
+              mgtsam.block(0, 3, 3, 3) = info.block(0, 3, 3, 3);  // off diagonal
+              mgtsam.block(3, 0, 3, 3) = info.block(3, 0, 3, 3);  // off diagonal
+              graph.addFactor(L1, L2, T_L1_L2, mgtsam);
+              outputPercentComplete(cnt_match, scan_matcher->total_matches, "Matching scans between nearest neighbours...");
+              cnt_match++;
+          }
+          else
+          {
+              LOG_ERROR("Scan match failed");
+          }
+
+      }
+
       if (no_GPS)
       {
           LOG_INFO("Fixing first pose.");
@@ -272,8 +316,6 @@ int main()
       }
       LOG_INFO("Done building graph.");
       //graph.print();
-      //std::cout << "Hit 'Enter' to continue" << std::endl;
-      //std::cin.get(); // wait for user to hit next
       graph.optimize();
 
       // Loop through and get final alignment

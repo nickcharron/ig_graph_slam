@@ -26,6 +26,9 @@
 #include "measurementtypes.hpp"
 #include "kdtreetype.hpp"
 
+using Clock = std::chrono::steady_clock;
+using TimePoint = std::chrono::time_point<Clock>;
+
 // General Functions
   //void fillparams(boost::shared_ptr<Params> params)
   void fillparams(Params &params)
@@ -48,6 +51,8 @@
       parser.addParam("map_sampling_distance", &(params.map_sampling_dist));
       parser.addParam("distance_match_limit", &(params.distance_match_limit));
       parser.addParam("distance_match_min", &(params.distance_match_min));
+      parser.addParam("loop_max_distance", &(params.loop_max_distance));
+      parser.addParam("loop_min_travel_distance", &(params.loop_min_travel_distance));
       parser.addParam("x_lower_threshold", &(params.x_lower_threshold));
       parser.addParam("x_upper_threshold", &(params.x_upper_threshold));
       parser.addParam("y_lower_threshold", &(params.y_lower_threshold));
@@ -97,10 +102,83 @@
       params.distance_match_min *= params.distance_match_min;
   }
 
-  using Clock = std::chrono::steady_clock;
-  using TimePoint = std::chrono::time_point<Clock>;
+  double calculateLength(const Eigen::Vector3d &p1, const Eigen::Vector3d &p2)
+  {
+      return sqrt( (p1(0, 0) - p2(0, 0)) * (p1(0, 0) - p2(0, 0)) +
+                   (p1(1, 0) - p2(1, 0)) * (p1(1, 0) - p2(1, 0)) +
+                   (p1(2, 0) - p2(2, 0)) * (p1(2, 0) - p2(2, 0))  );
+  }
 
-// Scan Matcher (parent Class) Functions
+// Scan Matcher (parent Class) Functions:
+
+  void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data)
+  {
+      LOG_INFO("Storing pose scans...");
+      // save initial poses of the lidar scans based on GPS data and save iterators
+      // corresponding to these scans
+      int i = 0;
+      Eigen::Affine3d T_ECEF_GPS, T_MAP_LIDAR;
+      for (uint64_t iter = 0; iter < ros_data->lidar_container.size(); iter++)
+      {  // this ierates through the lidar measurements
+          bool use_next_scan = false;
+          switch(this->params.init_method)
+          {
+            case 1 :
+              try
+              {
+                  // extract gps measurement at the same timepoint as the current lidar message
+                  auto gps_pose = ros_data->gps_container.get(ros_data->lidar_container[iter].time_point, 0);
+                  T_ECEF_GPS = gpsToEigen(gps_pose.first, true); // true: apply T_ENU_GPS
+                  T_MAP_LIDAR =  ros_data->T_ECEF_MAP.inverse() * T_ECEF_GPS * this->params.T_LIDAR_GPS.inverse();
+              }
+              catch (const std::out_of_range &e)
+              {
+                  LOG_INFO("No gps pose for time of scan, may happen at edges of recorded data");
+                  use_next_scan = true;
+                  break;
+              }
+              break;
+            case 2 :
+              try
+              {
+                  // extract odometry pose at the same timepoint as current lidar message
+                  auto odom_pose = ros_data->odom_container.get(ros_data->lidar_container[iter].time_point, 2);
+                  T_MAP_LIDAR = odom_pose.first;
+              }
+              catch (const std::out_of_range &e)
+              {
+                  LOG_INFO("No odometry message for time of scan, may happen at edges of recorded data");
+                  use_next_scan = true;
+                  break;
+              }
+              break;
+          }
+
+          // If i > 0 then check to see if the distance between current scan and
+          // last scan is greater than the minimum, if so then save this pose
+          // If i = 0, then save the scan - first scan
+          if ( i > 0 )
+          {
+            bool take_new_scan;
+            take_new_scan = takeNewScan(T_MAP_LIDAR, init_pose.poses[i - 1],
+                                    this->params.trajectory_sampling_dist);
+            if (take_new_scan && !use_next_scan)
+            {
+              this->init_pose.poses.push_back(T_MAP_LIDAR);
+              this->pose_scan_map.push_back(iter);
+              ++i;
+            }
+          }
+          else if (!use_next_scan)
+          {
+            this->init_pose.poses.push_back(T_MAP_LIDAR);
+            this->pose_scan_map.push_back(iter);
+            ++i;
+          }
+      }
+      LOG_INFO("Stored %d pose scans of %d available scans.", i, ros_data->lidar_container.size());
+  }
+
   void ScanMatcher::findAdjacentScans()
   {
      kd_tree_t index(3, this->init_pose, nanoflann::KDTreeSingleIndexAdaptorParams(10));
@@ -129,6 +207,7 @@
        // Do this for all poses except the last one
         if (j + 1 < this->init_pose.poses.size())
         {  // ensures that trajectory is connected
+           //  this is also accounted for in nn search (see if j < ret_indices[k]-1)
           this->adjacency->at(j).emplace_back(j + 1);
           this->total_matches++;
         }
@@ -147,15 +226,60 @@
            if ((out_dist_sqr[ret_indices[k]] > this->params.distance_match_min) &&
                (out_dist_sqr[ret_indices[k]] < this->params.distance_match_limit))
            {
-             if (j < ret_indices[k])
-             {
-               // add indices of K nearest neighbours to back of vector for scan j
+             if (j < ret_indices[k]-1)
+             { // add indices of K nearest neighbours to back of vector for scan j
                this->adjacency->at(j).emplace_back(ret_indices[k]);
                this->total_matches++;
              }
            }
          }
      }
+  }
+
+  void ScanMatcher::findLoops()
+  {
+     int knn_ = this->params.knn;
+     double pathLength, distanceP1P2;
+     Eigen::Vector3d pose1, pose2, poseLast;
+     std::vector<uint64_t> loopIndices = {0,0};
+
+     // creating a vector (size nx1) of vectors (will be size 2x1)
+     this->loops = boost::make_shared<std::vector<std::vector<uint64_t>>>();
+
+     for (uint64_t j = 0; j < this->init_pose.poses.size()-knn_; j++)
+     {
+       pathLength = 0;
+       distanceP1P2 = 0;
+       pose1(0,0) = this->init_pose.poses[j](0, 3);
+       pose1(1,0) = this->init_pose.poses[j](1, 3);
+       pose1(2,0) = this->init_pose.poses[j](2, 3);
+       poseLast = pose1;
+
+       // For each pose (pose1) position, check all the poses j + 1 and up
+       // if within loop_max_distance and outside of loop_min_travel_distance,
+       // then add the constraint (or add to loops object)
+         for (uint16_t k = j+1; k < init_pose.poses.size(); k++)
+         {
+           pose2(0,0) = this->init_pose.poses[k](0, 3);
+           pose2(1,0) = this->init_pose.poses[k](1, 3);
+           pose2(2,0) = this->init_pose.poses[k](2, 3);
+
+           distanceP1P2 = calculateLength(pose1, pose2);
+           pathLength += calculateLength(poseLast, pose2);
+           poseLast = pose2;
+           // std::cout << "Distance between pose " << j
+           //           << " and " << k << " is: " << distanceP1P2 <<  std::endl;
+           // std::cout << "Trajectory distance is: " << pathLength <<  std::endl;
+           if (distanceP1P2 < this->params.loop_max_distance &&
+               pathLength > this->params.loop_min_travel_distance)
+           {
+             loopIndices = {j,k};
+             this->loops->emplace_back(loopIndices);
+             this->total_matches++;
+           }
+         }
+     }
+     ROS_INFO("Found a total of %d loop closure scans.", this->loops->size());
   }
 
   void ScanMatcher::displayPointCloud(wave::PCLPointCloudPtr cloud_display,
@@ -481,75 +605,6 @@
       }
 
   }
-
-  void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data)
-  {
-      LOG_INFO("Storing pose scans...");
-      // save initial poses of the lidar scans based on GPS data and save iterators
-      // corresponding to these scans
-      int i = 0;
-      Eigen::Affine3d T_ECEF_GPS, T_MAP_LIDAR;
-      for (uint64_t iter = 0; iter < ros_data->lidar_container.size(); iter++)
-      {  // this ierates through the lidar measurements
-          bool use_next_scan = false;
-          switch(this->params.init_method)
-          {
-            case 1 :
-              try
-              {
-                  // extract gps measurement at the same timepoint as the current lidar message
-                  auto gps_pose = ros_data->gps_container.get(ros_data->lidar_container[iter].time_point, 0);
-                  T_ECEF_GPS = gpsToEigen(gps_pose.first, true); // true: apply T_ENU_GPS
-                  T_MAP_LIDAR =  ros_data->T_ECEF_MAP.inverse() * T_ECEF_GPS * this->params.T_LIDAR_GPS.inverse();
-              }
-              catch (const std::out_of_range &e)
-              {
-                  LOG_INFO("No gps pose for time of scan, may happen at edges of recorded data");
-                  use_next_scan = true;
-                  break;
-              }
-              break;
-            case 2 :
-              try
-              {
-                  // extract odometry pose at the same timepoint as current lidar message
-                  auto odom_pose = ros_data->odom_container.get(ros_data->lidar_container[iter].time_point, 2);
-                  T_MAP_LIDAR = odom_pose.first;
-              }
-              catch (const std::out_of_range &e)
-              {
-                  LOG_INFO("No odometry message for time of scan, may happen at edges of recorded data");
-                  use_next_scan = true;
-                  break;
-              }
-              break;
-          }
-
-          // If i > 0 then check to see if the distance between current scan and
-          // last scan is greater than the minimum, if so then save this pose
-          // If i = 0, then save the scan - first scan
-          if ( i > 0 )
-          {
-            bool take_new_scan;
-            take_new_scan = takeNewScan(T_MAP_LIDAR, init_pose.poses[i - 1],
-                                    this->params.trajectory_sampling_dist);
-            if (take_new_scan && !use_next_scan)
-            {
-              this->init_pose.poses.push_back(T_MAP_LIDAR);
-              this->pose_scan_map.push_back(iter);
-              ++i;
-            }
-          }
-          else if (!use_next_scan)
-          {
-            this->init_pose.poses.push_back(T_MAP_LIDAR);
-            this->pose_scan_map.push_back(iter);
-            ++i;
-          }
-      }
-      LOG_INFO("Stored %d pose scans of %d available scans.", i, ros_data->lidar_container.size());
-  }
-
 
 // ICP1ScanMatcher (Child Class) Functions
   ICP1ScanMatcher::ICP1ScanMatcher(Params &p_)

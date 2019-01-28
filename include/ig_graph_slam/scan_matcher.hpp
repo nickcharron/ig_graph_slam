@@ -38,7 +38,8 @@ struct Params
           z_lower_threshold, z_upper_threshold,
           x_lower_threshold_map, x_upper_threshold_map,
           y_lower_threshold_map, y_upper_threshold_map,
-          z_lower_threshold_map, z_upper_threshold_map;
+          z_lower_threshold_map, z_upper_threshold_map,
+          loop_max_distance, loop_min_travel_distance;
 
     bool ground_segment, combine_scans, use_gps, visualize, downsample_input,
          step_matches, optimize_gps_lidar, fixed_scan_transform_cov,
@@ -99,6 +100,11 @@ struct ScanMatcher
    void findAdjacentScans();
 
    /***
+    * Find loop closure opportunities for all pose scans.
+    */
+   void findLoops();
+
+   /***
      * Matches the scan
      * @param [in] i first scan index in initial poses
      * @param [in] j second scan index in initial poses
@@ -134,6 +140,7 @@ struct ScanMatcher
    std::vector<int> pose_scan_map;
    std::vector<wave::Measurement<Eigen::Affine3d, uint>> final_poses;
    boost::shared_ptr<std::vector<std::vector<uint64_t>>> adjacency;
+   boost::shared_ptr<std::vector<std::vector<uint64_t>>> loops;
    pcl::PCLPointCloud2::Ptr pcl_pc2; // used an intermediate when converting from ROS messages
    wave::PCLPointCloudPtr cloud_temp_display, aggregate, cloud_target;
 };
