@@ -217,3 +217,36 @@ graph slam parameters used.
   - lots of drift
   - compared to the last one, this helped fix the skew error of the map
   (it's more rectangular now) but caused more drift in the x direction
+
+2019_1_27_19_38_31
+  - bag: 2018_12_ATS/processed_2019_01_18/2019-01-18-16-29-27-B-short5
+  - k_nearest_neighbours: 2
+  - trajectory_sampling_distance: 4
+  - map_sampling_distance: 0.5
+  - distance_match_limit: 10.0
+  - iterations: 2
+  - matcher_type: "icp"
+  - no loop closure
+
+2019_1_27_20_9_26
+  - bag: 2018_12_ATS/processed_2019_01_18/2019-01-18-16-29-27-B-short5
+  - k_nearest_neighbours: 2
+  - trajectory_sampling_distance: 4
+  - map_sampling_distance: 0.5
+  - distance_match_limit: 10.0
+  - iterations: 2
+  - matcher_type: "icp"
+  - WITH LOOP CLOSURE
+  - loop_max_distance: 4
+  - loop_min_travel_distance: 10
+
+2019_1_28_8_46_14
+  - bag: 2018_12_ATS/processed_2019_01_18/2019-01-18-16-29-27-B
+  - k_nearest_neighbours: 15
+  - trajectory_sampling_distance: 0.4
+  - map_sampling_distance: 0.05
+  - distance_match_limit: 10.0
+  - iterations: 5
+  - matcher_type: "gicp"
+  - loop_max_distance: 4
+  - loop_min_travel_distance: 10

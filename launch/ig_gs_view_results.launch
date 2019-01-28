@@ -8,9 +8,9 @@
     <arg name="pcd_file2"
     value="/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2018_12_12_17_53/2019_1_23_12_55_34_map.pcd"/> -->
     <arg name="pcd_file1"
-    value="/home/nick/ig_catkin_ws/build/ig_graph_slam/2019_1_27_21_33_51_map.pcd"/>
+    value="/home/nick/ig_catkin_ws/build/ig_graph_slam/2019_1_27_20_9_27_map_AFTER_LC.pcd"/>
     <arg name="pcd_file2"
-    value="/home/nick/ig_catkin_ws/build/ig_graph_slam/2019_1_27_20_23_34_map.pcd"/>
+    value="/home/nick/ig_catkin_ws/build/ig_graph_slam/2019_1_28_17_35_10_map.pcd"/>
 
 <!-- Start RVIZ -->
   <node name="rviz_mapping" pkg="rviz" type="rviz"

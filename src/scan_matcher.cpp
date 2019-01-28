@@ -95,11 +95,6 @@ using TimePoint = std::chrono::time_point<Clock>;
         parser.load(cwd_s);
       */
       parser.load("/home/nick/ig_catkin_ws/src/ig_graph_slam/config/ig_graph_slam_config.yaml");
-      ++params.knn;  // Nearest neighbour search returns same point, so increment
-      // might as well square these now
-      // Why are these squared? Changed to x and y threshold
-      params.distance_match_limit *= params.distance_match_limit;
-      params.distance_match_min *= params.distance_match_min;
   }
 
   double calculateLength(const Eigen::Vector3d &p1, const Eigen::Vector3d &p2)
@@ -181,11 +176,8 @@ using TimePoint = std::chrono::time_point<Clock>;
 
   void ScanMatcher::findAdjacentScans()
   {
-     kd_tree_t index(3, this->init_pose, nanoflann::KDTreeSingleIndexAdaptorParams(10));
-
-     index.buildIndex();
-     std::vector<size_t> ret_indices(this->params.knn);
-     std::vector<double> out_dist_sqr(this->params.knn);
+     double distancejk;
+     Eigen::Vector3d posej, posek;
 
      // Scan registration class
      // As factors are added, factor id will just be counter value
@@ -200,9 +192,9 @@ using TimePoint = std::chrono::time_point<Clock>;
      for (uint64_t j = 0; j < this->init_pose.poses.size(); j++)
      {
        // query is the position of the current pose
-        double query[3] = {this->init_pose.poses[j](0, 3),
-                           this->init_pose.poses[j](1, 3),
-                           this->init_pose.poses[j](2, 3)};
+         posej(0,0) = this->init_pose.poses[j](0, 3);
+         posej(1,0) = this->init_pose.poses[j](1, 3);
+         posej(2,0) = this->init_pose.poses[j](2, 3);
 
        // Do this for all poses except the last one
         if (j + 1 < this->init_pose.poses.size())
@@ -212,25 +204,26 @@ using TimePoint = std::chrono::time_point<Clock>;
           this->total_matches++;
         }
 
-       // Search for the specified amount of nearest neighbours to the position
-       // within the original init_pose poses
-         index.knnSearch(query, this->params.knn, &ret_indices[0], &out_dist_sqr[0]);
-
-       // For each pose position, check the nearest neighbours if they are
-       // within the boundaries specified
-       // If they are and they are after j, add them to the adjacency
-       // If the points were discovered before j, they won't be added to
-       // the adjacency
-         for (uint16_t k = 0; k < this->params.knn; k++)
+       /*
+        * For each pose position, check the next scans to see if they are
+        * within the boundaries specified
+        * If they are and they are after j, add them to the adjacency
+        * If the points were discovered before j, they won't be added
+        *
+        */
+         for (uint16_t k = j + 1; k < j + 2 + this->params.knn; k++)
          {
-           if ((out_dist_sqr[ret_indices[k]] > this->params.distance_match_min) &&
-               (out_dist_sqr[ret_indices[k]] < this->params.distance_match_limit))
-           {
-             if (j < ret_indices[k]-1)
-             { // add indices of K nearest neighbours to back of vector for scan j
-               this->adjacency->at(j).emplace_back(ret_indices[k]);
-               this->total_matches++;
-             }
+           posek(0,0) = this->init_pose.poses[k](0, 3);
+           posek(1,0) = this->init_pose.poses[k](1, 3);
+           posek(2,0) = this->init_pose.poses[k](2, 3);
+           distancejk = calculateLength(posej, posek);
+
+           if ((distancejk > this->params.distance_match_min) &&
+               (distancejk < this->params.distance_match_limit) &&
+                j < k-1 )
+           { // add index to back of vector for scan j
+              this->adjacency->at(j).emplace_back(k);
+              this->total_matches++;
            }
          }
      }
@@ -267,9 +260,7 @@ using TimePoint = std::chrono::time_point<Clock>;
            distanceP1P2 = calculateLength(pose1, pose2);
            pathLength += calculateLength(poseLast, pose2);
            poseLast = pose2;
-           // std::cout << "Distance between pose " << j
-           //           << " and " << k << " is: " << distanceP1P2 <<  std::endl;
-           // std::cout << "Trajectory distance is: " << pathLength <<  std::endl;
+
            if (distanceP1P2 < this->params.loop_max_distance &&
                pathLength > this->params.loop_min_travel_distance)
            {

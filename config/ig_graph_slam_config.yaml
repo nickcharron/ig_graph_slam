@@ -102,9 +102,9 @@ z_lower_threshold_map: -5
 # ------------------------------------------------------------------------------
 
 # Graph Parameters:
-k_nearest_neighbours: 10            # maximum number of nearest neighbours for graph links
-trajectory_sampling_distance: 0.5   # Minimum distance in m at which we should take new scans for localization
-map_sampling_distance: 0.05         # Minimum distance in m at which we should take new scans for mapping
+k_nearest_neighbours: 2            # maximum number of nearest neighbours for graph links
+trajectory_sampling_distance: 4   # Minimum distance in m at which we should take new scans for localization
+map_sampling_distance: 1         # Minimum distance in m at which we should take new scans for mapping
 distance_match_min: 0               # specify minimum and maximum distance between scans to
 distance_match_limit: 10.0          # use for scan registration
 loop_max_distance: 4                # how close do two poses need to be to apply a loop closure constraint
