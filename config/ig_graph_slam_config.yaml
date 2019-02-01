@@ -8,7 +8,7 @@ gps_topic: ""
 # gps_topic: "/gps/filtered"
 gps_imu_topic: ""
 #gps_imu_topic: "/imu/rpy/filtered" # imu topic used to fill gps_container rotation
-                                   # NOTE: rpy depends on mounting position. Check in void ICP1ScanMatcher::loadIMUMessage()
+                                   # NOTE: rpy depends on mounting position. Check in void ICPScanMatcher::loadIMUMessage()
                                    # For IG: +x = +pitch, +y = -roll, +z = -yaw
 odom_topic: "/odometry/filtered_odom"
 init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
@@ -136,7 +136,5 @@ visualize: false                     # Whether to visualize matches as they happ
                                     # Blue: scan i after registration against j (shoudl match white)
 step_matches: false
 combine_scans: false     # combine scans  from both lidar for scan registrations. Default false
-matcher_type: "icp"    # icp: point to point icp in PCL, loam: loam registration, gicp: wave::gicp
-matcher_config_path: "/home/nick/ig_catkin_ws/src/ig_graph_slam/config/icp.yaml"
-# matcher_config_path: "/home/nick/ig_catkin_ws/src/ig_graph_slam/config/gicp.yaml"
+matcher_type: "gicp"    # icp: point to point icp in PCL, loam: loam registration, gicp: wave::gicp
 output_path: "/home/nick/results/ig_maps/ig_graph_slam/tmp_maps/"

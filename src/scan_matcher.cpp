@@ -75,7 +75,6 @@ using TimePoint = std::chrono::time_point<Clock>;
       parser.addParam("set_min_neighbours", &(params.set_min_neighbours));
       parser.addParam("set_search_radius", &(params.set_search_radius));
       parser.addParam("matcher_type", &(params.matcher_type));
-      parser.addParam("matcher_config_path", &(params.matcher_config));
       parser.addParam("ground_segment", &(params.ground_segment));
       parser.addParam("use_gps", &(params.use_gps));
       parser.addParam("downsample_cell_size", &(params.downsample_cell_size));
@@ -86,12 +85,13 @@ using TimePoint = std::chrono::time_point<Clock>;
       parser.addParam("optimize_gps_lidar", &(params.optimize_gps_lidar));
       parser.addParam("fixed_scan_transform_cov", &(params.fixed_scan_transform_cov));
       parser.addParam("scan_transform_cov", &(params.scan_transform_cov));
+      parser.addParam("output_path", &(params.output_path));
 
       std::string yamlDirStr = __FILE__;
       yamlDirStr.erase(yamlDirStr.end()-20,yamlDirStr.end());
       yamlDirStr += "config/ig_graph_slam_config.yaml";
       ifstream fileName(yamlDirStr.c_str());
-      
+
       if(fileName.good())
       {
         std::cout << "Loading config file: " << yamlDirStr << std::endl;
@@ -156,7 +156,7 @@ using TimePoint = std::chrono::time_point<Clock>;
     << "step_matches: " << p_->step_matches << std::endl
     << "combine_scans: " << p_->combine_scans << std::endl
     << "matcher_type: " << p_->matcher_type << std::endl
-    << "matcher_config_path: " << p_->matcher_config << std::endl
+    << "output_path: " << p_->output_path << std::endl
     << "----------------------------"<< std::endl;
   }
 
@@ -660,18 +660,18 @@ using TimePoint = std::chrono::time_point<Clock>;
 
   }
 
-// ICP1ScanMatcher (Child Class) Functions
-  ICP1ScanMatcher::ICP1ScanMatcher(Params &p_)
+// ICPScanMatcher (Child Class) Functions
+  ICPScanMatcher::ICPScanMatcher(Params &p_, std::string matcherConfigPath)
       : ScanMatcher(p_),
         //segmenter(this->seg_params),
-        matcher(wave::ICPMatcherParams(p_.matcher_config))
+        matcher(wave::ICPMatcherParams(matcherConfigPath))
   {
       this->params = p_;
       this->cloud_ref = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
       this->cloud_tgt = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   }
 
-  bool ICP1ScanMatcher::matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &T_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid, boost::shared_ptr<ROSBag> ros_data)
+  bool ICPScanMatcher::matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &T_Li_Lj, wave::Mat6 &info, bool &correction_norm_valid, boost::shared_ptr<ROSBag> ros_data)
   { // j: current, (reference scan)
     // i: adjacent scan (target)
     auto T_MAP_Lj = init_pose.poses[j]; // set initial guess of current scan
@@ -760,9 +760,9 @@ using TimePoint = std::chrono::time_point<Clock>;
   }
 
 // GICPScanMatcher (Child Class) Functions
-  GICPScanMatcher::GICPScanMatcher(Params &p_)
+  GICPScanMatcher::GICPScanMatcher(Params &p_, std::string matcherConfigPath)
       : ScanMatcher(p_),
-        matcher(wave::GICPMatcherParams(p_.matcher_config))
+        matcher(wave::GICPMatcherParams(matcherConfigPath))
   {
       this->params = p_;
       this->cloud_ref = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();

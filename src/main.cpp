@@ -45,7 +45,21 @@ int main()
     boost::shared_ptr<ScanMatcher> scan_matcher;
     if (p_->matcher_type == "icp")
     {
-        scan_matcher = boost::make_shared<ICP1ScanMatcher>(*p_);
+        std::string matcherConfigPath = __FILE__;
+        matcherConfigPath.erase(matcherConfigPath.end()-12,matcherConfigPath.end());
+        matcherConfigPath += "config/icp.yaml";
+        ifstream fileName(matcherConfigPath.c_str());
+
+        if(fileName.good())
+        {
+          std::cout << "Loading matcher config file: " << matcherConfigPath << std::endl;
+          scan_matcher = boost::make_shared<ICPScanMatcher>(*p_, matcherConfigPath);
+        }
+        else
+        {
+          std::wcerr << "\033[1;31mERROR: \033[0m"
+                     << "icp.yaml not found in config folder" << std::endl;
+        }
     }
     else if (p_->matcher_type == "loam")
     {
@@ -55,7 +69,22 @@ int main()
     }
     else if (p_->matcher_type == "gicp")
     {
-        scan_matcher = boost::make_shared<GICPScanMatcher>(*p_);
+      std::string matcherConfigPath = __FILE__;
+      matcherConfigPath.erase(matcherConfigPath.end()-12,matcherConfigPath.end());
+      matcherConfigPath += "config/gicp.yaml";
+      ifstream fileName(matcherConfigPath.c_str());
+
+      if(fileName.good())
+      {
+        std::cout << "Loading matcher config file: " << matcherConfigPath << std::endl;
+        scan_matcher = boost::make_shared<GICPScanMatcher>(*p_, matcherConfigPath);
+      }
+      else
+      {
+        std::wcerr << "\033[1;31mERROR: \033[0m"
+                   << "icp.yaml not found in config folder" << std::endl;
+      }
+
     }
     else
     {
