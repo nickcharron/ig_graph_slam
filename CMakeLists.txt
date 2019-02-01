@@ -3,7 +3,7 @@ project(ig_graph_slam)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 SET(CMAKE_CXX_FLAGS "-std=gnu++11 -Wall -Wextra ${CMAKE_CXX_FLAGS}")
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake_modules")
+#SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake_modules")
 
 ADD_DEFINITIONS(-DBOOST_LOG_DYN_LINK)
 
@@ -12,7 +12,6 @@ FIND_PACKAGE(Boost COMPONENTS REQUIRED log_SETup log)
 FIND_PACKAGE(PCL 1.8 REQUIRED)
 FIND_PACKAGE(OpenCV REQUIRED)
 FIND_PACKAGE(yaml-cpp REQUIRED)
-FIND_PACKAGE(SUITESPARSE REQUIRED)
 FIND_PACKAGE(GTSAM REQUIRED)
 FIND_PACKAGE(GeographicLib 1.49 REQUIRED)
 FIND_PACKAGE(wave REQUIRED utils matching containers geometry gtsam)
@@ -34,7 +33,6 @@ INCLUDE_DIRECTORIES(
         ~/ig_catkin_ws/devel/include
         /opt/ros/kinetic/include
         ${OpenCV_INCLUDE_DIRS}
-        ${SUITESPARE_INCLUDE_DIRS}
         ${GTSAM_INCLUDE_DIRS}
         ${GeographicLib_INCLUDE_DIRS}
 )
@@ -44,7 +42,6 @@ LINK_DIRECTORIES(
         ~/catkin_ws/devel/lib
         ~/ig_catkin_ws/devel/lib
         /opt/ros/kinetic/lib
-        ${SUITESPARSE_LIBRARY_DIRS}
 )
 
 ADD_EXECUTABLE(${PROJECT_NAME}_node
