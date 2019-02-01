@@ -55,6 +55,8 @@ struct Params
  */
 void fillparams(Params &params);
 
+void outputParams(boost::shared_ptr<Params> p_);
+
 struct ROSBag;
 
 struct ScanMatcher
