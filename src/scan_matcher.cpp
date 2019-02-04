@@ -4,6 +4,7 @@
 #include <string>
 #include <fstream>
 #include <math.h>
+#include <boost/filesystem.hpp>
 
 #include <chrono>
 #include <ctime>
@@ -571,7 +572,7 @@ using TimePoint = std::chrono::time_point<Clock>;
 
   }
 
-  void ScanMatcher::outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method)
+  void ScanMatcher::outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method, std::string path_)
   {
       *this->aggregate = downSampleFilterIG(this->aggregate, this->params.downsample_cell_size);
       std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
@@ -588,13 +589,14 @@ using TimePoint = std::chrono::time_point<Clock>;
           mapType = "_comb_map.pcd";
           break;
       }
-      pcl::io::savePCDFileBinary(dateandtime  + mapType , *this->aggregate);
+
+      pcl::io::savePCDFileBinary(path_ + dateandtime  + mapType , *this->aggregate);
       std::cout << "outputting map at time: " << dateandtime << std::endl;
 
       //now save trajectory to file
       std::ofstream file;
       const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", ", ");
-      file.open(dateandtime + "opt_traj" + ".txt");
+      file.open(path_ + dateandtime + "_opt_traj" + ".txt");
       for (auto iter = final_poses.begin(); iter != final_poses.end(); iter++)
       {
           file << iter->time_point.time_since_epoch().count() << ", ";
@@ -604,7 +606,7 @@ using TimePoint = std::chrono::time_point<Clock>;
       file.close();
 
       std::ofstream bias_file;
-      bias_file.open(dateandtime + "GPSbias.txt");
+      bias_file.open(path_ + dateandtime + "_GPSbias.txt");
       for (auto iter = graph.biases.begin(); iter != graph.biases.end(); iter++)
       {
           auto curbias = graph.result.at<gtsam::Point3>(*iter);
@@ -618,7 +620,7 @@ using TimePoint = std::chrono::time_point<Clock>;
         // This file contains the input traj to the GTSAM since we want to compare
         // the pose difference betweem the input and the output of GTSAM
         std::ofstream gt_file;
-        gt_file.open(dateandtime + "GTSAMinputTraj.txt");
+        gt_file.open(path_ + dateandtime + "_GTSAMinputTraj.txt");
         for (uint64_t j = 0; j < adjacency->size(); j++)
         {
             Eigen::Affine3d T_ECEF_GPSIMU = ros_data->getGPSTransform(ros_data->getLidarScanTimePoint(pose_scan_map.at(j)), true);
@@ -642,7 +644,7 @@ using TimePoint = std::chrono::time_point<Clock>;
 
         std::ofstream datumfile;
         using dbl = std::numeric_limits<double>;
-        datumfile.open(dateandtime + "map_ecef_datum" + ".txt");
+        datumfile.open(path_ + dateandtime + "map_ecef_datum" + ".txt");
         datumfile.precision(dbl::max_digits10);
         datumfile << ros_data->T_ECEF_MAP.matrix().format(CSVFormat);
         datumfile.close();

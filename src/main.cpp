@@ -305,12 +305,23 @@ int main()
 
     }
 
+    // Check output directory
+    std::string save_path = p_->output_path + "/" +
+                           convertTimeToDate(std::chrono::system_clock::now())
+                           + "/";
+
+    // if( !boost::filesystem::exists(p_->output_path))
+    // {
+    //   boost::filesystem::create_directory(p_->output_path);
+    // }
+    boost::filesystem::create_directories(save_path);
+
     // build and output maps
     scan_matcher->createAggregateMap(graph, load_ros_data, 1);
-    scan_matcher->outputAggregateMap(graph, load_ros_data, 1);
+    scan_matcher->outputAggregateMap(graph, load_ros_data, 1, save_path);
     scan_matcher->createAggregateMap(graph, load_ros_data, 2);
-    scan_matcher->outputAggregateMap(graph, load_ros_data, 2);
+    scan_matcher->outputAggregateMap(graph, load_ros_data, 2, save_path);
     scan_matcher->createAggregateMap(graph, load_ros_data, 3);
-    scan_matcher->outputAggregateMap(graph, load_ros_data, 3);
+    scan_matcher->outputAggregateMap(graph, load_ros_data, 3, save_path);
 
 }

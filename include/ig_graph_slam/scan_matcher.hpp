@@ -130,7 +130,7 @@ struct ScanMatcher
      * Outputs the aggregate pointcloud map as a pcd file
      * @param graph
      */
-    void outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method);
+    void outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data, int mapping_method, std::string path_);
 
     void displayPointCloud(wave::PCLPointCloudPtr cloud_display, int color, const Eigen::Affine3d &transform = Eigen::Affine3d::Identity());
 
