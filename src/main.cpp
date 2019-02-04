@@ -28,6 +28,7 @@
 #include "conversions.hpp"
 #include "pcl_filters.hpp"
 #include "measurementtypes.hpp"
+#include "utils.hpp"
 
 const uint64_t bias_offset = 1000000;
 using Clock = std::chrono::steady_clock;
@@ -52,13 +53,12 @@ int main()
 
         if(fileName.good())
         {
-          std::cout << "Loading matcher config file: " << matcherConfigPath << std::endl;
+          LOG_INFO("Loading matcher config file: %s", matcherConfigPath);
           scan_matcher = boost::make_shared<ICPScanMatcher>(*p_, matcherConfigPath);
         }
         else
         {
-          std::wcerr << "\033[1;31mERROR: \033[0m"
-                     << "icp.yaml not found in config folder" << std::endl;
+          LOG_ERROR("icp.yaml not found in config folder");
         }
     }
     else if (p_->matcher_type == "loam")
@@ -76,13 +76,12 @@ int main()
 
       if(fileName.good())
       {
-        std::cout << "Loading matcher config file: " << matcherConfigPath << std::endl;
+        LOG_INFO("Loading matcher config file: %s", matcherConfigPath);
         scan_matcher = boost::make_shared<GICPScanMatcher>(*p_, matcherConfigPath);
       }
       else
       {
-        std::wcerr << "\033[1;31mERROR: \033[0m"
-                   << "icp.yaml not found in config folder" << std::endl;
+        LOG_ERROR("gicp.yaml not found in config folder");
       }
 
     }

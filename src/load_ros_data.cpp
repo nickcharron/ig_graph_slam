@@ -18,6 +18,7 @@
 #include "pcl_filters.hpp"
 #include "measurementtypes.hpp"
 #include "conversions.hpp"
+#include "utils.hpp"
 
 #define DEG_TO_RAD 0.0174532925199433
 #define RAD_TO_DEG 57.2957795130823209

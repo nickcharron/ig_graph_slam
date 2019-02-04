@@ -23,6 +23,7 @@
 // IG Graph SLAM Headers
 #include "gtsam_graph.hpp"
 #include "scan_matcher.hpp"
+#include "utils.hpp"
 #include "load_ros_data.hpp"
 #include "conversions.hpp"
 #include "pcl_filters.hpp"
@@ -95,14 +96,13 @@ using TimePoint = std::chrono::time_point<Clock>;
 
       if(fileName.good())
       {
-        std::cout << "Loading config file: " << yamlDirStr << std::endl;
+        LOG_INFO("Loading config file: %s", yamlDirStr);
         parser.load(yamlDirStr);
-        std::cout << "Input Bag File: " << params.bag_file_path << std::endl;
+        LOG_INFO("Input Bag File: %s", params.bag_file_path);
       }
       else
       {
-        std::wcerr << "\033[1;31mERROR: \033[0m"
-                   << "ig_graph_slam.yaml not found in config folder" << std::endl;
+        LOG_ERROR("ig_graph_slam.yaml not found in config folder");
       }
   }
 
@@ -343,7 +343,7 @@ using TimePoint = std::chrono::time_point<Clock>;
 
            if ((distancejk > this->params.distance_match_min) &&
                (distancejk < this->params.distance_match_limit) &&
-                j < k-1 )
+                j+1 < k )
            { // add index to back of vector for scan j
               this->adjacency->at(j).emplace_back(k);
               this->total_matches++;
@@ -650,7 +650,7 @@ using TimePoint = std::chrono::time_point<Clock>;
       }
 
       pcl::io::savePCDFileBinary(path_ + dateandtime  + mapType , *this->aggregate);
-      std::cout << "outputting map at time: " << dateandtime << std::endl;
+      LOG_INFO("outputting map at time: %s", dateandtime);
 
       std::string fileName = path_ + dateandtime + "_params" + ".txt";
       outputToParamsFile(params, fileName);
