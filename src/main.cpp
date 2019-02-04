@@ -39,6 +39,12 @@ int main()
   // create shared pointers for parameters and ros data
     boost::shared_ptr<Params> p_(new Params);
     fillparams(*p_);
+    bool paramsOK = validateParams(p_);
+    outputParams(p_);
+    if(!paramsOK){
+      return 0;
+    }
+
     rosbag::Bag bag;
     boost::shared_ptr<ROSBag> load_ros_data(new ROSBag);
 
@@ -49,21 +55,12 @@ int main()
         std::string matcherConfigPath = __FILE__;
         matcherConfigPath.erase(matcherConfigPath.end()-12,matcherConfigPath.end());
         matcherConfigPath += "config/icp.yaml";
-        ifstream fileName(matcherConfigPath.c_str());
-
-        if(fileName.good())
-        {
-          LOG_INFO("Loading matcher config file: %s", matcherConfigPath);
-          scan_matcher = boost::make_shared<ICPScanMatcher>(*p_, matcherConfigPath);
-        }
-        else
-        {
-          LOG_ERROR("icp.yaml not found in config folder");
-        }
+        LOG_INFO("Loading matcher config file: %s", matcherConfigPath.c_str());
+        scan_matcher = boost::make_shared<ICPScanMatcher>(*p_, matcherConfigPath);
     }
     else if (p_->matcher_type == "loam")
     {
-        LOG_ERROR("%s matcher type is not yet implemented. Coming soon.", p_->matcher_type);
+        LOG_ERROR("%s matcher type is not yet implemented. Coming soon.", p_->matcher_type.c_str());
         // TODO: implement loam scan matcher
         return -1;
     }
@@ -72,22 +69,12 @@ int main()
       std::string matcherConfigPath = __FILE__;
       matcherConfigPath.erase(matcherConfigPath.end()-12,matcherConfigPath.end());
       matcherConfigPath += "config/gicp.yaml";
-      ifstream fileName(matcherConfigPath.c_str());
-
-      if(fileName.good())
-      {
-        LOG_INFO("Loading matcher config file: %s", matcherConfigPath);
-        scan_matcher = boost::make_shared<GICPScanMatcher>(*p_, matcherConfigPath);
-      }
-      else
-      {
-        LOG_ERROR("gicp.yaml not found in config folder");
-      }
-
+      LOG_INFO("Loading matcher config file: %s", matcherConfigPath.c_str());
+      scan_matcher = boost::make_shared<GICPScanMatcher>(*p_, matcherConfigPath);
     }
     else
     {
-        LOG_ERROR("%s is not a valid matcher type. Change matcher type in ig_graph_slam_config.yaml", p_->matcher_type);
+        LOG_ERROR("%s is not a valid matcher type. Change matcher type in ig_graph_slam_config.yaml", p_->matcher_type.c_str());
         return -1;
     }
 
@@ -115,7 +102,6 @@ int main()
     if (total_messages == 0)
     {
       LOG_ERROR("No messages read. Check your topics in config file.");
-      outputParams(p_);
     }
 
   //iterate through bag messages and save imu messages only
@@ -309,6 +295,16 @@ int main()
                            convertTimeToDate(std::chrono::system_clock::now())
                            + "/";
     boost::filesystem::create_directories(save_path);
+
+    // Save yaml file
+    std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
+    std::string dstFileName = save_path + dateandtime + "_params" + ".txt";
+    std::string yamlDirStr = __FILE__;
+    yamlDirStr.erase(yamlDirStr.end()-20,yamlDirStr.end());
+    yamlDirStr += "config/ig_graph_slam_config.yaml";
+    std::ifstream  src(yamlDirStr, std::ios::binary);
+    std::ofstream  dst(dstFileName, std::ios::binary);
+    dst << src.rdbuf();
 
     // build and output maps
     scan_matcher->createAggregateMap(graph, load_ros_data, 1);

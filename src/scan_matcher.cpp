@@ -38,55 +38,57 @@ using TimePoint = std::chrono::time_point<Clock>;
   void fillparams(Params &params)
   {
       wave::ConfigParser parser;
-      parser.addParam("bag_file_path", &(params.bag_file_path));
-      parser.addParam("lidar_topic_loc", &(params.lidar_topic_loc));
-      parser.addParam("lidar_topic_map", &(params.lidar_topic_map));
+      parser.addParam("gps_type", &(params.gps_type));
       parser.addParam("gps_topic", &(params.gps_topic));
       parser.addParam("gps_imu_topic", &(params.gps_imu_topic));
       parser.addParam("odom_topic", &(params.odom_topic));
       parser.addParam("init_method", &(params.init_method));
-      parser.addParam("gps_type", &(params.gps_type));
-      parser.addParam("int_map_size", &(params.int_map_size));
+      parser.addParam("lidar_topic_loc", &(params.lidar_topic_loc));
+      parser.addParam("lidar_topic_map", &(params.lidar_topic_map));
+      parser.addParam("bag_file_path", &(params.bag_file_path));
+      parser.addParam("use_prev_poses", &(params.use_prev_poses));
+      parser.addParam("prev_poses_path", &(params.prev_poses_path));
       parser.addParam("T_LIDAR_GPS", &(params.T_LIDAR_GPS.matrix()));
       parser.addParam("T_LMAP_LLOC", &(params.T_LMAP_LLOC.matrix()));
-      parser.addParam("k_nearest_neighbours", &(params.knn));
-      parser.addParam("trajectory_sampling_distance", &(params.trajectory_sampling_dist));
-      parser.addParam("combine_scans", &(params.combine_scans));
-      parser.addParam("map_sampling_distance", &(params.map_sampling_dist));
-      parser.addParam("distance_match_limit", &(params.distance_match_limit));
-      parser.addParam("distance_match_min", &(params.distance_match_min));
-      parser.addParam("loop_max_distance", &(params.loop_max_distance));
-      parser.addParam("loop_min_travel_distance", &(params.loop_min_travel_distance));
-      parser.addParam("x_lower_threshold", &(params.x_lower_threshold));
-      parser.addParam("x_upper_threshold", &(params.x_upper_threshold));
-      parser.addParam("y_lower_threshold", &(params.y_lower_threshold));
-      parser.addParam("y_upper_threshold", &(params.y_upper_threshold));
-      parser.addParam("z_lower_threshold", &(params.z_lower_threshold));
-      parser.addParam("z_upper_threshold", &(params.z_upper_threshold));
       parser.addParam("use_pass_through_filter", &(params.use_pass_through_filter));
-      parser.addParam("x_lower_threshold_map", &(params.x_lower_threshold_map));
-      parser.addParam("x_upper_threshold_map", &(params.x_upper_threshold_map));
-      parser.addParam("y_lower_threshold_map", &(params.y_lower_threshold_map));
-      parser.addParam("y_upper_threshold_map", &(params.y_upper_threshold_map));
-      parser.addParam("z_lower_threshold_map", &(params.z_lower_threshold_map));
-      parser.addParam("z_upper_threshold_map", &(params.z_upper_threshold));
-      parser.addParam("use_pass_through_filter_map", &(params.use_pass_through_filter_map));
+      parser.addParam("x_upper_threshold", &(params.x_upper_threshold));
+      parser.addParam("x_lower_threshold", &(params.x_lower_threshold));
+      parser.addParam("y_upper_threshold", &(params.y_upper_threshold));
+      parser.addParam("y_lower_threshold", &(params.y_lower_threshold));
+      parser.addParam("z_upper_threshold", &(params.z_upper_threshold));
+      parser.addParam("z_lower_threshold", &(params.z_lower_threshold));
       parser.addParam("downsample_input", &(params.downsample_input));
       parser.addParam("input_downsample_size", &(params.input_downsample_size));
       parser.addParam("use_rad_filter", &(params.use_rad_filter));
       parser.addParam("set_min_neighbours", &(params.set_min_neighbours));
       parser.addParam("set_search_radius", &(params.set_search_radius));
-      parser.addParam("matcher_type", &(params.matcher_type));
       parser.addParam("ground_segment", &(params.ground_segment));
-      parser.addParam("use_gps", &(params.use_gps));
-      parser.addParam("downsample_cell_size", &(params.downsample_cell_size));
       parser.addParam("downsample_output_method", &(params.downsample_output_method));
+      parser.addParam("downsample_cell_size", &(params.downsample_cell_size));
+      parser.addParam("int_map_size", &(params.int_map_size));
+      parser.addParam("use_pass_through_filter_map", &(params.use_pass_through_filter_map));
+      parser.addParam("x_upper_threshold_map", &(params.x_upper_threshold_map));
+      parser.addParam("x_lower_threshold_map", &(params.x_lower_threshold_map));
+      parser.addParam("y_upper_threshold_map", &(params.y_upper_threshold_map));
+      parser.addParam("y_lower_threshold_map", &(params.y_lower_threshold_map));
+      parser.addParam("z_upper_threshold_map", &(params.z_upper_threshold));
+      parser.addParam("z_lower_threshold_map", &(params.z_lower_threshold_map));
+      parser.addParam("k_nearest_neighbours", &(params.knn));
+      parser.addParam("trajectory_sampling_distance", &(params.trajectory_sampling_dist));
+      parser.addParam("map_sampling_distance", &(params.map_sampling_dist));
+      parser.addParam("distance_match_min", &(params.distance_match_min));
+      parser.addParam("distance_match_limit", &(params.distance_match_limit));
+      parser.addParam("loop_max_distance", &(params.loop_max_distance));
+      parser.addParam("loop_min_travel_distance", &(params.loop_min_travel_distance));
       parser.addParam("iterations", &(params.iterations));
-      parser.addParam("visualize", &(params.visualize));
-      parser.addParam("step_matches", &(params.step_matches));
+      parser.addParam("use_gps", &(params.use_gps));
       parser.addParam("optimize_gps_lidar", &(params.optimize_gps_lidar));
       parser.addParam("fixed_scan_transform_cov", &(params.fixed_scan_transform_cov));
       parser.addParam("scan_transform_cov", &(params.scan_transform_cov));
+      parser.addParam("visualize", &(params.visualize));
+      parser.addParam("step_matches", &(params.step_matches));
+      parser.addParam("combine_scans", &(params.combine_scans));
+      parser.addParam("matcher_type", &(params.matcher_type));
       parser.addParam("output_path", &(params.output_path));
 
       std::string yamlDirStr = __FILE__;
@@ -96,73 +98,14 @@ using TimePoint = std::chrono::time_point<Clock>;
 
       if(fileName.good())
       {
-        LOG_INFO("Loading config file: %s", yamlDirStr);
+        LOG_INFO("Loading config file: %s", yamlDirStr.c_str());
         parser.load(yamlDirStr);
-        LOG_INFO("Input Bag File: %s", params.bag_file_path);
+        LOG_INFO("Input Bag File: %s", params.bag_file_path.c_str());
       }
       else
       {
         LOG_ERROR("ig_graph_slam.yaml not found in config folder");
       }
-  }
-
-  void outputToParamsFile(Params &p_, std::string fileName)
-  {
-    std::ofstream file;
-    file.open(fileName);
-    file
-    << "----------------------------"<< std::endl
-    << "Outputting all parameters:"<< std::endl
-    << "----------------------------"<< std::endl
-    << "gps_type: " << p_.gps_type << std::endl
-    << "gps_topic: " << p_.gps_topic << std::endl
-    << "gps_imu_topic: " << p_.gps_imu_topic << std::endl
-    << "odom_topic: " << p_.odom_topic << std::endl
-    << "init_method: " << p_.init_method << std::endl
-    << "lidar_topic_loc: " << p_.lidar_topic_loc << std::endl
-    << "lidar_topic_map: " << p_.lidar_topic_map << std::endl
-    << "use_pass_through_filter: " << p_.use_pass_through_filter << std::endl
-    << "x_upper_threshold: " << p_.x_upper_threshold << std::endl
-    << "x_lower_threshold: " << p_.x_lower_threshold << std::endl
-    << "y_upper_threshold: " << p_.y_upper_threshold << std::endl
-    << "y_lower_threshold: " << p_.y_lower_threshold << std::endl
-    << "z_upper_threshold: " << p_.z_upper_threshold << std::endl
-    << "z_lower_threshold: " << p_.z_lower_threshold << std::endl
-    << "downsample_input: " << p_.downsample_input << std::endl
-    << "input_downsample_size: " << p_.input_downsample_size << std::endl
-    << "use_rad_filter: " << p_.use_rad_filter << std::endl
-    << "set_min_neighbours: " << p_.set_min_neighbours << std::endl
-    << "set_search_radius: " << p_.set_search_radius << std::endl
-    << "ground_segment: " << p_.ground_segment << std::endl
-    << "downsample_output_method: " << p_.downsample_output_method << std::endl
-    << "downsample_cell_size: " << p_.downsample_cell_size << std::endl
-    << "int_map_size: " << p_.int_map_size << std::endl
-    << "use_pass_through_filter_map: " << p_.use_pass_through_filter_map << std::endl
-    << "x_upper_threshold_map: " << p_.x_upper_threshold_map << std::endl
-    << "x_lower_threshold_map: " << p_.x_lower_threshold_map << std::endl
-    << "y_upper_threshold_map: " << p_.y_upper_threshold_map << std::endl
-    << "y_lower_threshold_map: " << p_.y_lower_threshold_map << std::endl
-    << "z_upper_threshold_map: " << p_.z_upper_threshold_map << std::endl
-    << "z_lower_threshold_map: " << p_.z_lower_threshold_map << std::endl
-    << "k_nearest_neighbours: " << p_.knn << std::endl
-    << "trajectory_sampling_distance: " << p_.trajectory_sampling_dist << std::endl
-    << "map_sampling_distance: " << p_.map_sampling_dist << std::endl
-    << "distance_match_min: " << p_.distance_match_min << std::endl
-    << "distance_match_limit: " << p_.distance_match_limit << std::endl
-    << "loop_max_distance: " << p_.loop_max_distance << std::endl
-    << "loop_min_travel_distance: " << p_.loop_min_travel_distance << std::endl
-    << "iterations: " << p_.iterations << std::endl
-    << "use_gps: " << p_.use_gps << std::endl
-    << "optimize_gps_lidar: " << p_.optimize_gps_lidar << std::endl
-    << "fixed_scan_transform_cov: " << p_.fixed_scan_transform_cov << std::endl
-    << "visualize: " << p_.visualize << std::endl
-    << "step_matches: " << p_.step_matches << std::endl
-    << "combine_scans: " << p_.combine_scans << std::endl
-    << "matcher_type: " << p_.matcher_type << std::endl
-    << "output_path: " << p_.output_path << std::endl
-    << "----------------------------"<< std::endl;
-
-    file.close();
   }
 
   void outputParams(boost::shared_ptr<Params> p_)
@@ -178,6 +121,11 @@ using TimePoint = std::chrono::time_point<Clock>;
     << "init_method: " << p_->init_method << std::endl
     << "lidar_topic_loc: " << p_->lidar_topic_loc << std::endl
     << "lidar_topic_map: " << p_->lidar_topic_map << std::endl
+    << "bag_file_path: " << p_->bag_file_path << std::endl
+    << "use_prev_poses: " << p_->use_prev_poses << std::endl
+    << "prev_poses_path: " << p_->prev_poses_path << std::endl
+    << "T_LIDAR_GPS: " << p_->T_LIDAR_GPS.matrix() << std::endl
+    << "T_LMAP_LLOC: " << p_->T_LMAP_LLOC.matrix() << std::endl
     << "use_pass_through_filter: " << p_->use_pass_through_filter << std::endl
     << "x_upper_threshold: " << p_->x_upper_threshold << std::endl
     << "x_lower_threshold: " << p_->x_lower_threshold << std::endl
@@ -218,6 +166,203 @@ using TimePoint = std::chrono::time_point<Clock>;
     << "matcher_type: " << p_->matcher_type << std::endl
     << "output_path: " << p_->output_path << std::endl
     << "----------------------------"<< std::endl;
+  }
+
+  bool validateParams(boost::shared_ptr<Params> p_)
+  {
+    // NOTE: These checks need to be performed in the same order as the
+    // fillparams function, or else you may not catch the first error.
+    if( !(p_->gps_type == "NavSatFix" || p_->gps_type == "INSPVAX")){
+      if(p_->init_method == 1){
+        LOG_ERROR("Invalid GPS type. Supported: NavSatFix, INSPVAX");
+        return 0;
+      }
+    }
+
+    if(p_->gps_topic == "" && p_->init_method == 1){
+      LOG_ERROR("Please enter GPS topic.");
+      return 0;
+    }
+
+    if(p_->gps_imu_topic == "" && p_->init_method == 1 && p_->gps_type == "NavSatFix"){
+      LOG_ERROR("Please enter GPS/IMU topic.");
+      return 0;
+    }
+
+    if(p_->odom_topic == "" && p_->init_method == 2){
+      LOG_ERROR("Please enter odometry topic.");
+      return 0;
+    }
+
+    if( !(p_->init_method == 1 || p_->init_method == 2) ){
+      LOG_ERROR("Invalid initialization method. Enter 1 or 2.");
+      return 0;
+    }
+
+    if(p_->lidar_topic_loc == ""){
+      LOG_ERROR("Please enter localization lidar topic.");
+      return 0;
+    }
+
+    if(p_->lidar_topic_map == ""){
+      LOG_INFO("WARNING: No lidar map topic.");
+    }
+
+    if(!boost::filesystem::exists(p_->bag_file_path)){
+      LOG_ERROR("Cannot find bag file.");
+      return 0;
+    }
+
+    if( !(p_->use_prev_poses == 1 || p_->use_prev_poses == 0) ){
+      LOG_ERROR("Invalid parameter: use_prev_poses. Enter a boolean.");
+      return 0;
+    }
+
+    if(!boost::filesystem::exists(p_->prev_poses_path) && p_->use_prev_poses == 1){
+      LOG_ERROR("Cannot find previous poses file.");
+      return 0;
+    }
+
+    if(!isTransformationMatrix(p_->T_LIDAR_GPS.matrix())){
+      LOG_ERROR("Invalid transformation matrix: T_LIDAR_GPS. Did not pass transformation check.");
+      return 0;
+    }
+
+    if(!isTransformationMatrix(p_->T_LMAP_LLOC.matrix())){
+      LOG_ERROR("Invalid transformation matrix: T_LMAP_LLOC. Did not pass transformation check.");
+      return 0;
+    }
+
+    if( !(p_->use_pass_through_filter == 1 || p_->use_pass_through_filter == 0) ){
+      LOG_ERROR("Invalid parameter: use_pass_through_filter. Enter a boolean.");
+      return 0;
+    }
+
+    if( !(p_->downsample_input == 1 || p_->downsample_input == 0) ){
+      LOG_ERROR("Invalid parameter: downsample_input. Enter a boolean.");
+      return 0;
+    }
+
+    if( !(p_->use_rad_filter == 1 || p_->use_rad_filter == 0) ){
+      LOG_ERROR("Invalid parameter: downsample_input. Enter a boolean.");
+      return 0;
+    }
+
+    if( p_->set_min_neighbours == 0 ){
+      LOG_ERROR("Invalid parameter: set_min_neighbours. Enter an integer greater than 0.");
+      return 0;
+    }
+
+    if( !(p_->ground_segment == 1 || p_->ground_segment == 0) ){
+      LOG_ERROR("Invalid parameter: ground_segment. Enter a boolean.");
+      return 0;
+    }
+
+    if( !(p_->downsample_output_method == 1 ||
+          p_->downsample_output_method == 2 ||
+          p_->downsample_output_method == 3) ){
+      LOG_ERROR("Invalid parameter: downsample_output_method. Enter 1, 2, or 3.");
+      return 0;
+    }
+
+    if( p_->int_map_size == 0 ){
+      LOG_ERROR("Invalid parameter: int_map_size. Enter an integer greater than 0.");
+      return 0;
+    }
+
+    if( !(p_->use_pass_through_filter_map == 1 ||
+          p_->use_pass_through_filter_map == 0) ){
+      LOG_ERROR("Invalid parameter: use_pass_through_filter_map. Enter a boolean.");
+      return 0;
+    }
+
+    if(p_->x_upper_threshold < p_->x_lower_threshold ||
+       p_->y_upper_threshold < p_->y_lower_threshold ||
+       p_->z_upper_threshold < p_->z_lower_threshold ||
+       p_->x_upper_threshold_map < p_->x_lower_threshold_map ||
+       p_->y_upper_threshold_map < p_->y_lower_threshold_map ||
+       p_->z_upper_threshold_map < p_->z_lower_threshold_map){
+      LOG_ERROR("Check pass through filter parameters. Limits not correct.");
+      return 0;
+    }
+
+    if( p_->knn == 0 ){
+      LOG_ERROR("Invalid parameter: k_nearest_neighbours. Enter an integer greater than 0.");
+      return 0;
+    }
+
+    if(p_->loop_min_travel_distance < p_->distance_match_limit){
+      LOG_ERROR("Parameter loop_min_travel_distance must be greater than parameter distance_match_limit");
+      return 0;
+    }
+
+    if(p_->trajectory_sampling_dist < p_->map_sampling_dist){
+      LOG_ERROR("parameter trajectory_sampling_distance must be greater or equal to parameter map_sampling_distance");
+      return 0;
+    }
+
+    if(p_->distance_match_limit < p_->distance_match_min){
+      LOG_ERROR("parameter distance_match_limit must be greater than parameter distance_match_min");
+      return 0;
+    }
+
+    if( p_->iterations == 0 ){
+      LOG_ERROR("Invalid parameter: iterations. Enter an integer greater than 0.");
+      return 0;
+    }
+
+    if( !(p_->use_gps == 1 || p_->use_gps == 0) ){
+      LOG_ERROR("Invalid parameter: use_gps. Enter a boolean.");
+      return 0;
+    }
+
+    if( !(p_->optimize_gps_lidar == 1 || p_->optimize_gps_lidar == 0) ){
+      LOG_ERROR("Invalid parameter: optimize_gps_lidar. Enter a boolean.");
+      return 0;
+    }
+
+    if( !(p_->fixed_scan_transform_cov == 1 || p_->fixed_scan_transform_cov == 0) ){
+      LOG_ERROR("Invalid parameter: fixed_scan_transform_cov. Enter a boolean.");
+      return 0;
+    }
+
+    if( !(p_->visualize == 1 || p_->visualize == 0) ){
+      LOG_ERROR("Invalid parameter: visualize. Enter a boolean.");
+      return 0;
+    }
+
+    if( !(p_->step_matches == 1 || p_->step_matches == 0) ){
+      LOG_ERROR("Invalid parameter: step_matches. Enter a boolean.");
+      return 0;
+    }
+
+    if( !(p_->combine_scans == 1 || p_->combine_scans == 0) ){
+      LOG_ERROR("Invalid parameter: combine_scans. Enter a boolean.");
+      return 0;
+    }
+
+    if( !(p_->matcher_type == "icp" || p_->matcher_type == "gicp" || p_->matcher_type == "loam") ){
+      if(p_->matcher_type == "loam"){
+        LOG_ERROR("LOAM Matcher not yet implemented");
+      }else{
+        LOG_ERROR("Invalid parameter: matcher_type. Supported: icp, gicp, loam");
+      }
+      return 0;
+    }
+
+    if(!boost::filesystem::exists(p_->output_path)){
+      if(p_->matcher_type == "icp"){
+        LOG_ERROR("icp.yaml not found in config folder");
+      } else if (p_->matcher_type == "gicp"){
+        LOG_ERROR("gicp.yaml not found in config folder");
+      } else if (p_->matcher_type == "loam"){
+        LOG_ERROR("loam.yaml not found in config folder");
+      } else{
+        LOG_ERROR("matcher config file not found in config folder");
+      }
+      return 0;
+    }
+    return 1;
   }
 
   double calculateLength(const Eigen::Vector3d &p1, const Eigen::Vector3d &p2)
@@ -650,11 +795,9 @@ using TimePoint = std::chrono::time_point<Clock>;
       }
 
       pcl::io::savePCDFileBinary(path_ + dateandtime  + mapType , *this->aggregate);
-      LOG_INFO("outputting map at time: %s", dateandtime);
+      LOG_INFO("outputting map at time: %s", dateandtime.c_str());
 
-      std::string fileName = path_ + dateandtime + "_params" + ".txt";
-      outputToParamsFile(params, fileName);
-
+      // TODO: move this to another function
       //now save trajectory to file
       std::ofstream file;
       const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", ", ");

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <ctime>
 #include <cmath>
+#include <math.h>
 #include <wave/utils/math.hpp>
 
 using Clock = std::chrono::steady_clock;
@@ -12,6 +13,44 @@ using TimePoint = std::chrono::time_point<Clock>;
 inline void outputTimePoint(const TimePoint t, const std::string output_text)
 {
   LOG_INFO("%s %f", output_text, t.time_since_epoch().count());
+}
+
+inline bool isRotationMatrix(Eigen::Matrix3d R){
+  Eigen::Matrix3d shouldBeIdentity = R*R.transpose();
+  double detR = R.determinant();
+
+  if(shouldBeIdentity.isIdentity() && detR == 1){
+    return 1;
+  }else{
+    return 0;
+  }
+}
+
+inline bool isTransformationMatrix(Eigen::Matrix4d T){
+  Eigen::Matrix3d R = T.block(0,0,3,3);
+  bool homoFormValid, tValid;
+
+  // check translation for infinity or nan
+  if(std::isinf(T(0,3)) || std::isinf(T(1,3)) || std::isinf(T(2,3)) ||
+     std::isnan(T(0,3)) || std::isnan(T(1,3)) || std::isnan(T(2,3))){
+    tValid = 0;
+  }else{
+    tValid = 1;
+  }
+
+  // check that bottom row is [0 0 0 1]
+  if(T(3,0)==0 && T(3,1)==0 && T(3,2)==0 && T(3,3)==1){
+    homoFormValid = 1;
+  }else{
+    homoFormValid = 0;
+  }
+
+  if(homoFormValid && tValid && isRotationMatrix(R)){
+    return 1;
+  }
+  else {
+    return 0;
+  }
 }
 
 inline void outputPercentComplete(int current_, int total_, std::string message_)
