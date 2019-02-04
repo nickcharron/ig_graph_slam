@@ -106,6 +106,65 @@ using TimePoint = std::chrono::time_point<Clock>;
       }
   }
 
+  void outputToParamsFile(Params &p_, std::string fileName)
+  {
+    std::ofstream file;
+    file.open(fileName);
+    file
+    << "----------------------------"<< std::endl
+    << "Outputting all parameters:"<< std::endl
+    << "----------------------------"<< std::endl
+    << "gps_type: " << p_.gps_type << std::endl
+    << "gps_topic: " << p_.gps_topic << std::endl
+    << "gps_imu_topic: " << p_.gps_imu_topic << std::endl
+    << "odom_topic: " << p_.odom_topic << std::endl
+    << "init_method: " << p_.init_method << std::endl
+    << "lidar_topic_loc: " << p_.lidar_topic_loc << std::endl
+    << "lidar_topic_map: " << p_.lidar_topic_map << std::endl
+    << "use_pass_through_filter: " << p_.use_pass_through_filter << std::endl
+    << "x_upper_threshold: " << p_.x_upper_threshold << std::endl
+    << "x_lower_threshold: " << p_.x_lower_threshold << std::endl
+    << "y_upper_threshold: " << p_.y_upper_threshold << std::endl
+    << "y_lower_threshold: " << p_.y_lower_threshold << std::endl
+    << "z_upper_threshold: " << p_.z_upper_threshold << std::endl
+    << "z_lower_threshold: " << p_.z_lower_threshold << std::endl
+    << "downsample_input: " << p_.downsample_input << std::endl
+    << "input_downsample_size: " << p_.input_downsample_size << std::endl
+    << "use_rad_filter: " << p_.use_rad_filter << std::endl
+    << "set_min_neighbours: " << p_.set_min_neighbours << std::endl
+    << "set_search_radius: " << p_.set_search_radius << std::endl
+    << "ground_segment: " << p_.ground_segment << std::endl
+    << "downsample_output_method: " << p_.downsample_output_method << std::endl
+    << "downsample_cell_size: " << p_.downsample_cell_size << std::endl
+    << "int_map_size: " << p_.int_map_size << std::endl
+    << "use_pass_through_filter_map: " << p_.use_pass_through_filter_map << std::endl
+    << "x_upper_threshold_map: " << p_.x_upper_threshold_map << std::endl
+    << "x_lower_threshold_map: " << p_.x_lower_threshold_map << std::endl
+    << "y_upper_threshold_map: " << p_.y_upper_threshold_map << std::endl
+    << "y_lower_threshold_map: " << p_.y_lower_threshold_map << std::endl
+    << "z_upper_threshold_map: " << p_.z_upper_threshold_map << std::endl
+    << "z_lower_threshold_map: " << p_.z_lower_threshold_map << std::endl
+    << "k_nearest_neighbours: " << p_.knn << std::endl
+    << "trajectory_sampling_distance: " << p_.trajectory_sampling_dist << std::endl
+    << "map_sampling_distance: " << p_.map_sampling_dist << std::endl
+    << "distance_match_min: " << p_.distance_match_min << std::endl
+    << "distance_match_limit: " << p_.distance_match_limit << std::endl
+    << "loop_max_distance: " << p_.loop_max_distance << std::endl
+    << "loop_min_travel_distance: " << p_.loop_min_travel_distance << std::endl
+    << "iterations: " << p_.iterations << std::endl
+    << "use_gps: " << p_.use_gps << std::endl
+    << "optimize_gps_lidar: " << p_.optimize_gps_lidar << std::endl
+    << "fixed_scan_transform_cov: " << p_.fixed_scan_transform_cov << std::endl
+    << "visualize: " << p_.visualize << std::endl
+    << "step_matches: " << p_.step_matches << std::endl
+    << "combine_scans: " << p_.combine_scans << std::endl
+    << "matcher_type: " << p_.matcher_type << std::endl
+    << "output_path: " << p_.output_path << std::endl
+    << "----------------------------"<< std::endl;
+
+    file.close();
+  }
+
   void outputParams(boost::shared_ptr<Params> p_)
   {
     std::cout
@@ -334,7 +393,7 @@ using TimePoint = std::chrono::time_point<Clock>;
            }
          }
      }
-     ROS_INFO("Found a total of %d loop closure scans.", this->loops->size());
+     LOG_INFO("Found a total of %d loop closure scans.", this->loops->size());
   }
 
   void ScanMatcher::displayPointCloud(wave::PCLPointCloudPtr cloud_display,
@@ -592,6 +651,9 @@ using TimePoint = std::chrono::time_point<Clock>;
 
       pcl::io::savePCDFileBinary(path_ + dateandtime  + mapType , *this->aggregate);
       std::cout << "outputting map at time: " << dateandtime << std::endl;
+
+      std::string fileName = path_ + dateandtime + "_params" + ".txt";
+      outputToParamsFile(params, fileName);
 
       //now save trajectory to file
       std::ofstream file;

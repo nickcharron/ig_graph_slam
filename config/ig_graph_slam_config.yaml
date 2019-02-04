@@ -137,4 +137,4 @@ visualize: false                     # Whether to visualize matches as they happ
 step_matches: false
 combine_scans: false     # combine scans  from both lidar for scan registrations. Default false
 matcher_type: "icp"    # icp: point to point icp in PCL, loam: loam registration, gicp: wave::gicp
-output_path: "/home/nick/results/ig_maps/ig_graph_slam/tmp_maps"
+output_path: "/home/nick/results/ig_maps/ig_graph_slam/tmp_maps/"

@@ -57,6 +57,8 @@ void fillparams(Params &params);
 
 void outputParams(boost::shared_ptr<Params> p_);
 
+void outputToParamsFile(Params &p_, std::string fileName);
+
 struct ROSBag;
 
 struct ScanMatcher

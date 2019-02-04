@@ -309,11 +309,6 @@ int main()
     std::string save_path = p_->output_path + "/" +
                            convertTimeToDate(std::chrono::system_clock::now())
                            + "/";
-
-    // if( !boost::filesystem::exists(p_->output_path))
-    // {
-    //   boost::filesystem::create_directory(p_->output_path);
-    // }
     boost::filesystem::create_directories(save_path);
 
     // build and output maps
