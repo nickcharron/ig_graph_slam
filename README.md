@@ -58,8 +58,3 @@ GTSAM concepts: https://bitbucket.org/gtborg/gtsam/src/90f688d94c720ac859689e62d
 GTSAM primer: https://bitbucket.org/gtborg/gtsam/wiki/Home
 
 GTSAM extra install instructions: https://bitbucket.org/gtborg/gtsam/src/90f688d94c720ac859689e62d6a003dabc79bc42/INSTALL?fileviewer=file-view-default
-
-## TO DO LIST
-- add point to plane ICP
-- add calibrations
-- add T_base_lidar for horizontal localization
