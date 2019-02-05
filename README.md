@@ -39,6 +39,12 @@ cd /ig_graph_slam
 bash ./scritps/install_deps.sh
 ```
 
+5. Install xdot for viewing gtsam graph file outputted after mapping
+
+```
+sudo apt install xdot
+```
+
 ## Additional Information and Useful Resources
 
 GTSAM discussion group: https://groups.google.com/forum/#!forum/gtsam-users
