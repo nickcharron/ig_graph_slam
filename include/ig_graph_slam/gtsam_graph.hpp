@@ -30,7 +30,7 @@ class GTSAMGraph
     void addInitialPose(const Eigen::Affine3d &pose, gtsam::Key id);
     void fixFirstPose();
     void optimize();
-    void print();
+    void print(std::string fileName, bool printToTerminal);
 
     // Declare variables
     gtsam::Values initial, result;

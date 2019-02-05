@@ -39,9 +39,10 @@ int main()
   // create shared pointers for parameters and ros data
     boost::shared_ptr<Params> p_(new Params);
     fillparams(*p_);
-    bool paramsOK = validateParams(p_);
-    outputParams(p_);
-    if(!paramsOK){
+
+    if(!validateParams(p_)){
+      LOG_INFO("NOTE: Check all booleans for typos in config file.");
+      outputParams(p_);
       return 0;
     }
 
@@ -267,7 +268,6 @@ int main()
           graph.fixFirstPose();
       }
       LOG_INFO("Done building graph.");
-      //graph.print();
       graph.optimize();
 
       // Loop through and get final alignment
@@ -298,13 +298,17 @@ int main()
 
     // Save yaml file
     std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
-    std::string dstFileName = save_path + dateandtime + "_params" + ".txt";
+    std::string dstFileName = save_path + dateandtime + "_params.txt";
     std::string yamlDirStr = __FILE__;
     yamlDirStr.erase(yamlDirStr.end()-20,yamlDirStr.end());
     yamlDirStr += "config/ig_graph_slam_config.yaml";
     std::ifstream  src(yamlDirStr, std::ios::binary);
     std::ofstream  dst(dstFileName, std::ios::binary);
     dst << src.rdbuf();
+
+    // Save Graph file
+    std::string graphFileName = save_path + dateandtime + "gtsam_graph.dot";
+    graph.print(graphFileName, false);
 
     // build and output maps
     scan_matcher->createAggregateMap(graph, load_ros_data, 1);

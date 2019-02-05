@@ -365,13 +365,6 @@ using TimePoint = std::chrono::time_point<Clock>;
     return 1;
   }
 
-  double calculateLength(const Eigen::Vector3d &p1, const Eigen::Vector3d &p2)
-  {
-      return sqrt( (p1(0, 0) - p2(0, 0)) * (p1(0, 0) - p2(0, 0)) +
-                   (p1(1, 0) - p2(1, 0)) * (p1(1, 0) - p2(1, 0)) +
-                   (p1(2, 0) - p2(2, 0)) * (p1(2, 0) - p2(2, 0))  );
-  }
-
 // Scan Matcher (parent Class) Functions:
 
   void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data)

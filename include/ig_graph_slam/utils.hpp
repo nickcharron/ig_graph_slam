@@ -26,6 +26,13 @@ inline bool isRotationMatrix(Eigen::Matrix3d R){
   }
 }
 
+inline double calculateLength(const Eigen::Vector3d &p1, const Eigen::Vector3d &p2)
+{
+    return sqrt( (p1(0, 0) - p2(0, 0)) * (p1(0, 0) - p2(0, 0)) +
+                 (p1(1, 0) - p2(1, 0)) * (p1(1, 0) - p2(1, 0)) +
+                 (p1(2, 0) - p2(2, 0)) * (p1(2, 0) - p2(2, 0))  );
+}
+
 inline bool isTransformationMatrix(Eigen::Matrix4d T){
   Eigen::Matrix3d R = T.block(0,0,3,3);
   bool homoFormValid, tValid;

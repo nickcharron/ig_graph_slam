@@ -47,10 +47,12 @@ void GTSAMGraph::fixFirstPose()
       firstKey, this->initial.at(firstKey).cast<gtsam::Pose3>(), priorModel));
 }
 
-void GTSAMGraph::print()
+void GTSAMGraph::print(std::string fileName, bool printToTerminal)
 {
-    graph.print();
-    std::ofstream graphfile("file.dot");
+    if(printToTerminal){
+      graph.print();
+    }
+    std::ofstream graphfile(fileName);
     this->graph.saveGraph(graphfile);
     graphfile.close();
 }
