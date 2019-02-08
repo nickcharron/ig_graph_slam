@@ -55,6 +55,8 @@ void fillparams(Params &params);
 
 void outputParams(boost::shared_ptr<Params> p_);
 
+std::string getMatcherConfig(std::string matcher);
+
 bool validateParams(boost::shared_ptr<Params> p_);
 
 struct ROSBag;
