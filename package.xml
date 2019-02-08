@@ -52,6 +52,9 @@
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
+  <build_depend>wave_spatial_utils</build_depend>
+  <build_depend>novatel_msgs</build_depend>
+  <build_depend>novatel_span_driver</build_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
