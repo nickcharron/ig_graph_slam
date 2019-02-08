@@ -146,8 +146,8 @@ struct ScanMatcher {
   std::vector<wave::Measurement<Eigen::Affine3d, uint>> final_poses;
   boost::shared_ptr<std::vector<std::vector<uint64_t>>> adjacency;
   boost::shared_ptr<std::vector<std::vector<uint64_t>>> loops;
-  pcl::PCLPointCloud2::Ptr
-      pcl_pc2; // used an intermediate when converting from ROS messages
+  pcl::PCLPointCloud2::Ptr pcl_pc2; // used an intermediate when
+                                    // converting from ROS messages
   wave::PCLPointCloudPtr cloud_temp_display, aggregate, cloud_target;
 };
 
@@ -179,8 +179,8 @@ public:
   wave::GICPMatcher matcher;
 
   // Declared here to avoid multiple allocation/deallocations
-  wave::PCLPointCloudPtr cloud_ref,
-      cloud_tgt; // used as intermediates to apply filters/matches
+  wave::PCLPointCloudPtr cloud_ref, cloud_tgt; // used as intermediates to
+                                               // apply filters/matches
 };
 
 #endif // IG_GRAPH_SLAM_SCAN_MATCHER_HPP

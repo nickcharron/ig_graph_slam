@@ -635,7 +635,6 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
         }
       }
       break;
-
     case 2:
       // transform current pose scan to target cloud
       pcl::transformPointCloud(
@@ -679,7 +678,6 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
           }
         }
       }
-
       break;
     case 3:
 
@@ -739,7 +737,6 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
           }
         }
       }
-
       break;
     }
 
@@ -747,21 +744,21 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
     // each scan is filtered individually when saved in measurements
     // containers, then the whole set of n
     // combined scans is filtered once (default, n=15)
-    if ((k % this->params.int_map_size) ==
-        0) { // every nth pose, filter the intermediate map if specified then
-             // move to next
-      if ((i != 0) &&
-          !(this->params.downsample_output_method ==
-            3)) { // if not first intermediate map, then filter it and
+    if ((k % this->params.int_map_size) == 0) {
+      // every nth pose, filter the intermediate map if specified then
+      // move to next
+      if ((i != 0) && !(this->params.downsample_output_method == 3)) {
+        // if not first intermediate map, then filter it and
         // move to the next intermediate map
         *intermediaries.at(i) = downSampleFilterIG(
             intermediaries.at(i), this->params.downsample_cell_size);
         i++;
-      } else // if first intermediate map
-      {
-        if (k != 0) { // if it's the first scan, do nothing.
-                      // if it's not the first scan, but it is the first
-                      // intermediate map , then increase iterator of int. maps
+      } else {
+        // if first intermediate map
+        if (k != 0) {
+          // if it's the first scan, do nothing.
+          // if it's not the first scan, but it is the first
+          // intermediate map , then increase iterator of int. maps
           i++;
         }
       }
