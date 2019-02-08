@@ -50,12 +50,9 @@ int main() {
 
   // Init pointer to scan matcher based on type
   boost::shared_ptr<ScanMatcher> scan_matcher;
+  std::string matcherConfigPath = getMatcherConfig(p_->matcher_type);
+  LOG_INFO("Loading matcher config file: %s", matcherConfigPath.c_str());
   if (p_->matcher_type == "icp") {
-    std::string matcherConfigPath = __FILE__;
-    matcherConfigPath.erase(matcherConfigPath.end() - 12,
-                            matcherConfigPath.end());
-    matcherConfigPath += "config/icp.yaml";
-    LOG_INFO("Loading matcher config file: %s", matcherConfigPath.c_str());
     scan_matcher = boost::make_shared<ICPScanMatcher>(*p_, matcherConfigPath);
   } else if (p_->matcher_type == "loam") {
     LOG_ERROR("%s matcher type is not yet implemented. Coming soon.",
@@ -63,11 +60,6 @@ int main() {
     // TODO: implement loam scan matcher
     return -1;
   } else if (p_->matcher_type == "gicp") {
-    std::string matcherConfigPath = __FILE__;
-    matcherConfigPath.erase(matcherConfigPath.end() - 12,
-                            matcherConfigPath.end());
-    matcherConfigPath += "config/gicp.yaml";
-    LOG_INFO("Loading matcher config file: %s", matcherConfigPath.c_str());
     scan_matcher = boost::make_shared<GICPScanMatcher>(*p_, matcherConfigPath);
   } else {
     LOG_ERROR("%s is not a valid matcher type. Change matcher type in "

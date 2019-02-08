@@ -173,6 +173,25 @@ void outputParams(boost::shared_ptr<Params> p_) {
       << "----------------------------" << std::endl;
 }
 
+std::string getMatcherConfig(std::string matcher_type_){
+	std::string matcherConfigPath = __FILE__;
+	matcherConfigPath.erase(matcherConfigPath.end() - 20, matcherConfigPath.end());
+	if (matcher_type_ == "icp") {
+	    matcherConfigPath += "config/icp.yaml";
+	    return matcherConfigPath;
+	} else if (matcher_type_ == "loam") {
+	  LOG_ERROR("%s matcher type is not yet implemented. Coming soon.",
+		      matcher_type_.c_str());
+	  return "";
+	} else if (matcher_type_ == "gicp") {
+	  matcherConfigPath += "config/gicp.yaml";
+	  return matcherConfigPath;	
+	} else {
+	  LOG_ERROR("%s is not a valid matcher type. Change matcher type in ig_graph_slam_config.yaml", matcher_type_.c_str());
+	  return "";
+	}		
+}
+
 bool validateParams(boost::shared_ptr<Params> p_) {
   // NOTE: These checks need to be performed in the same order as the
   // fillparams function, or else you may not catch the first error.
@@ -368,15 +387,17 @@ bool validateParams(boost::shared_ptr<Params> p_) {
     return 0;
   }
 
-  if (!boost::filesystem::exists(p_->output_path)) {
+  std::string matcherConfigFilePath = getMatcherConfig(p_->matcher_type);
+
+  if (!boost::filesystem::exists(matcherConfigFilePath)) {
     if (p_->matcher_type == "icp") {
-      LOG_ERROR("icp.yaml not found in config folder");
+      LOG_ERROR("icp.yaml not found. Looking in: %s", matcherConfigFilePath.c_str());
     } else if (p_->matcher_type == "gicp") {
-      LOG_ERROR("gicp.yaml not found in config folder");
+      LOG_ERROR("gicp.yaml not found. Looking in: %s", matcherConfigFilePath.c_str());
     } else if (p_->matcher_type == "loam") {
-      LOG_ERROR("loam.yaml not found in config folder");
+      LOG_ERROR("loam.yaml not found. Looking in: %s", matcherConfigFilePath.c_str());
     } else {
-      LOG_ERROR("matcher config file not found in config folder");
+      LOG_ERROR("matcher config file not found. Looking in: %s", matcherConfigFilePath.c_str());
     }
     return 0;
   }
