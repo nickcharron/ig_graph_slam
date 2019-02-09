@@ -173,23 +173,26 @@ void outputParams(boost::shared_ptr<Params> p_) {
       << "----------------------------" << std::endl;
 }
 
-std::string getMatcherConfig(std::string matcher_type_){
-	std::string matcherConfigPath = __FILE__;
-	matcherConfigPath.erase(matcherConfigPath.end() - 20, matcherConfigPath.end());
-	if (matcher_type_ == "icp") {
-	    matcherConfigPath += "config/icp.yaml";
-	    return matcherConfigPath;
-	} else if (matcher_type_ == "loam") {
-	  LOG_ERROR("%s matcher type is not yet implemented. Coming soon.",
-		      matcher_type_.c_str());
-	  return "";
-	} else if (matcher_type_ == "gicp") {
-	  matcherConfigPath += "config/gicp.yaml";
-	  return matcherConfigPath;	
-	} else {
-	  LOG_ERROR("%s is not a valid matcher type. Change matcher type in ig_graph_slam_config.yaml", matcher_type_.c_str());
-	  return "";
-	}		
+std::string getMatcherConfig(std::string matcher_type_) {
+  std::string matcherConfigPath = __FILE__;
+  matcherConfigPath.erase(matcherConfigPath.end() - 20,
+                          matcherConfigPath.end());
+  if (matcher_type_ == "icp") {
+    matcherConfigPath += "config/icp.yaml";
+    return matcherConfigPath;
+  } else if (matcher_type_ == "loam") {
+    LOG_ERROR("%s matcher type is not yet implemented. Coming soon.",
+              matcher_type_.c_str());
+    return "";
+  } else if (matcher_type_ == "gicp") {
+    matcherConfigPath += "config/gicp.yaml";
+    return matcherConfigPath;
+  } else {
+    LOG_ERROR("%s is not a valid matcher type. Change matcher type in "
+              "ig_graph_slam_config.yaml",
+              matcher_type_.c_str());
+    return "";
+  }
 }
 
 bool validateParams(boost::shared_ptr<Params> p_) {
@@ -391,13 +394,17 @@ bool validateParams(boost::shared_ptr<Params> p_) {
 
   if (!boost::filesystem::exists(matcherConfigFilePath)) {
     if (p_->matcher_type == "icp") {
-      LOG_ERROR("icp.yaml not found. Looking in: %s", matcherConfigFilePath.c_str());
+      LOG_ERROR("icp.yaml not found. Looking in: %s",
+                matcherConfigFilePath.c_str());
     } else if (p_->matcher_type == "gicp") {
-      LOG_ERROR("gicp.yaml not found. Looking in: %s", matcherConfigFilePath.c_str());
+      LOG_ERROR("gicp.yaml not found. Looking in: %s",
+                matcherConfigFilePath.c_str());
     } else if (p_->matcher_type == "loam") {
-      LOG_ERROR("loam.yaml not found. Looking in: %s", matcherConfigFilePath.c_str());
+      LOG_ERROR("loam.yaml not found. Looking in: %s",
+                matcherConfigFilePath.c_str());
     } else {
-      LOG_ERROR("matcher config file not found. Looking in: %s", matcherConfigFilePath.c_str());
+      LOG_ERROR("matcher config file not found. Looking in: %s",
+                matcherConfigFilePath.c_str());
     }
     return 0;
   }
@@ -888,6 +895,38 @@ void ScanMatcher::outputAggregateMap(GTSAMGraph &graph,
       datumfile << result.inverse().matrix().format(CSVFormat);
       datumfile.close();
     }
+  }
+}
+
+void ScanMatcher::outputForColourization(boost::shared_ptr<ROSBag> ros_data,
+                                         int mapping_method,
+                                         std::string path_) {
+
+  std::string outputPathRoot, outputPathPCDs, outputPathImgs;
+  outputPathRoot = path_ + "/colourization/";
+  outputPathPCDs = outputPathRoot + "pcds/";
+  outputPathImgs = outputPathRoot + "images/";
+
+  Eigen::Affine3d T_C_L;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr aggregateTransformed(
+      new pcl::PointCloud<pcl::PointXYZ>);
+  TimePoint poseTimePoint;
+
+  // TODO: write this function (in utils probably)
+  outputInstrinsics(this->intrinsicsPath, outputPathRoot);
+
+  // TODO: add parameter for how many images are taken
+  for (int i = 0 + 10; i < final_poses.size(); i + 10) {
+    // Get transform for pose i. Here L is lidar map frame, and C is camera
+    // frame which is also the current pose
+    T_C_L = final_poses.at(i).value;
+
+    // transform the aggregate map to the image frame
+    pcl::transformPointCloud(*this->aggregate, *aggregateTransformed, T_C_L);
+
+    // Get image closest to timestamp of pose i
+    poseTimePoint = ros_data->getLidarScanTimePoint(pose_scan_map.at(j)), true);
+    ros_data->outputImage(poseTimePoint, outputPathImgs);
   }
 }
 

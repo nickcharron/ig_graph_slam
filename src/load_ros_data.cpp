@@ -23,6 +23,9 @@
 #define DEG_TO_RAD 0.0174532925199433
 #define RAD_TO_DEG 57.2957795130823209
 
+using Clock = std::chrono::steady_clock;
+using TimePoint = std::chrono::time_point<Clock>;
+
 int gpsMsgCount = 0, imuMsgCount = 0, odomMsgCount = 0, pointCloudMsgCount = 0,
     pointCloudMsgCountMap = 0;
 double initial_heading = 0;
@@ -53,6 +56,11 @@ Eigen::Affine3d ROSBag::getGPSTransform(const TimePoint &time_point,
 
 TimePoint ROSBag::getLidarScanTimePoint(int index) {
   return this->lidar_container[index].time_point;
+}
+
+void ROSBag::outputImage(const TimePoint &time_point,
+                         const std::string output_path) {
+  // TODO: finish this.
 }
 
 Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,

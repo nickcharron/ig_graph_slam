@@ -297,4 +297,6 @@ int main() {
   scan_matcher->outputAggregateMap(graph, load_ros_data, 2, save_path);
   scan_matcher->createAggregateMap(graph, load_ros_data, 3);
   scan_matcher->outputAggregateMap(graph, load_ros_data, 3, save_path);
+  scan_matcher->outputForColourization(graph, load_ros_data, 2,
+                                       save_path + dateandtime);
 }

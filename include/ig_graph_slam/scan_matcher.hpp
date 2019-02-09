@@ -124,6 +124,7 @@ struct ScanMatcher {
    * pointcloud.
    * @param graph
    * @param ros_data
+   * @param mapping_method
    */
   void createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data,
                           int mapping_method);
@@ -131,9 +132,25 @@ struct ScanMatcher {
   /***
    * Outputs the aggregate pointcloud map as a pcd file
    * @param graph
+   * @param ros_data
+   * @param mapping_method
+   * @param path_
    */
   void outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data,
                           int mapping_method, std::string path_);
+
+  /***
+   * Outputs three things needed for point cloud colourization testing:
+   * 1. Camera intrinsic matrix
+   * 2. Aggregate pointcloud maps transformed into the camera frame for each image
+   * 3. Images for a number of poses
+   * @param graph
+   * @param ros_data
+   * @param mapping_method
+   * @param path_
+   */
+  void outputForColourization(boost::shared_ptr<ROSBag> ros_data,
+                              int mapping_method, std::string path_);
 
   void displayPointCloud(
       wave::PCLPointCloudPtr cloud_display, int color,
