@@ -26,7 +26,7 @@ using TimePoint = std::chrono::time_point<Clock>;
 struct Params {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   std::string bag_file_path, lidar_topic_loc, lidar_topic_map, gps_topic,
-      prev_poses_path, gps_imu_topic, odom_topic, gps_type, matcher_type,
+      prev_poses_path, imu_topic, odom_topic, gps_type, matcher_type,
       output_path;
   int knn, set_min_neighbours, iterations, init_method, int_map_size,
       downsample_output_method;

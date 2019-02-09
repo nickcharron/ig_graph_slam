@@ -109,7 +109,9 @@ Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,
   }
 }
 
-ROSBag::ROSBag() {
+ROSBag::ROSBag(std::string path, std::vector<std::string> topics) {
+  this->bag_file_path = path;
+  this->bag_topics = topics;
   this->T_ECEF_MAP.setIdentity();
   this->have_GPS_datum = false;
   this->pcl_pc2_tmp = boost::make_shared<pcl::PCLPointCloud2>();
@@ -217,6 +219,41 @@ void ROSBag::loadIMUMessage(rosbag::View::iterator &rosbag_iter,
   }
 }
 
+void ROSBag::loadIMUMessagesAll(std::string imu_topic) {
+
+  if (imu_topic == "") {
+    return;
+  }
+
+  // Read bag file and create view
+  rosbag::Bag bag;
+  try {
+    bag.open(this->bag_file_path, rosbag::bagmode::Read);
+  } catch (rosbag::BagException &ex) {
+    LOG_ERROR("Bag exception : %s", ex.what());
+  }
+  rosbag::View view(bag, rosbag::TopicQuery(this->bag_topics), ros::TIME_MIN,
+                    ros::TIME_MAX, true);
+
+  int bag_counter = 0, total_messages = view.size();
+  bool end_of_bag = false, start_of_bag = true;
+  if (total_messages == 0) {
+    LOG_ERROR("No messages read. Check your topics in config file.");
+  }
+
+  for (auto iter = view.begin(); iter != view.end(); iter++) {
+    bag_counter++;
+    outputPercentComplete(bag_counter, total_messages,
+                          "Loading IMU messages...");
+    if (bag_counter == total_messages) {
+      end_of_bag = true;
+    }
+    loadIMUMessage(iter, end_of_bag, start_of_bag, imu_topic);
+    start_of_bag = false;
+  }
+  bag.close();
+}
+
 void ROSBag::loadROSBagMessage(rosbag::View::iterator &rosbag_iter,
                                bool end_of_bag, boost::shared_ptr<Params> p_) {
   if (rosbag_iter->getTopic() == p_->gps_topic) {
@@ -253,6 +290,33 @@ void ROSBag::loadROSBagMessage(rosbag::View::iterator &rosbag_iter,
              pointCloudMsgCountMap);
     LOG_INFO("Saved %d Odometry Messages.", odomMsgCount);
   }
+}
+
+void ROSBag::loadROSBagMessagesAll(boost::shared_ptr<Params> p_) {
+
+  // Read bag file and create view
+  rosbag::Bag bag;
+  try {
+    bag.open(this->bag_file_path, rosbag::bagmode::Read);
+  } catch (rosbag::BagException &ex) {
+    LOG_ERROR("Bag exception : %s", ex.what());
+  }
+  rosbag::View view(bag, rosbag::TopicQuery(this->bag_topics), ros::TIME_MIN,
+                    ros::TIME_MAX, true);
+
+  int bag_counter = 0, total_messages = view.size();
+  bool end_of_bag = false;
+
+  for (auto iter = view.begin(); iter != view.end(); iter++) {
+    bag_counter++;
+    if (bag_counter == total_messages) {
+      end_of_bag = true;
+    }
+    outputPercentComplete(bag_counter, total_messages,
+                          "Loading all other messages...");
+    loadROSBagMessage(iter, end_of_bag, p_);
+  }
+  bag.close();
 }
 
 void ROSBag::loadPCLPointCloudFromPointCloud2(

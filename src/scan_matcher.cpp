@@ -39,7 +39,7 @@ void fillparams(Params &params) {
   wave::ConfigParser parser;
   parser.addParam("gps_type", &(params.gps_type));
   parser.addParam("gps_topic", &(params.gps_topic));
-  parser.addParam("gps_imu_topic", &(params.gps_imu_topic));
+  parser.addParam("imu_topic", &(params.imu_topic));
   parser.addParam("odom_topic", &(params.odom_topic));
   parser.addParam("init_method", &(params.init_method));
   parser.addParam("lidar_topic_loc", &(params.lidar_topic_loc));
@@ -107,6 +107,12 @@ void fillparams(Params &params) {
   } else {
     LOG_ERROR("ig_graph_slam.yaml not found in config folder");
   }
+
+  params.topics.push_back(params.lidar_topic_loc);
+  params.topics.push_back(params.lidar_topic_map);
+  params.topics.push_back(params.gps_topic);
+  params.topics.push_back(params.imu_topic);
+  params.topics.push_back(params.odom_topic);
 }
 
 void outputParams(boost::shared_ptr<Params> p_) {
@@ -116,7 +122,7 @@ void outputParams(boost::shared_ptr<Params> p_) {
       << "----------------------------" << std::endl
       << "gps_type: " << p_->gps_type << std::endl
       << "gps_topic: " << p_->gps_topic << std::endl
-      << "gps_imu_topic: " << p_->gps_imu_topic << std::endl
+      << "imu_topic: " << p_->imu_topic << std::endl
       << "odom_topic: " << p_->odom_topic << std::endl
       << "init_method: " << p_->init_method << std::endl
       << "lidar_topic_loc: " << p_->lidar_topic_loc << std::endl
@@ -185,11 +191,11 @@ std::string getMatcherConfig(std::string matcher_type_){
 	  return "";
 	} else if (matcher_type_ == "gicp") {
 	  matcherConfigPath += "config/gicp.yaml";
-	  return matcherConfigPath;	
-	} else {
+          return matcherConfigPath;
+        } else {
 	  LOG_ERROR("%s is not a valid matcher type. Change matcher type in ig_graph_slam_config.yaml", matcher_type_.c_str());
 	  return "";
-	}		
+        }
 }
 
 bool validateParams(boost::shared_ptr<Params> p_) {
@@ -207,7 +213,7 @@ bool validateParams(boost::shared_ptr<Params> p_) {
     return 0;
   }
 
-  if (p_->gps_imu_topic == "" && p_->init_method == 1 &&
+  if (p_->imu_topic == "" && p_->init_method == 1 &&
       p_->gps_type == "NavSatFix") {
     LOG_ERROR("Please enter GPS/IMU topic.");
     return 0;
