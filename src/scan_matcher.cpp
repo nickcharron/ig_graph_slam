@@ -39,7 +39,7 @@ void fillparams(Params &params) {
   wave::ConfigParser parser;
   parser.addParam("gps_type", &(params.gps_type));
   parser.addParam("gps_topic", &(params.gps_topic));
-  parser.addParam("gps_imu_topic", &(params.gps_imu_topic));
+  parser.addParam("imu_topic", &(params.imu_topic));
   parser.addParam("odom_topic", &(params.odom_topic));
   parser.addParam("init_method", &(params.init_method));
   parser.addParam("lidar_topic_loc", &(params.lidar_topic_loc));
@@ -47,6 +47,8 @@ void fillparams(Params &params) {
   parser.addParam("bag_file_path", &(params.bag_file_path));
   parser.addParam("use_prev_poses", &(params.use_prev_poses));
   parser.addParam("prev_poses_path", &(params.prev_poses_path));
+  parser.addParam("camera_topics", &(params.camera_topics));
+  parser.addParam("intrinsics", &(params.intrinsics));
   parser.addParam("T_LIDAR_GPS", &(params.T_LIDAR_GPS.matrix()));
   parser.addParam("T_LMAP_LLOC", &(params.T_LMAP_LLOC.matrix()));
   parser.addParam("use_pass_through_filter", &(params.use_pass_through_filter));
@@ -107,23 +109,35 @@ void fillparams(Params &params) {
   } else {
     LOG_ERROR("ig_graph_slam.yaml not found in config folder");
   }
+
+  params.topics.push_back(params.lidar_topic_loc);
+  params.topics.push_back(params.lidar_topic_map);
+  params.topics.push_back(params.gps_topic);
+  params.topics.push_back(params.imu_topic);
+  params.topics.push_back(params.odom_topic);
 }
 
 void outputParams(boost::shared_ptr<Params> p_) {
+  std::cout << "----------------------------" << std::endl
+            << "Outputting all parameters:" << std::endl
+            << "----------------------------" << std::endl
+            << "gps_type: " << p_->gps_type << std::endl
+            << "gps_topic: " << p_->gps_topic << std::endl
+            << "imu_topic: " << p_->imu_topic << std::endl
+            << "odom_topic: " << p_->odom_topic << std::endl
+            << "init_method: " << p_->init_method << std::endl
+            << "lidar_topic_loc: " << p_->lidar_topic_loc << std::endl
+            << "lidar_topic_map: " << p_->lidar_topic_map << std::endl
+            << "bag_file_path: " << p_->bag_file_path << std::endl
+            << "use_prev_poses: " << p_->use_prev_poses << std::endl
+            << "prev_poses_path: " << p_->prev_poses_path << std::endl;
+  for (uint16_t i = 0; i < p_->camera_topics.size(); i++) {
+    std::cout << "camera_topics: " << p_->camera_topics[i] << std::endl;
+  }
+  for (uint16_t i = 0; i < p_->camera_topics.size(); i++) {
+    std::cout << "intrinsics: " << p_->intrinsics[i] << std::endl;
+  }
   std::cout
-      << "----------------------------" << std::endl
-      << "Outputting all parameters:" << std::endl
-      << "----------------------------" << std::endl
-      << "gps_type: " << p_->gps_type << std::endl
-      << "gps_topic: " << p_->gps_topic << std::endl
-      << "gps_imu_topic: " << p_->gps_imu_topic << std::endl
-      << "odom_topic: " << p_->odom_topic << std::endl
-      << "init_method: " << p_->init_method << std::endl
-      << "lidar_topic_loc: " << p_->lidar_topic_loc << std::endl
-      << "lidar_topic_map: " << p_->lidar_topic_map << std::endl
-      << "bag_file_path: " << p_->bag_file_path << std::endl
-      << "use_prev_poses: " << p_->use_prev_poses << std::endl
-      << "prev_poses_path: " << p_->prev_poses_path << std::endl
       << "T_LIDAR_GPS: " << p_->T_LIDAR_GPS.matrix() << std::endl
       << "T_LMAP_LLOC: " << p_->T_LMAP_LLOC.matrix() << std::endl
       << "use_pass_through_filter: " << p_->use_pass_through_filter << std::endl
@@ -210,7 +224,7 @@ bool validateParams(boost::shared_ptr<Params> p_) {
     return 0;
   }
 
-  if (p_->gps_imu_topic == "" && p_->init_method == 1 &&
+  if (p_->imu_topic == "" && p_->init_method == 1 &&
       p_->gps_type == "NavSatFix") {
     LOG_ERROR("Please enter GPS/IMU topic.");
     return 0;
@@ -248,6 +262,12 @@ bool validateParams(boost::shared_ptr<Params> p_) {
   if (!boost::filesystem::exists(p_->prev_poses_path) &&
       p_->use_prev_poses == 1) {
     LOG_ERROR("Cannot find previous poses file.");
+    return 0;
+  }
+
+  if (p_->camera_topics.size() != p_->intrinsics.size()) {
+    LOG_ERROR(
+        "Number of camera topics not equal to number of intrinsic files.");
     return 0;
   }
 
@@ -899,34 +919,57 @@ void ScanMatcher::outputAggregateMap(GTSAMGraph &graph,
 }
 
 void ScanMatcher::outputForColourization(boost::shared_ptr<ROSBag> ros_data,
-                                         int mapping_method,
                                          std::string path_) {
 
-  std::string outputPathRoot, outputPathPCDs, outputPathImgs;
+  std::string outputPathRoot, outputPathThisCam, outputPathThisCamPCDs,
+      outputPathThisCamImgs;
+
   outputPathRoot = path_ + "/colourization/";
-  outputPathPCDs = outputPathRoot + "pcds/";
-  outputPathImgs = outputPathRoot + "images/";
 
   Eigen::Affine3d T_C_L;
   pcl::PointCloud<pcl::PointXYZ>::Ptr aggregateTransformed(
       new pcl::PointCloud<pcl::PointXYZ>);
   TimePoint poseTimePoint;
 
-  // TODO: write this function (in utils probably)
-  outputInstrinsics(this->intrinsicsPath, outputPathRoot);
+  for (uint32_t i = 0; i < this->params.intrinsics.size(); i++) {
+    // For each camera, create separate save directories
+    outputPathThisCam = outputPathRoot + this->params.intrinsics[i];
+    outputPathThisCam.erase(outputPathThisCam.end() - 5,
+                            outputPathThisCam.end());
+    outputPathThisCamPCDs = outputPathThisCam + "/pcds/";
+    outputPathThisCamImgs = outputPathThisCam + "/images/";
+    boost::filesystem::create_directories(outputPathThisCamPCDs);
+    boost::filesystem::create_directories(outputPathThisCamImgs);
 
-  // TODO: add parameter for how many images are taken
-  for (int i = 0 + 10; i < final_poses.size(); i + 10) {
-    // Get transform for pose i. Here L is lidar map frame, and C is camera
-    // frame which is also the current pose
-    T_C_L = final_poses.at(i).value;
+    // Output the intrinsics to results folder
+    std::string intrinsicsPath = __FILE__;
+    intrinsicsPath.erase(intrinsicsPath.end() - 20, intrinsicsPath.end());
+    intrinsicsPath += "calibrations/" + this->params.intrinsics[i];
+    std::ifstream src(intrinsicsPath, std::ios::binary);
+    std::ofstream dst(outputPathThisCam + "/" + this->params.intrinsics[i],
+                      std::ios::binary);
+    dst << src.rdbuf();
 
-    // transform the aggregate map to the image frame
-    pcl::transformPointCloud(*this->aggregate, *aggregateTransformed, T_C_L);
+    // Iterate through poses and save images + transformed clouds
+    // TODO: add parameter for how many images are taken
+    int mapCounter = 0;
+    for (uint32_t i = 0 + 10; i < final_poses.size(); i += 10) {
+      mapCounter++;
 
-    // Get image closest to timestamp of pose i
-    poseTimePoint = ros_data->getLidarScanTimePoint(pose_scan_map.at(j)), true);
-    ros_data->outputImage(poseTimePoint, outputPathImgs);
+      // Get transform for pose i. Here L is lidar map frame, and C is camera
+      // frame which is also the current pose
+      T_C_L = final_poses.at(i).value;
+
+      // transform the aggregate map to the image frame
+      pcl::transformPointCloud(*this->aggregate, *aggregateTransformed, T_C_L);
+      pcl::io::savePCDFileASCII(outputPathThisCamPCDs + "map" +
+                                    std::to_string(mapCounter) + ".pcd",
+                                *aggregateTransformed);
+
+      // Get image closest to timestamp of pose i
+      poseTimePoint = ros_data->getLidarScanTimePoint(pose_scan_map.at(i));
+      // ros_data->outputImage(poseTimePoint, outputPathImgs);
+    }
   }
 }
 

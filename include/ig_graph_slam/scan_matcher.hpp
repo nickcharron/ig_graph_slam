@@ -26,7 +26,7 @@ using TimePoint = std::chrono::time_point<Clock>;
 struct Params {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   std::string bag_file_path, lidar_topic_loc, lidar_topic_map, gps_topic,
-      prev_poses_path, gps_imu_topic, odom_topic, gps_type, matcher_type,
+      prev_poses_path, imu_topic, odom_topic, gps_type, matcher_type,
       output_path;
   int knn, set_min_neighbours, iterations, init_method, int_map_size,
       downsample_output_method;
@@ -44,7 +44,7 @@ struct Params {
       use_pass_through_filter_map;
   Eigen::Affine3d T_LIDAR_GPS, T_LMAP_LLOC;
   wave::MatX scan_transform_cov;
-  std::vector<std::string> topics;
+  std::vector<std::string> topics, intrinsics, camera_topics;
 };
 
 /***
@@ -150,7 +150,7 @@ struct ScanMatcher {
    * @param path_
    */
   void outputForColourization(boost::shared_ptr<ROSBag> ros_data,
-                              int mapping_method, std::string path_);
+                              std::string path_);
 
   void displayPointCloud(
       wave::PCLPointCloudPtr cloud_display, int color,

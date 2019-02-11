@@ -52,7 +52,7 @@ struct ROSBag {
    */
   //-------------------------------------------------------------------------
 
-  ROSBag();
+  ROSBag(std::string path, std::vector<std::string> topics);
   //~ROSBag();
 
   /***
@@ -66,10 +66,9 @@ struct ROSBag {
   /***
    * Save image from a ROS bag that is closest to a specified timepoint
    * @param time_point
-   * @return output_path
+   * @param output_path
    */
-  void ROSBag::outputImage(const TimePoint &time_point,
-                           const std::string output_path)
+  void outputImage(const TimePoint &time_point, const std::string output_path);
 
   /***
    * Gets the GPS Transform at a certain time point
@@ -83,14 +82,21 @@ struct ROSBag {
   /***
    * Loads IMU RPY data into container from a geometry_msgs/Vector3Stamped ROS
    * msg
+   * @param imu_topic
+   */
+  void loadIMUMessagesAll(std::string imu_topic);
+
+  /***
+   * Loads IMU RPY data into container from a geometry_msgs/Vector3Stamped ROS
+   * msg
    * @param rosbag_iter
    * @param end_of_bag
    * @param start_of_bag
    * @param imu_topic
    */
-  void loadIMUMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag,
-                      bool start_of_bag, std::string imu_topic);
-
+  void loadIMUMessage(rosbag::View::iterator &rosbag_iter,
+                              bool end_of_bag, bool start_of_bag,
+                              std::string imu_topic);
   /***
    * Loads GPS data into measurement container from an NavSatFix ROS msg
    * @param gps_msg NavSatFix ROS msg
@@ -122,6 +128,12 @@ struct ROSBag {
    */
   void loadROSBagMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag,
                          boost::shared_ptr<Params> p_);
+
+ /***
+  * Load all ROS Bag messages into their appropriate containers
+  * @param p_
+  */
+  void loadROSBagMessagesAll(boost::shared_ptr<Params> p_);
 
   /***
    * Load PCL point cloud message from ROS message into container (for
@@ -164,6 +176,8 @@ struct ROSBag {
   wave::PCLPointCloudPtr cloud_tmp;
 
   // Other required variables
+  std::string bag_file_path;
+  std::vector<std::string> bag_topics;
   bool have_GPS_datum;
   Eigen::Affine3d T_ECEF_MAP; // this is in both ROSBag and ScanMatcher structs
 };

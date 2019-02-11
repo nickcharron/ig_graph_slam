@@ -35,23 +35,25 @@ using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;
 
 int main() {
-  // create shared pointers for parameters and ros data
+
+  // create shared pointers for parameters and fill the params
   boost::shared_ptr<Params> p_(new Params);
   fillparams(*p_);
-
   if (!validateParams(p_)) {
     LOG_INFO("NOTE: Check all booleans for typos in config file.");
     outputParams(p_);
     return 0;
   }
 
-  rosbag::Bag bag;
-  boost::shared_ptr<ROSBag> load_ros_data(new ROSBag);
+  // create shared pointers for ros data and initialize
+  boost::shared_ptr<ROSBag> load_ros_data;
+  load_ros_data = boost::make_shared<ROSBag>(p_->bag_file_path, p_->topics);
 
-  // Init pointer to scan matcher based on type
+  // create shared pointer to scan matcher based on type, and initialize
   boost::shared_ptr<ScanMatcher> scan_matcher;
   std::string matcherConfigPath = getMatcherConfig(p_->matcher_type);
   LOG_INFO("Loading matcher config file: %s", matcherConfigPath.c_str());
+
   if (p_->matcher_type == "icp") {
     scan_matcher = boost::make_shared<ICPScanMatcher>(*p_, matcherConfigPath);
   } else if (p_->matcher_type == "loam") {
@@ -68,60 +70,13 @@ int main() {
     return -1;
   }
 
-  // Read bag file
-  try {
-    bag.open(p_->bag_file_path, rosbag::bagmode::Read);
-  } catch (rosbag::BagException &ex) {
-    LOG_ERROR("Bag exception : %s", ex.what());
-  }
-  p_->topics.push_back(p_->lidar_topic_loc);
-  p_->topics.push_back(p_->lidar_topic_map);
-  p_->topics.push_back(p_->gps_topic);
-  p_->topics.push_back(p_->gps_imu_topic);
-  p_->topics.push_back(p_->odom_topic);
-
-  // iterate through bag file and save messages
-  int bag_counter = 0;
-  bool end_of_bag = false;
-  bool start_of_bag = true;
-  rosbag::View view(bag, rosbag::TopicQuery(p_->topics), ros::TIME_MIN,
-                    ros::TIME_MAX, true);
-  int total_messages = view.size();
-  if (total_messages == 0) {
-    LOG_ERROR("No messages read. Check your topics in config file.");
-  }
-
   // iterate through bag messages and save imu messages only
-  if (!(p_->gps_imu_topic == "")) {
-    for (auto iter = view.begin(); iter != view.end(); iter++) {
-      bag_counter++;
-      outputPercentComplete(bag_counter, total_messages,
-                            "Loading IMU messages...");
-      if (bag_counter == total_messages) {
-        end_of_bag = true;
-      }
-      load_ros_data->loadIMUMessage(iter, end_of_bag, start_of_bag,
-                                    p_->gps_imu_topic);
-      start_of_bag = false;
-    }
-  }
-  end_of_bag = false;
-  bag_counter = 0;
-  ;
+  load_ros_data->loadIMUMessagesAll(p_->imu_topic);
 
   // iterate through bag and save GPS and Scan messages
-  //-> we need to do this after filling imu container because GPS relies
-  //   on imu for rotation information
-  for (auto iter = view.begin(); iter != view.end(); iter++) {
-    bag_counter++;
-    if (bag_counter == total_messages) {
-      end_of_bag = true;
-    }
-    outputPercentComplete(bag_counter, total_messages,
-                          "Loading all other messages...");
-    load_ros_data->loadROSBagMessage(iter, end_of_bag, p_);
-  }
-  bag.close();
+  // NOTE: we need to do this after filling imu container because GPS relies
+  // on imu for rotation information
+  load_ros_data->loadROSBagMessagesAll(p_);
 
   // Select scans to store and save their respective poses based on
   // initialization measurements
@@ -287,7 +242,7 @@ int main() {
   dst << src.rdbuf();
 
   // Save Graph file
-  std::string graphFileName = save_path + dateandtime + "gtsam_graph.dot";
+  std::string graphFileName = save_path + dateandtime + "_gtsam_graph.dot";
   graph.print(graphFileName, false);
 
   // build and output maps
@@ -295,8 +250,7 @@ int main() {
   scan_matcher->outputAggregateMap(graph, load_ros_data, 1, save_path);
   scan_matcher->createAggregateMap(graph, load_ros_data, 2);
   scan_matcher->outputAggregateMap(graph, load_ros_data, 2, save_path);
+  scan_matcher->outputForColourization(load_ros_data, save_path);
   scan_matcher->createAggregateMap(graph, load_ros_data, 3);
   scan_matcher->outputAggregateMap(graph, load_ros_data, 3, save_path);
-  scan_matcher->outputForColourization(graph, load_ros_data, 2,
-                                       save_path + dateandtime);
 }
