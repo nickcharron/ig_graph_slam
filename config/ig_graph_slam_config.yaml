@@ -3,17 +3,23 @@
 # ------------------------------------------------------------------------------
   # For IG:
 gps_type: "NavSatFix" # For IG use "NavSatFix", for Moose use "INSPVAX"
-gps_topic: "/piksi/navsatfix_best_fix"
+gps_topic: ""
+# gps_topic: "/piksi/navsatfix_best_fix"
 # gps_topic: "/gps/filtered"
-gps_imu_topic: "/imu/rpy/filtered" # imu topic used to fill gps_container rotation
-                                   # NOTE: rpy depends on mounting position. Check in void ICP1ScanMatcher::loadIMUMessage()
+gps_imu_topic: ""
+#gps_imu_topic: "/imu/rpy/filtered" # imu topic used to fill gps_container rotation
+                                   # NOTE: rpy depends on mounting position. Check in void ICPScanMatcher::loadIMUMessage()
                                    # For IG: +x = +pitch, +y = -roll, +z = -yaw
 # odom_topic: "/odometry/filtered_odom"
 odom_topic: "/ig/loam/lidar_odom"
 init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
-bag_file_path: "/home/nick/OPG_DEMO_JAN2019/bags/ig_scan_loam_OPG_JAN2019.bag"
+bag_file_path: "/home/robot/OPG_DEMO_JAN2019/bags/ig_scan_loam_OPG_JAN2019.bag"
+#bag_file_path: "/home/robot/bag_files/ig_scans/2019-01-18-16-29-27-B-short3.bag"
+# TODO: Implement this:
+use_prev_poses: false             # if you want to use pre-calculated pose results and just rebuild the maps, set to true
+prev_poses_path: "/home/robot/results/ig_maps/ig_graph_slam/tmp_maps/mapX/poses.txt"
 
 T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization
   rows: 4
@@ -101,12 +107,14 @@ z_lower_threshold_map: -5
 # ------------------------------------------------------------------------------
 
 # Graph Parameters:
-scanreg_init_icp_distance_max: 10.0  # distance limit between two initial scan locations to be considered for nearest neighbours
-k_nearest_neighbours: 15            # maximum number of nearest neighbours for graph links
-trajectory_sampling_distance: 0.5   # Minimum distance in m at which we should take new scans for localization
-map_sampling_distance: 0.05         # Minimum distance in m at which we should take new scans for mapping
+k_nearest_neighbours: 2            # maximum number of nearest neighbours for graph links
+trajectory_sampling_distance: 4   # Minimum distance in m at which we should take new scans for localization
+map_sampling_distance: 1         # Minimum distance in m at which we should take new scans for mapping
 distance_match_min: 0               # specify minimum and maximum distance between scans to
-distance_match_limit: 10.0           # use for scan registration
+distance_match_limit: 10.0          # use for scan registration
+loop_max_distance: 4                # how close do two poses need to be to apply a loop closure constraint
+                                    # set to 0 to stop loop closure
+loop_min_travel_distance: 10        # how far does the robot need to travel before looking for loop closure
 iterations: 1                       # How many times to update initial estimates and redo matches
 use_gps: false                      # Whether to use GPS priors in graph optimization. Even if set false, GPS will be
                                     # TODO: KEEP FALSE UNTIL WE HAVE RPY IN GPS MESSAGE
@@ -130,6 +138,6 @@ visualize: false                     # Whether to visualize matches as they happ
                                     # Blue: scan i after registration against j (shoudl match white)
 step_matches: false
 combine_scans: false     # combine scans  from both lidar for scan registrations. Default false
-matcher_type: "icp1"    # icp1: point to plane icp in PCL, icp2: point to plane in PCL, gicp: wave::gicp
-matcher_config_path: "/home/nick/ig_catkin_ws/src/ig_graph_slam/config/icp1.yaml"
-# matcher_config_path: "/home/nick/ig_catkin_ws/src/ig_graph_slam/config/gicp.yaml"
+matcher_type: "icp"    # icp: point to point icp in PCL, loam: loam registration, gicp: wave::gicp
+#output_path: "/home/robot/results/ig_maps/ig_graph_slam/tmp_maps/"
+output_path: "/home/robot/OPG_DEMO_JAN2019/maps"
