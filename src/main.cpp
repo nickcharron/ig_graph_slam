@@ -129,15 +129,9 @@ int main() {
 
         // Attempts to match the scans and checks the correction norm
         // between scan transformation and GPS
-        // TODO: this is a hack fix, bug in adjacency builder.
-        if (scan_matcher->adjacency->at(j).at(iter) >=
-            scan_matcher->init_pose.poses.size()) {
-          LOG_ERROR("Trying to access pose that doesn't exist");
-        } else {
-          match_success = scan_matcher->matchScans(
-              scan_matcher->adjacency->at(j).at(iter), j, T_Liter_Lj, info,
-              correction_norm_valid, load_ros_data);
-        }
+        match_success = scan_matcher->matchScans(
+            scan_matcher->adjacency->at(j).at(iter), j, T_Liter_Lj, info,
+            correction_norm_valid, load_ros_data);
 
         if (!correction_norm_valid) // WHAT IS THIS??
         {

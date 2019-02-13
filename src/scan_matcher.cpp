@@ -478,6 +478,7 @@ void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
 void ScanMatcher::findAdjacentScans() {
   double distancejk;
   Eigen::Vector3d posej, posek;
+  this->total_matches = 0; // reset the counter of matches
 
   // Scan registration class
   // As factors are added, factor id will just be counter value
@@ -491,16 +492,16 @@ void ScanMatcher::findAdjacentScans() {
    *
    */
   for (uint64_t j = 0; j < this->init_pose.poses.size(); j++) {
-    // query is the position of the current pose
+    // posej is the position of the current pose
     posej(0, 0) = this->init_pose.poses[j](0, 3);
     posej(1, 0) = this->init_pose.poses[j](1, 3);
     posej(2, 0) = this->init_pose.poses[j](2, 3);
 
     // Do this for all poses except the last one
-    if (j + 1 <
-        this->init_pose.poses.size()) { // ensures that trajectory is connected
-                                        //  this is also accounted for in nn
-                                        //  search (see if j < ret_indices[k]-1)
+    if (j + 1 < this->init_pose.poses.size()) {
+      // ensures that trajectory is connected
+      //  this is also accounted for in nn
+      //  search (see if j < ret_indices[k]-1)
       this->adjacency->at(j).emplace_back(j + 1);
       this->total_matches++;
     }
@@ -509,18 +510,19 @@ void ScanMatcher::findAdjacentScans() {
      * For each pose position, check the next scans to see if they are
      * within the boundaries specified
      * If they are and they are after j, add them to the adjacency
-     * If the points were discovered before j, they won't be added
      *
      */
-    for (uint16_t k = j + 1; k < j + 2 + this->params.knn; k++) {
+    for (uint16_t k = j + 2;
+         (k < j + 1 + this->params.knn) && (k < this->init_pose.poses.size());
+         k++) {
       posek(0, 0) = this->init_pose.poses[k](0, 3);
       posek(1, 0) = this->init_pose.poses[k](1, 3);
       posek(2, 0) = this->init_pose.poses[k](2, 3);
       distancejk = calculateLength(posej, posek);
 
       if ((distancejk > this->params.distance_match_min) &&
-          (distancejk < this->params.distance_match_limit) &&
-          j + 1 < k) { // add index to back of vector for scan j
+          (distancejk < this->params.distance_match_limit)) {
+        // add index to back of vector for scan j
         this->adjacency->at(j).emplace_back(k);
         this->total_matches++;
       }
