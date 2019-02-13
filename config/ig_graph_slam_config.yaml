@@ -6,8 +6,8 @@ gps_type: "NavSatFix" # For IG use "NavSatFix", for Moose use "INSPVAX"
 gps_topic: ""
 # gps_topic: "/piksi/navsatfix_best_fix"
 # gps_topic: "/gps/filtered"
-gps_imu_topic: ""
-#gps_imu_topic: "/imu/rpy/filtered" # imu topic used to fill gps_container rotation
+imu_topic: ""
+#imu_topic: "/imu/rpy/filtered" # imu topic used to fill gps_container rotation
                                    # NOTE: rpy depends on mounting position. Check in void ICPScanMatcher::loadIMUMessage()
                                    # For IG: +x = +pitch, +y = -roll, +z = -yaw
 odom_topic: "/odometry/filtered_odom"
