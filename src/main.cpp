@@ -119,16 +119,26 @@ int main() {
       }
 
       // iterate over all scans adjacent to scan j
-      for (auto iter = scan_matcher->adjacency->at(j).begin();
-           iter != scan_matcher->adjacency->at(j).end(); iter++) {
+      // for (auto iter = scan_matcher->adjacency->at(j).begin();
+      //      iter != scan_matcher->adjacency->at(j).end(); iter++) {
+      for (uint64_t iter = 0; iter < scan_matcher->adjacency->at(j).size();
+           iter++) {
         Eigen::Affine3d T_Liter_Lj;
         wave::Mat6 info;
-        bool match_success;
+        bool match_success = false;
 
         // Attempts to match the scans and checks the correction norm
         // between scan transformation and GPS
-        match_success = scan_matcher->matchScans(
-            *iter, j, T_Liter_Lj, info, correction_norm_valid, load_ros_data);
+        // TODO: this is a hack fix, bug in adjacency builder.
+        if (scan_matcher->adjacency->at(j).at(iter) >=
+            scan_matcher->init_pose.poses.size()) {
+          LOG_ERROR("Trying to access pose that doesn't exist");
+        } else {
+          match_success = scan_matcher->matchScans(
+              scan_matcher->adjacency->at(j).at(iter), j, T_Liter_Lj, info,
+              correction_norm_valid, load_ros_data);
+        }
+
         if (!correction_norm_valid) // WHAT IS THIS??
         {
           continue;
@@ -143,7 +153,8 @@ int main() {
           mgtsam.block(3, 3, 3, 3) = info.block(0, 0, 3, 3); // translation
           mgtsam.block(0, 3, 3, 3) = info.block(0, 3, 3, 3); // off diagonal
           mgtsam.block(3, 0, 3, 3) = info.block(3, 0, 3, 3); // off diagonal
-          graph.addFactor(*iter, j, T_Liter_Lj, mgtsam);
+          graph.addFactor(scan_matcher->adjacency->at(j).at(iter), j,
+                          T_Liter_Lj, mgtsam);
           outputPercentComplete(cnt_match, scan_matcher->total_matches,
                                 "Matching scans between nearest neighbours...");
           cnt_match++;
