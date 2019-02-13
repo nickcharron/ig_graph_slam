@@ -968,7 +968,8 @@ void ScanMatcher::outputForColourization(boost::shared_ptr<ROSBag> ros_data,
 
       // Get image closest to timestamp of pose i
       poseTimePoint = ros_data->getLidarScanTimePoint(pose_scan_map.at(i));
-      // ros_data->outputImage(poseTimePoint, outputPathImgs);
+      ros_data->outputImage(poseTimePoint, outputPathThisCamImgs,
+                            this->params.camera_topics[i], mapCounter);
     }
   }
 }

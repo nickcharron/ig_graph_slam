@@ -5,8 +5,12 @@
 #include <ros/time.h>
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
+#include <sensor_msgs/Image.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/PointCloud2.h>
+
+// OpenCV headers
+#include <cv_bridge/cv_bridge.h>
 
 // WAVE Headers
 #include <wave/containers/measurement_container.hpp>
@@ -29,6 +33,16 @@ using TimePoint = std::chrono::time_point<Clock>;
 int gpsMsgCount = 0, imuMsgCount = 0, odomMsgCount = 0, pointCloudMsgCount = 0,
     pointCloudMsgCountMap = 0;
 double initial_heading = 0;
+
+// class constructor
+ROSBag::ROSBag(std::string path, std::vector<std::string> topics_) {
+  this->bag_file_path = path;
+  this->bag_topics = topics_;
+  this->T_ECEF_MAP.setIdentity();
+  this->have_GPS_datum = false;
+  this->pcl_pc2_tmp = boost::make_shared<pcl::PCLPointCloud2>();
+  this->cloud_tmp = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+}
 
 // General Functions
 bool takeNewScan(const Eigen::Affine3d &p1, const Eigen::Affine3d &p2,
@@ -58,8 +72,50 @@ TimePoint ROSBag::getLidarScanTimePoint(int index) {
   return this->lidar_container[index].time_point;
 }
 
-void outputImage(const TimePoint &time_point, const std::string output_path) {
-  // TODO: finish this.
+void outputImage(const TimePoint &time_point, const std::string output_path,
+                 const std::string camera_topic, const int imgNo) {
+
+  // Read bag file and create view
+  rosbag::Bag bag;
+  try {
+    bag.open(this->bag_file_path, rosbag::bagmode::Read);
+  } catch (rosbag::BagException &ex) {
+    LOG_ERROR("Bag exception : %s", ex.what());
+  }
+  rosbag::View view(bag, rosbag::TopicQuery(camera_topic), ros::TIME_MIN,
+                    ros::TIME_MAX, true);
+
+  if (view.size() == 0) {
+    LOG_ERROR("No image messages read. Check your topics in config file.");
+    break;
+  }
+
+  // iterate through bag:
+  int imageCount =
+      0 for (auto iter = view.begin(); iter != view.end(); iter++) {
+    if (iter->getTopic() == camera_topic) {
+
+      // save ros message
+      auto img_msg = iter->instantiate<sensor_msgs::Image>();
+
+      // check timepoint
+      TimePoint curImgTimepoint =
+          rosTimeToChrono(img_msg.header) if (curImgTimepoint >= time_point) {
+        imageCount++;
+
+        // first we need to change to opencv object
+        cv::Mat curImg = cv_bridge::toCvShare(msg, "bgr8")->image;
+
+        // save this image and swith to next image topic.
+        cv::imwrite(output_path + "image" + std::to_string(imgNo) + ".jpg",
+                    curImg);
+        break;
+      }
+    }
+  }
+  bag.close();
+  LOG_INFO("Saved a total of %d images.", imageCount);
+  LOG_INFO("Images saved to: %s", output_path);
 }
 
 Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,
@@ -114,15 +170,6 @@ Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,
   } else {
     return E_T_ECEF_ENU;
   }
-}
-
-ROSBag::ROSBag(std::string path, std::vector<std::string> topics) {
-  this->bag_file_path = path;
-  this->bag_topics = topics;
-  this->T_ECEF_MAP.setIdentity();
-  this->have_GPS_datum = false;
-  this->pcl_pc2_tmp = boost::make_shared<pcl::PCLPointCloud2>();
-  this->cloud_tmp = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
 }
 
 // Messages needed for IG

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+
+  <group ns="/F1">
+    <node pkg="nodelet" type="nodelet" name="camera_nodelet_manager" args="manager" cwd="node" output="log"/>
+	  <node pkg="nodelet" type="nodelet" name="image_proc_debayer"
+          args="load image_proc/debayer camera_nodelet_manager">
+	  </node>
+  </group>
+
+  <group ns="/F2">
+    <node pkg="nodelet" type="nodelet" name="camera_nodelet_manager" args="manager" cwd="node" output="log"/>
+    <node pkg="nodelet" type="nodelet" name="image_proc_debayer"
+          args="load image_proc/debayer camera_nodelet_manager">
+    </node>
+  </group>
+
+</launch>

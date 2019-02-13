@@ -52,7 +52,7 @@ struct ROSBag {
    */
   //-------------------------------------------------------------------------
 
-  ROSBag(std::string path, std::vector<std::string> topics);
+  ROSBag(std::string path, std::vector<std::string> topics_);
   //~ROSBag();
 
   /***
@@ -68,7 +68,8 @@ struct ROSBag {
    * @param time_point
    * @param output_path
    */
-  void outputImage(const TimePoint &time_point, const std::string output_path);
+  void outputImage(const TimePoint &time_point, const std::string output_path,
+                   const std::string camera_topic, const int imgNo);
 
   /***
    * Gets the GPS Transform at a certain time point

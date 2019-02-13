@@ -47,7 +47,8 @@ int main() {
 
   // create shared pointers for ros data and initialize
   boost::shared_ptr<ROSBag> load_ros_data;
-  load_ros_data = boost::make_shared<ROSBag>(p_->bag_file_path, p_->topics);
+  load_ros_data = boost::make_shared<ROSBag>(p_->bag_file_path, p_->topics,
+                                             p_->camera_topics);
 
   // create shared pointer to scan matcher based on type, and initialize
   boost::shared_ptr<ScanMatcher> scan_matcher;
