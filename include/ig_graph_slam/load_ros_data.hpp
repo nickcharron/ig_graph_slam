@@ -29,16 +29,6 @@
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;
 
-/***
- * Takes new scan if the distance between the scans are more than dist
- * @param p1 pose of first scan
- * @param p2 pose of second scan
- * @param dist minimum distance between scans
- * @return
- */
-bool takeNewScan(const Eigen::Affine3d &p1, const Eigen::Affine3d &p2,
-                 const double &dist);
-
 // declare these due to circular reference
 struct ScanMatcher;
 struct Params;

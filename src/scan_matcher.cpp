@@ -78,6 +78,9 @@ void fillparams(Params &params) {
   parser.addParam("trajectory_sampling_distance",
                   &(params.trajectory_sampling_dist));
   parser.addParam("map_sampling_distance", &(params.map_sampling_dist));
+  parser.addParam("trajectory_rotation_change",
+                  &(params.trajectory_rotation_change));
+  parser.addParam("map_rotation_change", &(params.map_rotation_change));
   parser.addParam("distance_match_min", &(params.distance_match_min));
   parser.addParam("distance_match_limit", &(params.distance_match_limit));
   parser.addParam("loop_max_distance", &(params.loop_max_distance));
@@ -346,6 +349,17 @@ bool validateParams(boost::shared_ptr<Params> p_) {
     return 0;
   }
 
+  if (p_->trajectory_rotation_change < 5) {
+    LOG_ERROR(
+        "parameter trajectory_rotation_change invalid. Might be too small");
+    return 0;
+  }
+
+  if (p_->map_rotation_change < 3) {
+    LOG_ERROR("parameter map_rotation_change invalid. Might be too small");
+    return 0;
+  }
+
   if (p_->iterations == 0) {
     LOG_ERROR(
         "Invalid parameter: iterations. Enter an integer greater than 0.");
@@ -410,6 +424,37 @@ bool validateParams(boost::shared_ptr<Params> p_) {
   return 1;
 }
 
+// General Functions
+bool takeNewScan(const Eigen::Affine3d &p1, const Eigen::Affine3d &p2,
+                 const double &dist, const double &rot) {
+  // calculate the norm of the distance between the two points
+  double l2sqrd = (p1(0, 3) - p2(0, 3)) * (p1(0, 3) - p2(0, 3)) +
+                  (p1(1, 3) - p2(1, 3)) * (p1(1, 3) - p2(1, 3)) +
+                  (p1(2, 3) - p2(2, 3)) * (p1(2, 3) - p2(2, 3));
+
+  double minRotSq = rot * DEG_TO_RAD * rot * DEG_TO_RAD;
+  Eigen::Vector3d eps1, eps2, diffSq;
+  eps1 = RToLieAlgebra(p1.rotation());
+  eps2 = RToLieAlgebra(p2.rotation());
+  diffSq(0, 0) = (eps2(0, 0) - eps1(0, 0)) * (eps2(0, 0) - eps1(0, 0));
+  diffSq(1, 0) = (eps2(1, 0) - eps1(1, 0)) * (eps2(1, 0) - eps1(1, 0));
+  diffSq(2, 0) = (eps2(2, 0) - eps1(2, 0)) * (eps2(2, 0) - eps1(2, 0));
+
+  // if the norm is greater than the specified minimum sampling distance or
+  // if the change in rotation is greater than specified min.
+  if (l2sqrd > dist * dist) {
+    // then yes take a new scan
+    return true;
+  } else if (diffSq(0, 0) > minRotSq || diffSq(1, 0) > minRotSq ||
+             diffSq(2, 0) > minRotSq) {
+    // then yes take a new scan
+    return true;
+  } else {
+    // then no, do not take a new scan
+    return false;
+  }
+}
+
 // Scan Matcher (parent Class) Functions:
 
 void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
@@ -459,7 +504,8 @@ void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
     if (i > 0) {
       bool take_new_scan;
       take_new_scan = takeNewScan(T_MAP_LIDAR, init_pose.poses[i - 1],
-                                  this->params.trajectory_sampling_dist);
+                                  this->params.trajectory_sampling_dist,
+                                  this->params.trajectory_rotation_change);
       if (take_new_scan && !use_next_scan) {
         this->init_pose.poses.push_back(T_MAP_LIDAR);
         this->pose_scan_map.push_back(iter);
@@ -650,8 +696,9 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
               T_MAP_LLOC_k.matrix(), curr_pose_time, T_MAP_LLOC_kp1.matrix(),
               next_pose_time, time_point_J);
 
-          bool take_new_map_scan = takeNewScan(T_MAP_LLOC_Jprev, T_MAP_LLOC_J,
-                                               this->params.map_sampling_dist);
+          bool take_new_map_scan = takeNewScan(
+              T_MAP_LLOC_Jprev, T_MAP_LLOC_J, this->params.map_sampling_dist,
+              this->params.map_rotation_change);
 
           // interpolate pose and add new scan to current target cloud
           if (take_new_map_scan) {
@@ -694,8 +741,9 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
           T_MAP_LMAP_J.matrix() = interpolateTransform(
               T_MAP_LMAP_k.matrix(), curr_pose_time, T_MAP_LMAP_kp1.matrix(),
               next_pose_time, time_point_J);
-          bool take_new_map_scan = takeNewScan(T_MAP_LMAP_Jprev, T_MAP_LMAP_J,
-                                               this->params.map_sampling_dist);
+          bool take_new_map_scan = takeNewScan(
+              T_MAP_LMAP_Jprev, T_MAP_LMAP_J, this->params.map_sampling_dist,
+              this->params.map_rotation_change);
 
           // interpolate pose and add new scan to current target cloud
           if (take_new_map_scan) {
@@ -749,8 +797,9 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
               T_MAP_LMAP_k.matrix(), curr_pose_time, T_MAP_LMAP_kp1.matrix(),
               next_pose_time, time_point_J);
 
-          bool take_new_map_scan = takeNewScan(T_MAP_LLOC_Jprev, T_MAP_LLOC_J,
-                                               this->params.map_sampling_dist);
+          bool take_new_map_scan = takeNewScan(
+              T_MAP_LLOC_Jprev, T_MAP_LLOC_J, this->params.map_sampling_dist,
+              this->params.map_rotation_change);
 
           // interpolate pose and add new scan to current target cloud
           if (take_new_map_scan) {

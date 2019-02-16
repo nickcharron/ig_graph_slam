@@ -27,24 +27,6 @@ int gpsMsgCount = 0, imuMsgCount = 0, odomMsgCount = 0, pointCloudMsgCount = 0,
     pointCloudMsgCountMap = 0;
 double initial_heading = 0;
 
-// General Functions
-bool takeNewScan(const Eigen::Affine3d &p1, const Eigen::Affine3d &p2,
-                 const double &dist) {
-  // calculate the norm of the distance between the two points
-  double l2sqrd = (p1(0, 3) - p2(0, 3)) * (p1(0, 3) - p2(0, 3)) +
-                  (p1(1, 3) - p2(1, 3)) * (p1(1, 3) - p2(1, 3)) +
-                  (p1(2, 3) - p2(2, 3)) * (p1(2, 3) - p2(2, 3));
-
-  // if the norm is greater than the specified minimum sampling distance
-  if (l2sqrd > dist * dist) {
-    // then yes take a new scan
-    return true;
-  } else {
-    // then no, do not take a new scan
-    return false;
-  }
-}
-
 Eigen::Affine3d ROSBag::getGPSTransform(const TimePoint &time_point,
                                         bool applyT_ENU_GPS) {
   return gpsToEigen(this->gps_container.get(time_point, 0).first,

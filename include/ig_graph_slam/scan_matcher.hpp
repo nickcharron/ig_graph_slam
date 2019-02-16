@@ -30,7 +30,8 @@ struct Params {
       output_path;
   int knn, set_min_neighbours, iterations, init_method, int_map_size,
       downsample_output_method;
-  float trajectory_sampling_dist, map_sampling_dist, distance_match_limit,
+  float trajectory_sampling_dist, map_sampling_dist,
+      trajectory_rotation_change, map_rotation_change, distance_match_limit,
       distance_match_min, input_downsample_size, downsample_cell_size,
       set_search_radius, x_lower_threshold, x_upper_threshold,
       y_lower_threshold, y_upper_threshold, z_lower_threshold,
@@ -58,6 +59,18 @@ void outputParams(boost::shared_ptr<Params> p_);
 std::string getMatcherConfig(std::string matcher);
 
 bool validateParams(boost::shared_ptr<Params> p_);
+
+/***
+ * Takes new scan if the distance between the scans are more than dist, or if
+ * the change in rotation is more than rot
+ * @param p1 pose of first scan
+ * @param p2 pose of second scan
+ * @param dist minimum distance between scans
+ * @param rot minimum rotation change between scans (in deg)
+ * @return
+ */
+bool takeNewScan(const Eigen::Affine3d &p1, const Eigen::Affine3d &p2,
+                 const double &dist, const double &rot);
 
 struct ROSBag;
 

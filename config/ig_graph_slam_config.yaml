@@ -16,10 +16,10 @@ init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odom
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
 #bag_file_path: "/home/robot/OPG_DEMO_JAN2019/bags/ig_scan_loam_OPG_JAN2019.bag"
-bag_file_path: "/home/robot/bag_files/ig_scans/2019-01-18-16-29-27-B-short3.bag"
+bag_file_path: "/home/nick/bag_files/ig_scans/2019-01-18-16-29-27-B-short3.bag"
 # TODO: Implement this:
 use_prev_poses: false             # if you want to use pre-calculated pose results and just rebuild the maps, set to true
-prev_poses_path: "/home/robot/results/ig_maps/ig_graph_slam/tmp_maps/mapX/poses.txt"
+prev_poses_path: "/home/nick/results/ig_maps/ig_graph_slam/tmp_maps/mapX/poses.txt"
 
 T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization
   rows: 4
@@ -107,10 +107,12 @@ z_lower_threshold_map: -5
 # ------------------------------------------------------------------------------
 
 # Graph Parameters:
-k_nearest_neighbours: 2            # maximum number of nearest neighbours for graph links
-trajectory_sampling_distance: 4   # Minimum distance in m at which we should take new scans for localization
-map_sampling_distance: 1         # Minimum distance in m at which we should take new scans for mapping
-distance_match_min: 0               # specify minimum and maximum distance between scans to
+k_nearest_neighbours: 10             # maximum number of nearest neighbours for graph links
+trajectory_sampling_distance: 0.5   # Minimum distance in m at which we should take new scans for localization
+map_sampling_distance: 0.1            # Minimum distance in m at which we should take new scans for mapping
+trajectory_rotation_change: 10      # Minimum change in rotation in Deg at which we should take new scans for localization
+map_rotation_change: 10             # Minimum change in rotation in Deg at which we should take new scans for mapping
+distance_match_min: 1.5             # specify minimum and maximum distance between scans to
 distance_match_limit: 10.0          # use for scan registration
 loop_max_distance: 4                # how close do two poses need to be to apply a loop closure constraint
                                     # set to 0 to stop loop closure
@@ -139,5 +141,4 @@ visualize: false                     # Whether to visualize matches as they happ
 step_matches: false
 combine_scans: false     # combine scans  from both lidar for scan registrations. Default false
 matcher_type: "icp"    # icp: point to point icp in PCL, loam: loam registration, gicp: wave::gicp
-#output_path: "/home/robot/results/ig_maps/ig_graph_slam/tmp_maps/"
-output_path: "/home/robot/OPG_DEMO_JAN2019/maps"
+output_path: "/home/nick/results/ig_maps/ig_graph_slam/tmp_maps/"
