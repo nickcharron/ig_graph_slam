@@ -242,8 +242,9 @@ int main() {
   std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
   std::string dstFileName = save_path + dateandtime + "_params.txt";
   std::string yamlDirStr = __FILE__;
-  yamlDirStr.erase(yamlDirStr.end() - 20, yamlDirStr.end());
+  yamlDirStr.erase(yamlDirStr.end() - 12, yamlDirStr.end());
   yamlDirStr += "config/ig_graph_slam_config.yaml";
+  std::cout << "yamlDirStr" << yamlDirStr << std::endl;
   std::ifstream src(yamlDirStr, std::ios::binary);
   std::ofstream dst(dstFileName, std::ios::binary);
   dst << src.rdbuf();
