@@ -13,7 +13,6 @@
 
 // IG Graph SLAM headers
 #include "gtsam_graph.hpp"
-#include "kdtreetype.hpp"
 #include "load_ros_data.hpp"
 
 // Declare some templates:
@@ -137,16 +136,29 @@ struct ScanMatcher {
    * pointcloud.
    * @param graph
    * @param ros_data
+   * @param mapping_method
    */
   void createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data,
                           int mapping_method);
 
   /***
    * Outputs the aggregate pointcloud map as a pcd file
-   * @param graph
+   * @param mapping_method
+   * @param path_
    */
-  void outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data,
-                          int mapping_method, std::string path_);
+  void outputAggregateMap(int mapping_method, std::string path_);
+
+  /***
+   * Outputs the optimized trajectory into a text file along with timestamps
+   * @param path_
+   */
+  void outputOptTraj(std::string path_);
+
+  /***
+   * Outputs the initial trajectory into a text file along with timestamps
+   * @param path_
+   */
+  void outputInitTraj(std::string path_);
 
   void displayPointCloud(
       wave::PCLPointCloudPtr cloud_display, int color,
@@ -156,8 +168,9 @@ struct ScanMatcher {
   // Eigen::Affine3d T_ECEF_MAP; // TODO: is this needed?
   Params params;
   wave::PointCloudDisplay init_display;
-  InitPose<double> init_pose; // see kdtreetype.hpp
+  //InitPose<double> init_pose; // see kdtreetype.hpp
   std::vector<int> pose_scan_map;
+  std::vector<wave::Measurement<Eigen::Affine3d, uint>> init_pose;
   std::vector<wave::Measurement<Eigen::Affine3d, uint>> final_poses;
   boost::shared_ptr<std::vector<std::vector<uint64_t>>> adjacency;
   boost::shared_ptr<std::vector<std::vector<uint64_t>>> loops;

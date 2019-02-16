@@ -23,7 +23,6 @@
 // IG Graph SLAM Headers
 #include "conversions.hpp"
 #include "gtsam_graph.hpp"
-#include "kdtreetype.hpp"
 #include "load_ros_data.hpp"
 #include "measurementtypes.hpp"
 #include "pcl_filters.hpp"
@@ -81,6 +80,15 @@ int main() {
   // Select scans to store and save their respective poses based on
   // initialization measurements
   scan_matcher->createPoseScanMap(load_ros_data);
+
+  // Check output directory
+  std::string save_path = p_->output_path + "/" +
+                          convertTimeToDate(std::chrono::system_clock::now()) +
+                          "/";
+  boost::filesystem::create_directories(save_path);
+
+  // Ouput initial trajectory
+  scan_matcher->outputInitTraj(save_path);
 
   // perform graph optimization:
 
@@ -162,7 +170,7 @@ int main() {
                          // Careful because currently GPS has no rotation info
                          // See Ben's code
       }
-      graph.addInitialPose(scan_matcher->init_pose.poses.at(j), j);
+      graph.addInitialPose(scan_matcher->init_pose.at(j).value, j);
     }
 
     for (uint64_t j = 0; j < scan_matcher->loops->size();
@@ -218,7 +226,7 @@ int main() {
           graph.result.at<gtsam::Pose3>(graph.poses.at(k)).matrix();
 
       // update initial pose estimate for next iteration (if needed)
-      scan_matcher->init_pose.poses.at(graph.poses.at(k)) = temp_trans;
+      scan_matcher->init_pose.at(graph.poses.at(k)).value = temp_trans;
 
       // Add result to final pose measurement container
       scan_matcher->final_poses.emplace_back(
@@ -229,12 +237,6 @@ int main() {
       prev = temp_trans;
     }
   }
-
-  // Check output directory
-  std::string save_path = p_->output_path + "/" +
-                          convertTimeToDate(std::chrono::system_clock::now()) +
-                          "/";
-  boost::filesystem::create_directories(save_path);
 
   // Save yaml file
   std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
@@ -252,9 +254,10 @@ int main() {
 
   // build and output maps
   scan_matcher->createAggregateMap(graph, load_ros_data, 1);
-  scan_matcher->outputAggregateMap(graph, load_ros_data, 1, save_path);
+  scan_matcher->outputAggregateMap(1, save_path);
+  scan_matcher->outputOptTraj(save_path);
   scan_matcher->createAggregateMap(graph, load_ros_data, 2);
-  scan_matcher->outputAggregateMap(graph, load_ros_data, 2, save_path);
+  scan_matcher->outputAggregateMap(2, save_path);
   scan_matcher->createAggregateMap(graph, load_ros_data, 3);
-  scan_matcher->outputAggregateMap(graph, load_ros_data, 3, save_path);
+  scan_matcher->outputAggregateMap(3, save_path);
 }

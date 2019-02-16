@@ -16,6 +16,8 @@
 
 // WAVE Headers
 #include "wave/matching/gicp.hpp"
+#include <wave/containers/measurement.hpp>
+#include <wave/containers/measurement_container.hpp>
 #include <wave/matching/icp.hpp>
 #include <wave/matching/pointcloud_display.hpp>
 #include <wave/utils/log.hpp>
@@ -23,7 +25,6 @@
 // IG Graph SLAM Headers
 #include "conversions.hpp"
 #include "gtsam_graph.hpp"
-#include "kdtreetype.hpp"
 #include "load_ros_data.hpp"
 #include "measurementtypes.hpp"
 #include "pcl_filters.hpp"
@@ -182,23 +183,26 @@ void outputParams(boost::shared_ptr<Params> p_) {
       << "----------------------------" << std::endl;
 }
 
-std::string getMatcherConfig(std::string matcher_type_){
-	std::string matcherConfigPath = __FILE__;
-	matcherConfigPath.erase(matcherConfigPath.end() - 20, matcherConfigPath.end());
-	if (matcher_type_ == "icp") {
-	    matcherConfigPath += "config/icp.yaml";
-	    return matcherConfigPath;
-	} else if (matcher_type_ == "loam") {
-	  LOG_ERROR("%s matcher type is not yet implemented. Coming soon.",
-		      matcher_type_.c_str());
-	  return "";
-	} else if (matcher_type_ == "gicp") {
-	  matcherConfigPath += "config/gicp.yaml";
-          return matcherConfigPath;
-        } else {
-	  LOG_ERROR("%s is not a valid matcher type. Change matcher type in ig_graph_slam_config.yaml", matcher_type_.c_str());
-	  return "";
-        }
+std::string getMatcherConfig(std::string matcher_type_) {
+  std::string matcherConfigPath = __FILE__;
+  matcherConfigPath.erase(matcherConfigPath.end() - 20,
+                          matcherConfigPath.end());
+  if (matcher_type_ == "icp") {
+    matcherConfigPath += "config/icp.yaml";
+    return matcherConfigPath;
+  } else if (matcher_type_ == "loam") {
+    LOG_ERROR("%s matcher type is not yet implemented. Coming soon.",
+              matcher_type_.c_str());
+    return "";
+  } else if (matcher_type_ == "gicp") {
+    matcherConfigPath += "config/gicp.yaml";
+    return matcherConfigPath;
+  } else {
+    LOG_ERROR("%s is not a valid matcher type. Change matcher type in "
+              "ig_graph_slam_config.yaml",
+              matcher_type_.c_str());
+    return "";
+  }
 }
 
 bool validateParams(boost::shared_ptr<Params> p_) {
@@ -411,13 +415,17 @@ bool validateParams(boost::shared_ptr<Params> p_) {
 
   if (!boost::filesystem::exists(matcherConfigFilePath)) {
     if (p_->matcher_type == "icp") {
-      LOG_ERROR("icp.yaml not found. Looking in: %s", matcherConfigFilePath.c_str());
+      LOG_ERROR("icp.yaml not found. Looking in: %s",
+                matcherConfigFilePath.c_str());
     } else if (p_->matcher_type == "gicp") {
-      LOG_ERROR("gicp.yaml not found. Looking in: %s", matcherConfigFilePath.c_str());
+      LOG_ERROR("gicp.yaml not found. Looking in: %s",
+                matcherConfigFilePath.c_str());
     } else if (p_->matcher_type == "loam") {
-      LOG_ERROR("loam.yaml not found. Looking in: %s", matcherConfigFilePath.c_str());
+      LOG_ERROR("loam.yaml not found. Looking in: %s",
+                matcherConfigFilePath.c_str());
     } else {
-      LOG_ERROR("matcher config file not found. Looking in: %s", matcherConfigFilePath.c_str());
+      LOG_ERROR("matcher config file not found. Looking in: %s",
+                matcherConfigFilePath.c_str());
     }
     return 0;
   }
@@ -503,16 +511,18 @@ void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
     // If i = 0, then save the scan - first scan
     if (i > 0) {
       bool take_new_scan;
-      take_new_scan = takeNewScan(T_MAP_LIDAR, init_pose.poses[i - 1],
+      take_new_scan = takeNewScan(T_MAP_LIDAR, init_pose.at(i - 1).value,
                                   this->params.trajectory_sampling_dist,
                                   this->params.trajectory_rotation_change);
       if (take_new_scan && !use_next_scan) {
-        this->init_pose.poses.push_back(T_MAP_LIDAR);
+        this->init_pose.emplace_back(ros_data->getLidarScanTimePoint(iter), 0,
+                                     T_MAP_LIDAR);
         this->pose_scan_map.push_back(iter);
         ++i;
       }
     } else if (!use_next_scan) {
-      this->init_pose.poses.push_back(T_MAP_LIDAR);
+      this->init_pose.emplace_back(ros_data->getLidarScanTimePoint(iter), 0,
+                                   T_MAP_LIDAR);
       this->pose_scan_map.push_back(iter);
       ++i;
     }
@@ -529,7 +539,7 @@ void ScanMatcher::findAdjacentScans() {
   // Scan registration class
   // As factors are added, factor id will just be counter value
   this->adjacency = boost::make_shared<std::vector<std::vector<uint64_t>>>(
-      this->init_pose.poses.size());
+      this->init_pose.size());
 
   /*
    * For each pose within the initial pose, get the position.
@@ -537,14 +547,14 @@ void ScanMatcher::findAdjacentScans() {
    * at that point
    *
    */
-  for (uint64_t j = 0; j < this->init_pose.poses.size(); j++) {
+  for (uint64_t j = 0; j < this->init_pose.size(); j++) {
     // posej is the position of the current pose
-    posej(0, 0) = this->init_pose.poses[j](0, 3);
-    posej(1, 0) = this->init_pose.poses[j](1, 3);
-    posej(2, 0) = this->init_pose.poses[j](2, 3);
+    posej(0, 0) = this->init_pose.at(j).value(0, 3);
+    posej(1, 0) = this->init_pose.at(j).value(1, 3);
+    posej(2, 0) = this->init_pose.at(j).value(2, 3);
 
     // Do this for all poses except the last one
-    if (j + 1 < this->init_pose.poses.size()) {
+    if (j + 1 < this->init_pose.size()) {
       // ensures that trajectory is connected
       //  this is also accounted for in nn
       //  search (see if j < ret_indices[k]-1)
@@ -559,11 +569,10 @@ void ScanMatcher::findAdjacentScans() {
      *
      */
     for (uint16_t k = j + 2;
-         (k < j + 1 + this->params.knn) && (k < this->init_pose.poses.size());
-         k++) {
-      posek(0, 0) = this->init_pose.poses[k](0, 3);
-      posek(1, 0) = this->init_pose.poses[k](1, 3);
-      posek(2, 0) = this->init_pose.poses[k](2, 3);
+         (k < j + 1 + this->params.knn) && (k < this->init_pose.size()); k++) {
+      posek(0, 0) = this->init_pose.at(k).value(0, 3);
+      posek(1, 0) = this->init_pose.at(k).value(1, 3);
+      posek(2, 0) = this->init_pose.at(k).value(2, 3);
       distancejk = calculateLength(posej, posek);
 
       if ((distancejk > this->params.distance_match_min) &&
@@ -585,21 +594,21 @@ void ScanMatcher::findLoops() {
   // creating a vector (size nx1) of vectors (will be size 2x1)
   this->loops = boost::make_shared<std::vector<std::vector<uint64_t>>>();
 
-  for (uint64_t j = 0; j < this->init_pose.poses.size() - knn_; j++) {
+  for (uint64_t j = 0; j < this->init_pose.size() - knn_; j++) {
     pathLength = 0;
     distanceP1P2 = 0;
-    pose1(0, 0) = this->init_pose.poses[j](0, 3);
-    pose1(1, 0) = this->init_pose.poses[j](1, 3);
-    pose1(2, 0) = this->init_pose.poses[j](2, 3);
+    pose1(0, 0) = this->init_pose.at(j).value(0, 3);
+    pose1(1, 0) = this->init_pose.at(j).value(1, 3);
+    pose1(2, 0) = this->init_pose.at(j).value(2, 3);
     poseLast = pose1;
 
     // For each pose (pose1) position, check all the poses j + 1 and up
     // if within loop_max_distance and outside of loop_min_travel_distance,
     // then add the constraint (or add to loops object)
-    for (uint16_t k = j + 1; k < init_pose.poses.size(); k++) {
-      pose2(0, 0) = this->init_pose.poses[k](0, 3);
-      pose2(1, 0) = this->init_pose.poses[k](1, 3);
-      pose2(2, 0) = this->init_pose.poses[k](2, 3);
+    for (uint16_t k = j + 1; k < init_pose.size(); k++) {
+      pose2(0, 0) = this->init_pose.at(k).value(0, 3);
+      pose2(1, 0) = this->init_pose.at(k).value(1, 3);
+      pose2(2, 0) = this->init_pose.at(k).value(2, 3);
 
       distanceP1P2 = calculateLength(pose1, pose2);
       pathLength += calculateLength(poseLast, pose2);
@@ -862,9 +871,7 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
   }
 }
 
-void ScanMatcher::outputAggregateMap(GTSAMGraph &graph,
-                                     boost::shared_ptr<ROSBag> ros_data,
-                                     int mapping_method, std::string path_) {
+void ScanMatcher::outputAggregateMap(int mapping_method, std::string path_) {
   *this->aggregate =
       downSampleFilterIG(this->aggregate, this->params.downsample_cell_size);
   std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
@@ -896,59 +903,34 @@ void ScanMatcher::outputAggregateMap(GTSAMGraph &graph,
     file << std::endl;
   }
   file.close();
+}
 
-  std::ofstream bias_file;
-  bias_file.open(path_ + dateandtime + "_GPSbias.txt");
-  for (auto iter = graph.biases.begin(); iter != graph.biases.end(); iter++) {
-    auto curbias = graph.result.at<gtsam::Point3>(*iter);
-    bias_file << curbias.x() << ", " << curbias.y() << ", " << curbias.z()
-              << std::endl;
+void ScanMatcher::outputOptTraj(std::string path_) {
+  std::ofstream file;
+  std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
+  const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision,
+                                         Eigen::DontAlignCols, ", ", ", ");
+  file.open(path_ + dateandtime + "_opt_traj" + ".txt");
+  for (auto iter = final_poses.begin(); iter != final_poses.end(); iter++) {
+    file << iter->time_point.time_since_epoch().count() << ", ";
+    file << iter->value.matrix().format(CSVFormat);
+    file << std::endl;
   }
-  bias_file.close();
+  file.close();
+}
 
-  // TODO: Make this work even without GPS data
-  if (this->params.init_method == 1) {
-    // This file contains the input traj to the GTSAM since we want to compare
-    // the pose difference betweem the input and the output of GTSAM
-    std::ofstream gt_file;
-    gt_file.open(path_ + dateandtime + "_GTSAMinputTraj.txt");
-    for (uint64_t j = 0; j < adjacency->size(); j++) {
-      Eigen::Affine3d T_ECEF_GPSIMU = ros_data->getGPSTransform(
-          ros_data->getLidarScanTimePoint(pose_scan_map.at(j)), true);
-      Eigen::Affine3d T_MAP_GPSIMU, T_MAP_LIDAR;
-      T_MAP_GPSIMU = ros_data->T_ECEF_MAP.inverse() * T_ECEF_GPSIMU;
-      if (this->params.optimize_gps_lidar) {
-        auto result = graph.result.at<gtsam::Pose3>(6000000);
-        T_MAP_LIDAR = T_MAP_GPSIMU * result.matrix();
-      } else {
-        auto result = params.T_LIDAR_GPS.inverse();
-        T_MAP_LIDAR = T_MAP_GPSIMU * result.matrix();
-      }
-      gt_file << ros_data->getLidarScanTimePoint(pose_scan_map.at(j))
-                     .time_since_epoch()
-                     .count()
-              << ", ";
-      gt_file << T_MAP_LIDAR.matrix().format(CSVFormat);
-      gt_file << std::endl;
-    }
-    gt_file.close();
-
-    std::ofstream datumfile;
-    using dbl = std::numeric_limits<double>;
-    datumfile.open(path_ + dateandtime + "map_ecef_datum" + ".txt");
-    datumfile.precision(dbl::max_digits10);
-    datumfile << ros_data->T_ECEF_MAP.matrix().format(CSVFormat);
-    datumfile.close();
-    if (this->params.optimize_gps_lidar) {
-      auto result = graph.result.at<gtsam::Pose3>(6000000);
-      std::ofstream datumfile;
-      using dbl = std::numeric_limits<double>;
-      datumfile.open(dateandtime + "T_LIDAR_GPS" + ".txt");
-      datumfile.precision(dbl::max_digits10);
-      datumfile << result.inverse().matrix().format(CSVFormat);
-      datumfile.close();
-    }
+void ScanMatcher::outputInitTraj(std::string path_) {
+  std::ofstream file;
+  std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
+  const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision,
+                                         Eigen::DontAlignCols, ", ", ", ");
+  file.open(path_ + dateandtime + "_init_traj" + ".txt");
+  for (auto iter = init_pose.begin(); iter != init_pose.end(); iter++) {
+    file << iter->time_point.time_since_epoch().count() << ", ";
+    file << iter->value.matrix().format(CSVFormat);
+    file << std::endl;
   }
+  file.close();
 }
 
 // ICPScanMatcher (Child Class) Functions
@@ -966,8 +948,8 @@ bool ICPScanMatcher::matchScans(
     bool &correction_norm_valid,
     boost::shared_ptr<ROSBag> ros_data) { // j: current, (reference scan)
   // i: adjacent scan (target)
-  auto T_MAP_Lj = init_pose.poses[j]; // set initial guess of current scan
-  auto T_MAP_Li = init_pose.poses[i]; // set initial guess of adjacent scan
+  auto T_MAP_Lj = init_pose.at(j).value; // set initial guess of current scan
+  auto T_MAP_Li = init_pose.at(i).value; // set initial guess of adjacent scan
   correction_norm_valid = true;
 
   // Get scans
@@ -1062,8 +1044,8 @@ bool GICPScanMatcher::matchScans(
     bool &correction_norm_valid,
     boost::shared_ptr<ROSBag> ros_data) { // j: current, (reference scan)
   // i: adjacent scan (target)
-  auto T_MAP_Lj = init_pose.poses[j]; // set initial guess of current scan
-  auto T_MAP_Li = init_pose.poses[i]; // set initial guess of adjacent scan
+  auto T_MAP_Lj = init_pose.at(j).value; // set initial guess of current scan
+  auto T_MAP_Li = init_pose.at(i).value; // set initial guess of adjacent scan
   correction_norm_valid = true;
 
   // Get scans

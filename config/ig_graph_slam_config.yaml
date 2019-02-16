@@ -107,7 +107,7 @@ z_lower_threshold_map: -5
 # ------------------------------------------------------------------------------
 
 # Graph Parameters:
-k_nearest_neighbours: 10             # maximum number of nearest neighbours for graph links
+k_nearest_neighbours: 5             # maximum number of nearest neighbours for graph links
 trajectory_sampling_distance: 0.5   # Minimum distance in m at which we should take new scans for localization
 map_sampling_distance: 0.1            # Minimum distance in m at which we should take new scans for mapping
 trajectory_rotation_change: 10      # Minimum change in rotation in Deg at which we should take new scans for localization
