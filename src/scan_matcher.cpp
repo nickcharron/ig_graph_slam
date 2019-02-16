@@ -890,19 +890,6 @@ void ScanMatcher::outputAggregateMap(int mapping_method, std::string path_) {
 
   pcl::io::savePCDFileBinary(path_ + dateandtime + mapType, *this->aggregate);
   LOG_INFO("outputting map at time: %s", dateandtime.c_str());
-
-  // TODO: move this to another function
-  // now save trajectory to file
-  std::ofstream file;
-  const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision,
-                                         Eigen::DontAlignCols, ", ", ", ");
-  file.open(path_ + dateandtime + "_opt_traj" + ".txt");
-  for (auto iter = final_poses.begin(); iter != final_poses.end(); iter++) {
-    file << iter->time_point.time_since_epoch().count() << ", ";
-    file << iter->value.matrix().format(CSVFormat);
-    file << std::endl;
-  }
-  file.close();
 }
 
 void ScanMatcher::outputOptTraj(std::string path_) {
