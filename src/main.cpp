@@ -35,6 +35,10 @@ using TimePoint = std::chrono::time_point<Clock>;
 
 int main() {
 
+  // Get start time:
+  std::chrono::system_clock::time_point time_start =
+      std::chrono::system_clock::now();
+
   // create shared pointers for parameters and fill the params
   boost::shared_ptr<Params> p_(new Params);
   fillparams(*p_);
@@ -76,6 +80,8 @@ int main() {
   // NOTE: we need to do this after filling imu container because GPS relies
   // on imu for rotation information
   load_ros_data->loadROSBagMessagesAll(p_);
+  outputTimePointDiff(time_start, std::chrono::system_clock::now(),
+                      "Time to load ROS data: ");
 
   // Select scans to store and save their respective poses based on
   // initialization measurements
@@ -244,7 +250,6 @@ int main() {
   std::string yamlDirStr = __FILE__;
   yamlDirStr.erase(yamlDirStr.end() - 12, yamlDirStr.end());
   yamlDirStr += "config/ig_graph_slam_config.yaml";
-  std::cout << "yamlDirStr" << yamlDirStr << std::endl;
   std::ifstream src(yamlDirStr, std::ios::binary);
   std::ofstream dst(dstFileName, std::ios::binary);
   dst << src.rdbuf();
@@ -259,6 +264,11 @@ int main() {
   scan_matcher->outputOptTraj(save_path);
   scan_matcher->createAggregateMap(graph, load_ros_data, 2);
   scan_matcher->outputAggregateMap(2, save_path);
-  scan_matcher->createAggregateMap(graph, load_ros_data, 3);
-  scan_matcher->outputAggregateMap(3, save_path);
+
+  // Combine maps together?
+  // scan_matcher->createAggregateMap(graph, load_ros_data, 3);
+  // scan_matcher->outputAggregateMap(3, save_path);
+
+  outputTimePointDiff(time_start, std::chrono::system_clock::now(),
+                      "Total computation time: ");
 }

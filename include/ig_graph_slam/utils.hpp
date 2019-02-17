@@ -14,6 +14,16 @@ inline void outputTimePoint(const TimePoint t, const std::string output_text) {
   LOG_INFO("%s %f", output_text, t.time_since_epoch().count());
 }
 
+inline void outputTimePointDiff(const std::chrono::system_clock::time_point tStart,
+                                const std::chrono::system_clock::time_point tEnd,
+                                const std::string output_text) {
+  double time_diff = (tEnd.time_since_epoch().count()
+                      - tStart.time_since_epoch().count()) / 1000000000;
+  int time_diff_mins = std::floor(time_diff / 60);
+  int time_diff_secs = std::round((time_diff / 60 - time_diff_mins) * 60);
+  LOG_INFO("%s %dm:%ds", output_text.c_str(), time_diff_mins, time_diff_secs);
+}
+
 inline bool isRotationMatrix(Eigen::Matrix3d R) {
   Eigen::Matrix3d shouldBeIdentity = R * R.transpose();
   double detR = R.determinant();
