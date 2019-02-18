@@ -16,10 +16,9 @@ init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odom
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
 #bag_file_path: "/home/robot/OPG_DEMO_JAN2019/bags/ig_scan_loam_OPG_JAN2019.bag"
-bag_file_path: "/home/nick/bag_files/ig_scans/2019-01-18-16-29-27-B-short3.bag"
-# TODO: Implement this:
-use_prev_poses: false             # if you want to use pre-calculated pose results and just rebuild the maps, set to true
-prev_poses_path: "/home/nick/results/ig_maps/ig_graph_slam/tmp_maps/mapX/poses.txt"
+bag_file_path: "/home/nick/bag_files/ig_scans/2019-01-18-16-29-27-B-short4.bag"
+use_prev_poses: true             # if you want to use pre-calculated pose results and just rebuild the maps, set to true
+prev_poses_path: "/home/nick/results/ig_maps/map1/opt_traj.txt"
 
 T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization
   rows: 4

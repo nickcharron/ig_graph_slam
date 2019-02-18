@@ -1,13 +1,17 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include <Eigen/Dense>
 #include <chrono>
 #include <cmath>
 #include <ctime>
+#include <utility>
+#include <fstream>
+#include <iostream>
 #include <math.h>
-#include <wave/utils/math.hpp>
-#include <wave/utils/log.hpp>
 #include <unsupported/Eigen/MatrixFunctions>
+#include <wave/utils/log.hpp>
+#include <wave/utils/math.hpp>
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;
@@ -16,11 +20,13 @@ inline void outputTimePoint(const TimePoint t, const std::string output_text) {
   LOG_INFO("%s %f", output_text, t.time_since_epoch().count());
 }
 
-inline void outputTimePointDiff(const std::chrono::system_clock::time_point tStart,
-                                const std::chrono::system_clock::time_point tEnd,
-                                const std::string output_text) {
-  double time_diff = (tEnd.time_since_epoch().count()
-                      - tStart.time_since_epoch().count()) / 1000000000;
+inline void
+outputTimePointDiff(const std::chrono::system_clock::time_point tStart,
+                    const std::chrono::system_clock::time_point tEnd,
+                    const std::string output_text) {
+  double time_diff =
+      (tEnd.time_since_epoch().count() - tStart.time_since_epoch().count()) /
+      1000000000;
   int time_diff_mins = std::floor(time_diff / 60);
   int time_diff_secs = std::round((time_diff / 60 - time_diff_mins) * 60);
   LOG_INFO("%s %dm:%ds", output_text.c_str(), time_diff_mins, time_diff_secs);
@@ -120,6 +126,35 @@ inline wave::Mat4 interpolateTransform(const wave::Mat4 &m1,
 inline void outputTransform(Eigen::Affine3d T, std::string name) {
   std::cout << name << " :" << std::endl;
   std::cout << T.matrix() << std::endl;
+}
+
+inline std::vector<std::pair<double, Eigen::Matrix4d>>
+readPoseFile(const std::string filename) {
+  // declare variables
+  std::ifstream infile;
+  std::string line;
+  Eigen::Matrix4d Tk;
+  double tk;
+  std::vector<std::pair<double, Eigen::Matrix4d>> poses;
+
+  // open file
+  infile.open(filename);
+
+  // extract poses
+  while(! infile.eof()){
+    // get timestamp k
+    std::getline(infile, line, ',');
+    tk = std::stod(line);
+
+    for(int i = 0; i < 4; i++){
+      for(int j = 0; j < 4; j++){
+        std::getline(infile, line, ',');
+        Tk(i,j) = std::stod(line);
+      }
+    }
+    poses.push_back(std::make_pair(tk, Tk));
+  }
+  return poses;
 }
 
 #endif // UTILS_HPP

@@ -86,27 +86,33 @@ int main() {
   outputTimePointDiff(time_start, std::chrono::system_clock::now(),
                       "Time to load ROS data: ");
 
-  // Select scans to store and save their respective poses based on
-  // initialization measurements
-  scan_matcher->createPoseScanMap(load_ros_data);
-
-  // Check output directory
+  // Check output directory and create
   std::string save_path = p_->output_path + "/" +
                           convertTimeToDate(std::chrono::system_clock::now()) +
                           "/";
   boost::filesystem::create_directories(save_path);
 
-  // Ouput initial trajectory
-  scan_matcher->outputInitTraj(save_path);
+  GTSAMGraph graph;
+  if (p_->use_prev_poses) {
+    // load poses from file
+    scan_matcher->loadPrevPoses();
+  } else {
+    // Select scans to store and save their respective poses based on
+    // initialization measurements
+    scan_matcher->createPoseScanMap(load_ros_data);
 
-  // perform graph optimization:
-  GTSAMGraph graph = scan_matcher->buildGTSAMGraph(load_ros_data);
+    // Ouput initial trajectory
+    scan_matcher->outputInitTraj(save_path);
 
-  // Save yaml file
-  scan_matcher->saveParamsFile(save_path);
+    // perform graph optimization:
+    graph = scan_matcher->buildGTSAMGraph(load_ros_data);
 
-  // Save Graph file
-  scan_matcher->saveGraphFile(graph, save_path);
+    // Save yaml file
+    scan_matcher->saveParamsFile(save_path);
+
+    // Save Graph file
+    scan_matcher->saveGraphFile(graph, save_path);
+  }
 
   // build and output maps
   scan_matcher->createAggregateMap(graph, load_ros_data, 1);
@@ -114,7 +120,6 @@ int main() {
   scan_matcher->outputOptTraj(save_path);
   scan_matcher->createAggregateMap(graph, load_ros_data, 2);
   scan_matcher->outputAggregateMap(2, save_path);
-
   // Combine maps together?
   // scan_matcher->createAggregateMap(graph, load_ros_data, 3);
   // scan_matcher->outputAggregateMap(3, save_path);

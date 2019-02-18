@@ -226,6 +226,14 @@ bool ScanMatcher::takeNewScan(const Eigen::Affine3d &p1,
   }
 }
 
+void ScanMatcher::loadPrevPoses() {
+  Eigen::Matrix4d PoseK;
+  std::vector<std::pair<double, Eigen::Matrix4d>> poses;
+
+  poses = readPoseFile(this->params.prev_poses_path);
+  LOG_INFO("Loaded a total of %d poses.", poses.size());
+}
+
 void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
   LOG_INFO("Storing pose scans...");
   // save initial poses of the lidar scans based on GPS data and save iterators
@@ -405,10 +413,7 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
   std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> intermediaries;
   this->aggregate->clear();
   int i = 0;
-  for (uint64_t k = 0; k < graph.poses.size();
-       k++) // NOTE: Sometimes I get seg fault on the last scan
-  {         // iterate through all poses in graph
-
+  for (uint64_t k = 0; k < graph.poses.size(); k++) {
     // Define transforms we will need
     Eigen::Affine3d T_MAP_LLOC_k, T_MAP_LLOC_kp1, T_MAP_LMAP_k, T_MAP_LMAP_kp1,
         T_LMAP_LLOC, T_MAP_LLOC_Jprev, T_MAP_LMAP_Jprev;

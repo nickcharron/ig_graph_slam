@@ -78,6 +78,11 @@ struct ScanMatcher {
   bool takeNewScan(const Eigen::Affine3d &p1, const Eigen::Affine3d &p2,
                    const double &dist, const double &rot);
 
+ /***
+  * Load poses from a previous graph
+  */
+  void loadPrevPoses();
+
   /***
    * Creates pose scan map with GPS data
    * @param ros_data
