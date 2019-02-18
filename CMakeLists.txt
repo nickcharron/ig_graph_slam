@@ -49,6 +49,7 @@ ADD_EXECUTABLE(${PROJECT_NAME}_node
         src/load_ros_data.cpp
         src/gtsam_graph.cpp
         src/scan_matcher.cpp
+        src/slam_params.cpp
         )
 
 # Uncomment once we have at least one exec.

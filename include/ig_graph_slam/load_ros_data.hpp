@@ -24,6 +24,7 @@
 // IG Graph SLAM specific headers
 #include "pcl_filters.hpp"
 #include "scan_matcher.hpp"
+#include "slam_params.hpp"
 
 // Declare some templates:
 using Clock = std::chrono::steady_clock;
@@ -31,7 +32,7 @@ using TimePoint = std::chrono::time_point<Clock>;
 
 // declare these due to circular reference
 struct ScanMatcher;
-struct Params;
+//struct Params;
 
 Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,
                            bool applyT_ENU_GPS);
@@ -39,10 +40,9 @@ Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,
 struct ROSBag {
   /***
    * ROSBag parent class
-   */
-  //-------------------------------------------------------------------------
+  */
 
-  ROSBag(std::string path, std::vector<std::string> topics);
+  ROSBag(Params &p_);
   //~ROSBag();
 
   /***
@@ -65,9 +65,8 @@ struct ROSBag {
   /***
    * Loads IMU RPY data into container from a geometry_msgs/Vector3Stamped ROS
    * msg
-   * @param imu_topic
    */
-  void loadIMUMessagesAll(std::string imu_topic);
+  void loadIMUMessagesAll();
 
   /***
    * Loads IMU RPY data into container from a geometry_msgs/Vector3Stamped ROS
@@ -75,15 +74,12 @@ struct ROSBag {
    * @param rosbag_iter
    * @param end_of_bag
    * @param start_of_bag
-   * @param imu_topic
    */
   void loadIMUMessage(rosbag::View::iterator &rosbag_iter,
-                              bool end_of_bag, bool start_of_bag,
-                              std::string imu_topic);
+                              bool end_of_bag, bool start_of_bag);
   /***
    * Loads GPS data into measurement container from an NavSatFix ROS msg
    * @param gps_msg NavSatFix ROS msg
-   * @param p_
    */
   void
   loadGPSDataFromNavSatFix(boost::shared_ptr<sensor_msgs::NavSatFix> gps_msg);
@@ -98,7 +94,6 @@ struct ROSBag {
   /***
    * Loads GPS data into measurement container from an INSPVAX ROS msg
    * @param gps_msg INSPVAX ROS msg
-   * @param p_
    */
   void loadGPSDataFromINSPVAX(boost::shared_ptr<novatel_msgs::INSPVAX> gps_msg);
 
@@ -107,35 +102,28 @@ struct ROSBag {
    * @param rosbag_iter
    * @param end_of_bag
    * @param start_of_bag
-   * @param p_
    */
-  void loadROSBagMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag,
-                         boost::shared_ptr<Params> p_);
+  void loadROSBagMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag);
 
  /***
   * Load all ROS Bag messages into their appropriate containers
-  * @param p_
   */
-  void loadROSBagMessagesAll(boost::shared_ptr<Params> p_);
+  void loadROSBagMessagesAll();
 
   /***
    * Load PCL point cloud message from ROS message into container (for
    * localization)
    * @param lidar_msg
-   * @param p_
    */
   void loadPCLPointCloudFromPointCloud2(
-      boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg,
-      boost::shared_ptr<Params> p_);
+      boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg);
 
   /***
    * Load PCL point cloud message from ROS message into container (for mapping)
    * @param lidar_msg
-   * @param p_
    */
   void loadPCLPointCloudFromPointCloud2Map(
-      boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg,
-      boost::shared_ptr<Params> p_);
+      boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg);
 
   // declare containers
   wave::MeasurementContainer<
@@ -151,14 +139,12 @@ struct ROSBag {
   std::vector<wave::Measurement<wave::PCLPointCloudPtr, uint>>
       lidar_container_map;
 
-  // declare filter objects
-  pcl::PCLPointCloud2::Ptr
-      pcl_pc2_tmp; // used an intermediate when converting from ROS messages
+  // declare point cloud objects
+  pcl::PCLPointCloud2::Ptr pcl_pc2_tmp;
   wave::PCLPointCloudPtr cloud_tmp;
 
   // Other required variables
-  std::string bag_file_path;
-  std::vector<std::string> bag_topics;
+  Params params;
   bool have_GPS_datum;
   Eigen::Affine3d T_ECEF_MAP; // this is in both ROSBag and ScanMatcher structs
 };

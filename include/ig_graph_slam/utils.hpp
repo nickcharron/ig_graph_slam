@@ -6,6 +6,7 @@
 #include <ctime>
 #include <math.h>
 #include <wave/utils/math.hpp>
+#include <unsupported/Eigen/MatrixFunctions>
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;

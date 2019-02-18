@@ -95,10 +95,10 @@ int_map_size: 15                  # Scans are combined into intermediate maps
 
 # PassThrough Filter for the Map scans: set min and max in each direction for input cloud
 use_pass_through_filter_map: true
-x_upper_threshold_map: 15
-x_lower_threshold_map: -15
-y_upper_threshold_map: 20
-y_lower_threshold_map: -20
+x_upper_threshold_map: 10
+x_lower_threshold_map: -10
+y_upper_threshold_map: 10
+y_lower_threshold_map: -10
 z_upper_threshold_map: 5
 z_lower_threshold_map: -5
 
@@ -110,7 +110,7 @@ z_lower_threshold_map: -5
 k_nearest_neighbours: 5             # maximum number of nearest neighbours for graph links
 trajectory_sampling_distance: 0.5   # Minimum distance in m at which we should take new scans for localization
 map_sampling_distance: 0.1            # Minimum distance in m at which we should take new scans for mapping
-trajectory_rotation_change: 10      # Minimum change in rotation in Deg at which we should take new scans for localization
+trajectory_rotation_change: 30      # Minimum change in rotation in Deg at which we should take new scans for localization
 map_rotation_change: 10             # Minimum change in rotation in Deg at which we should take new scans for mapping
 distance_match_min: 1.5             # specify minimum and maximum distance between scans to
 distance_match_limit: 10.0          # use for scan registration
