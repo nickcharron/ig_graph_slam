@@ -6,6 +6,7 @@
 #include <ctime>
 #include <math.h>
 #include <wave/utils/math.hpp>
+#include <wave/utils/log.hpp>
 #include <unsupported/Eigen/MatrixFunctions>
 
 using Clock = std::chrono::steady_clock;

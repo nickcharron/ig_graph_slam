@@ -3,6 +3,7 @@
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <wave/utils/math.hpp>
 
 /***
  * Params loaded from the ig_graph_slam_config file
