@@ -123,7 +123,7 @@ struct ScanMatcher {
    * @param ros_data
    * @param mapping_method
    */
-  void createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data,
+  void createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
                           int mapping_method);
 
   /***

@@ -115,13 +115,13 @@ int main() {
   }
 
   // build and output maps
-  scan_matcher->createAggregateMap(graph, load_ros_data, 1);
+  scan_matcher->createAggregateMap(load_ros_data, 1);
   scan_matcher->outputAggregateMap(1, save_path);
   scan_matcher->outputOptTraj(save_path);
-  scan_matcher->createAggregateMap(graph, load_ros_data, 2);
+  scan_matcher->createAggregateMap(load_ros_data, 2);
   scan_matcher->outputAggregateMap(2, save_path);
-  // Combine maps together?
-  // scan_matcher->createAggregateMap(graph, load_ros_data, 3);
+  // Uncomment if you want to combine the two maps and save them
+  // scan_matcher->createAggregateMap(load_ros_data, 3);
   // scan_matcher->outputAggregateMap(3, save_path);
 
   outputTimePointDiff(time_start, std::chrono::system_clock::now(),

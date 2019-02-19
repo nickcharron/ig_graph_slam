@@ -407,33 +407,31 @@ void ScanMatcher::displayPointCloud(wave::PCLPointCloudPtr cloud_display,
   }
 }
 
-void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
-                                     boost::shared_ptr<ROSBag> ros_data,
+void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
                                      int mapping_method) {
   std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> intermediaries;
   this->aggregate->clear();
   int i = 0;
-  for (uint64_t k = 0; k < graph.poses.size(); k++) {
+  for (uint64_t k = 0; k < this->final_poses.size(); k++) {
     // Define transforms we will need
     Eigen::Affine3d T_MAP_LLOC_k, T_MAP_LLOC_kp1, T_MAP_LMAP_k, T_MAP_LMAP_kp1,
         T_LMAP_LLOC, T_MAP_LLOC_Jprev, T_MAP_LMAP_Jprev;
-    T_MAP_LLOC_k = this->final_poses.at(graph.poses.at(k)).value; // for pose k
+    T_MAP_LLOC_k = this->final_poses.at(k).value;                 // for pose k
     T_LMAP_LLOC = this->params.T_LMAP_LLOC;                       // static
     T_MAP_LMAP_k = T_MAP_LLOC_k * T_LMAP_LLOC.inverse();
 
-    int curr_index = this->pose_scan_map.at(graph.poses.at(k));
+    int curr_index = this->pose_scan_map.at(k);
     TimePoint curr_pose_time = ros_data->lidar_container[curr_index].time_point;
     int next_index;
     TimePoint next_pose_time = curr_pose_time;
 
     // get all time and transforms for next pose for interpolation
-    if (!(k == graph.poses.size() - 1)) {
-      T_MAP_LLOC_kp1 =
-          this->final_poses.at(graph.poses.at(k + 1)).value; // for pose k + 1
+    if (!(k == this->final_poses.size() - 1)) {
+      T_MAP_LLOC_kp1 = this->final_poses.at(k + 1).value; // for pose k + 1
       T_MAP_LMAP_kp1 = T_MAP_LLOC_kp1 * T_LMAP_LLOC.inverse();
       T_MAP_LLOC_Jprev = T_MAP_LLOC_k;
       T_MAP_LMAP_Jprev = T_MAP_LMAP_k;
-      next_index = this->pose_scan_map.at(graph.poses.at(k + 1));
+      next_index = this->pose_scan_map.at(k + 1);
       next_pose_time = ros_data->lidar_container[next_index].time_point;
     }
 
@@ -451,7 +449,7 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
       // iterate through all scans between pose k and k+1
       if ((this->params.trajectory_sampling_dist >
            this->params.map_sampling_dist) &&
-          !(k == graph.poses.size() - 1)) {
+          !(k == this->final_poses.size() - 1)) {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_interp(
             new pcl::PointCloud<pcl::PointXYZ>);
 
@@ -496,7 +494,7 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
       // iterate through all scans between pose k and k+1
       if ((this->params.trajectory_sampling_dist >
            this->params.map_sampling_dist) &&
-          !(k == graph.poses.size() - 1)) {
+          !(k == this->final_poses.size() - 1)) {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_interp(
             new pcl::PointCloud<pcl::PointXYZ>);
 
@@ -550,7 +548,7 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
       // iterate through all scans between pose k and k+1
       if ((this->params.trajectory_sampling_dist >
            this->params.map_sampling_dist) &&
-          !(k == graph.poses.size() - 1)) {
+          !(k == this->final_poses.size() - 1)) {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_interp(
             new pcl::PointCloud<pcl::PointXYZ>);
         int j = 0;
