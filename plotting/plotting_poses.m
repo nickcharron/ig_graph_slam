@@ -1,7 +1,8 @@
 % This script is for plotting the poses outputted by ig_graph_slam
 clc; clear; close all; format short;
 
-files = {'opt_traj3.txt','opt_traj4.txt'};
+% files = {'opt_traj1.txt', 'opt_traj2.txt', ...};
+files = {'opt_traj1.txt'};
 
 for k = 1:size(files,2)
 

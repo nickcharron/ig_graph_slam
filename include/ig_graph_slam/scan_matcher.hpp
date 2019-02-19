@@ -84,10 +84,16 @@ struct ScanMatcher {
   void loadPrevPoses();
 
   /***
-   * Creates pose scan map with GPS data
+   * Creates pose scan map based on specified initialization method
    * @param ros_data
    */
   void createPoseScanMap(boost::shared_ptr<ROSBag> ros_data);
+
+  /***
+   * Creates pose scan map with inputted poses data
+   * @param ros_data
+   */
+  void createPoseScanMapFromPoses(boost::shared_ptr<ROSBag> ros_data);
 
   /***
    * Find Adjacent scans for all scans. Adjacent scans will only consist of

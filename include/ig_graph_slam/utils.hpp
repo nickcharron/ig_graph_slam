@@ -128,14 +128,14 @@ inline void outputTransform(Eigen::Affine3d T, std::string name) {
   std::cout << T.matrix() << std::endl;
 }
 
-inline std::vector<std::pair<double, Eigen::Matrix4d>>
+inline std::vector<std::pair<uint64_t, Eigen::Matrix4d>>
 readPoseFile(const std::string filename) {
   // declare variables
   std::ifstream infile;
   std::string line;
   Eigen::Matrix4d Tk;
-  double tk;
-  std::vector<std::pair<double, Eigen::Matrix4d>> poses;
+  uint64_t tk;
+  std::vector<std::pair<uint64_t, Eigen::Matrix4d>> poses;
 
   // open file
   infile.open(filename);
@@ -144,12 +144,22 @@ readPoseFile(const std::string filename) {
   while(! infile.eof()){
     // get timestamp k
     std::getline(infile, line, ',');
-    tk = std::stod(line);
+    try{
+      tk = std::stod(line);
+    } catch (const std::invalid_argument &e){
+      LOG_INFO("Invalid argument, probably at end of file");
+      return poses;
+    }
 
     for(int i = 0; i < 4; i++){
       for(int j = 0; j < 4; j++){
-        std::getline(infile, line, ',');
-        Tk(i,j) = std::stod(line);
+        if(i == 3 && j == 3){
+          std::getline(infile, line, '\n');
+          Tk(i,j) = std::stod(line);
+        }else{
+          std::getline(infile, line, ',');
+          Tk(i,j) = std::stod(line);
+        }
       }
     }
     poses.push_back(std::make_pair(tk, Tk));

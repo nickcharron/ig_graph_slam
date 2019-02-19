@@ -85,28 +85,21 @@ interpolate(const TransformMeasurement &m1, const TransformMeasurement &m2,
   return std::make_pair(T, std_dev);
 }
 
-inline std::pair<int, int>
+inline std::pair<uint64_t, uint64_t>
 getLidarTimeWindow(const LidarContainer &lidar_container_, const TimePoint T1,
                    const TimePoint T2) {
-  int start_index_ = 0, end_index_ = 0;
+  uint64_t start_index_ = 0, end_index_ = 0;
   for (size_t i = 0; i < lidar_container_.size(); i++) {
     if (lidar_container_[i].time_point == T1) {
       start_index_ = i;
       break;
     } else if (lidar_container_[i].time_point > T1) {
-      // LOG_INFO("getLidarTimeWindow: Exact scan time not found, using next
-      // scan."); std::cout << "Looking for Time Point:   " <<
-      // T1.time_since_epoch().count()
-      //           << std::endl
-      //           << "Instead, using timepoint: " <<
-      //           lidar_container_[i].time_point.time_since_epoch().count()
-      //           << std::endl;
       start_index_ = i;
       break;
     } else if (i == lidar_container_.size()) {
       LOG_ERROR("getLidarTimeWindow: Cannot find lidar time window. Time "
                 "inputs invalid.");
-      std::pair<int, int> timewindow(0, 0);
+      std::pair<uint64_t, uint64_t> timewindow(0, 0);
       return timewindow;
     }
   }
@@ -115,52 +108,36 @@ getLidarTimeWindow(const LidarContainer &lidar_container_, const TimePoint T1,
       end_index_ = i;
       break;
     } else if (lidar_container_[i].time_point > T2) {
-      // LOG_INFO("getLidarTimeWindow: Exact scan time not found, using prev
-      // scan."); std::cout << "Looking for Time Point:   " <<
-      // T2.time_since_epoch().count()
-      //           << std::endl
-      //           << "Instead, using timepoint: " <<
-      //           lidar_container_[i].time_point.time_since_epoch().count()
-      //           << std::endl;
       end_index_ = i - 1;
       break;
     } else if (i == lidar_container_.size() - 1) {
       LOG_ERROR("getLidarTimeWindow: Cannot find lidar time window. Time "
                 "inputs invalid.");
-      std::pair<int, int> timewindow(0, 0);
+      std::pair<uint64_t, uint64_t> timewindow(0, 0);
       return timewindow;
     }
   }
-  std::pair<int, int> timewindow(start_index_, end_index_);
+  std::pair<uint64_t, uint64_t> timewindow(start_index_, end_index_);
   return timewindow;
 }
 
-inline int getLidarTimeWindow(const LidarContainer &lidar_container_,
+inline uint64_t getLidarTimeWindow(const LidarContainer &lidar_container_,
                               const TimePoint T1) {
-  int start_index_ = 0;
+  uint64_t start_index_ = 0;
   for (size_t i = 0; i < lidar_container_.size(); i++) {
     if (lidar_container_[i].time_point == T1) {
       start_index_ = i;
       break;
     } else if (lidar_container_[i].time_point > T1) {
-      // LOG_INFO("getLidarTimeWindow: Exact scan time not found, using next
-      // scan."); std::cout << "Looking for Time Point:   " <<
-      // T1.time_since_epoch().count()
-      //           << std::endl
-      //           << "Instead, using timepoint: " <<
-      //           lidar_container_[i].time_point.time_since_epoch().count()
-      //           << std::endl;
       start_index_ = i;
       break;
     } else if (i == lidar_container_.size()) {
       LOG_ERROR("getLidarTimeWindow: Cannot find lidar time window. Time "
                 "inputs invalid.");
-      int timewindow = 0;
-      return timewindow;
+      return 0;
     }
   }
-  int timewindow = start_index_;
-  return timewindow;
+  return start_index_;
 }
 
 } // namespace wave

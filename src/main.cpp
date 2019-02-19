@@ -52,6 +52,8 @@ int main() {
   // create shared pointers for ros data and initialize
   boost::shared_ptr<ROSBag> load_ros_data;
   load_ros_data = boost::make_shared<ROSBag>(*p_);
+  LOG_INFO("Loading config file: %s", p_->config_file_path.c_str());
+  LOG_INFO("Input Bag File: %s", p_->bag_file_path.c_str());
 
   // create shared pointer to scan matcher based on type, and initialize
   boost::shared_ptr<ScanMatcher> scan_matcher;
@@ -96,6 +98,9 @@ int main() {
   if (p_->use_prev_poses) {
     // load poses from file
     scan_matcher->loadPrevPoses();
+
+    // create pose scan map
+    scan_matcher->createPoseScanMapFromPoses(load_ros_data);
   } else {
     // Select scans to store and save their respective poses based on
     // initialization measurements

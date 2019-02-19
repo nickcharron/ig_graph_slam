@@ -125,6 +125,14 @@ struct ROSBag {
   void loadPCLPointCloudFromPointCloud2Map(
       boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg);
 
+  /***
+   * Extract the index within lidar_container which corresponds to a specific
+   * time point.
+   * @param T1 time_point at which you want the lidar container index
+   * @return
+   */
+  uint64_t getLidarTimeWindow(const TimePoint T1);
+
   // declare containers
   wave::MeasurementContainer<
       wave::Measurement<std::pair<wave::Vec6, wave::Vec6>, uint>>

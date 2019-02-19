@@ -76,12 +76,11 @@ Params::Params() {
   std::string yamlDirStr = __FILE__;
   yamlDirStr.erase(yamlDirStr.end() - 19, yamlDirStr.end());
   yamlDirStr += "config/ig_graph_slam_config.yaml";
+  this->config_file_path = yamlDirStr;
   std::ifstream fileName(yamlDirStr.c_str());
 
   if (fileName.good()) {
-    LOG_INFO("Loading config file: %s", yamlDirStr.c_str());
     parser.load(yamlDirStr);
-    LOG_INFO("Input Bag File: %s", this->bag_file_path.c_str());
   } else {
     LOG_ERROR("ig_graph_slam.yaml not found in config folder");
   }

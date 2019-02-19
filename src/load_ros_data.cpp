@@ -372,6 +372,24 @@ void ROSBag::loadPCLPointCloudFromPointCloud2Map(
                                          temp);
 }
 
+uint64_t ROSBag::getLidarTimeWindow(const TimePoint T1) {
+  uint64_t start_index_ = 0;
+  for (size_t i = 0; i < this->lidar_container.size(); i++) {
+    if (this->lidar_container[i].time_point == T1) {
+      start_index_ = i;
+      break;
+    } else if (this->lidar_container[i].time_point > T1) {
+      start_index_ = i;
+      break;
+    } else if (i == this->lidar_container.size()) {
+      LOG_ERROR("getLidarTimeWindow: Cannot find lidar time window. Time "
+                "inputs invalid.");
+      return 0;
+    }
+  }
+  return start_index_;
+}
+
 // Messages specific for Moose
 void ROSBag::loadGPSDataFromINSPVAX(
     boost::shared_ptr<novatel_msgs::INSPVAX> gps_msg) {

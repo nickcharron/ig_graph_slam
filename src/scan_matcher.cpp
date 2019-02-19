@@ -168,10 +168,9 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
 
       // Add result to final pose measurement container
       this->final_poses.emplace_back(
-          ros_data->getLidarScanTimePoint(graph.poses.at(k)), 0, temp_trans);
-
-      // this seems to be useless?
-      prev = temp_trans;
+          // ros_data->getLidarScanTimePoint(graph.poses.at(k)), 0, temp_trans);
+          ros_data->getLidarScanTimePoint(this->pose_scan_map[k]), 0,
+          temp_trans);
     }
   }
 
@@ -227,11 +226,24 @@ bool ScanMatcher::takeNewScan(const Eigen::Affine3d &p1,
 }
 
 void ScanMatcher::loadPrevPoses() {
-  Eigen::Matrix4d PoseK;
-  std::vector<std::pair<double, Eigen::Matrix4d>> poses;
+  Eigen::Affine3d PoseK;
+  uint64_t tk;
+  TimePoint timepointk;
+  std::vector<std::pair<uint64_t, Eigen::Matrix4d>> poses_;
 
-  poses = readPoseFile(this->params.prev_poses_path);
-  LOG_INFO("Loaded a total of %d poses.", poses.size());
+  poses_ = readPoseFile(this->params.prev_poses_path);
+  LOG_INFO("Loaded a total of %d poses.", poses_.size());
+
+  for (uint64_t k = 0; k < poses_.size(); k++) {
+    // get resulting transform and timestamp for pose k
+    tk = poses_[k].first;
+    PoseK.matrix() = poses_[k].second;
+    TimePoint timepointk{std::chrono::duration_cast<TimePoint::duration>(
+        std::chrono::nanoseconds(tk))};
+
+    // Add result to final pose measurement container
+    this->final_poses.emplace_back(timepointk, 0, PoseK);
+  }
 }
 
 void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
@@ -240,8 +252,9 @@ void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
   // corresponding to these scans
   int i = 0;
   Eigen::Affine3d T_ECEF_GPS, T_MAP_LIDAR;
-  for (uint64_t iter = 0; iter < ros_data->lidar_container.size();
-       iter++) { // this ierates through the lidar measurements
+
+  // this ierates through the lidar measurements
+  for (uint64_t iter = 0; iter < ros_data->lidar_container.size(); iter++) {
     bool use_next_scan = false;
     switch (this->params.init_method) {
     case 1:
@@ -298,6 +311,20 @@ void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
   }
   LOG_INFO("Stored %d pose scans of %d available scans.", i,
            ros_data->lidar_container.size());
+}
+
+void ScanMatcher::createPoseScanMapFromPoses(
+    boost::shared_ptr<ROSBag> ros_data) {
+  LOG_INFO("Creating pose scan map from inputted poses...");
+  uint64_t index;
+  TimePoint timepointk;
+  for (uint64_t i = 0; i < this->final_poses.size(); i++) {
+    timepointk = this->final_poses[i].time_point;
+    index = getLidarTimeWindow(ros_data->lidar_container, timepointk);
+    this->pose_scan_map.push_back(index);
+  }
+  LOG_INFO("Stored %d pose scans of %d available scans.",
+           this->pose_scan_map.size(), ros_data->lidar_container.size());
 }
 
 void ScanMatcher::findAdjacentScans() {
@@ -416,7 +443,9 @@ void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
     // Define transforms we will need
     Eigen::Affine3d T_MAP_LLOC_k, T_MAP_LLOC_kp1, T_MAP_LMAP_k, T_MAP_LMAP_kp1,
         T_LMAP_LLOC, T_MAP_LLOC_Jprev, T_MAP_LMAP_Jprev;
-    T_MAP_LLOC_k = this->final_poses.at(k).value;                 // for pose k
+    // T_MAP_LLOC_k = this->final_poses.at(k).value;                 // for pose
+    // k
+    T_MAP_LLOC_k = this->final_poses[k].value;
     T_LMAP_LLOC = this->params.T_LMAP_LLOC;                       // static
     T_MAP_LMAP_k = T_MAP_LLOC_k * T_LMAP_LLOC.inverse();
 
@@ -427,7 +456,8 @@ void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
 
     // get all time and transforms for next pose for interpolation
     if (!(k == this->final_poses.size() - 1)) {
-      T_MAP_LLOC_kp1 = this->final_poses.at(k + 1).value; // for pose k + 1
+      // T_MAP_LLOC_kp1 = this->final_poses.at(k + 1).value; // for pose k + 1
+      T_MAP_LLOC_kp1 = this->final_poses[k + 1].value; // for pose k + 1
       T_MAP_LMAP_kp1 = T_MAP_LLOC_kp1 * T_LMAP_LLOC.inverse();
       T_MAP_LLOC_Jprev = T_MAP_LLOC_k;
       T_MAP_LMAP_Jprev = T_MAP_LMAP_k;
@@ -436,7 +466,7 @@ void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
     }
 
     // find scan range for map scans:
-    std::pair<int, int> scan_range_map;
+    std::pair<uint64_t, uint64_t> scan_range_map;
     scan_range_map = getLidarTimeWindow(ros_data->lidar_container_map,
                                         curr_pose_time, next_pose_time);
 
@@ -662,9 +692,10 @@ void ScanMatcher::outputOptTraj(std::string path_) {
   const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision,
                                          Eigen::DontAlignCols, ", ", ", ");
   file.open(path_ + dateandtime + "_opt_traj" + ".txt");
-  for (auto iter = final_poses.begin(); iter != final_poses.end(); iter++) {
-    file << iter->time_point.time_since_epoch().count() << ", ";
-    file << iter->value.matrix().format(CSVFormat);
+  for (uint64_t iter = 0; iter < this->final_poses.size(); iter++) {
+    file << this->final_poses[iter].time_point.time_since_epoch().count()
+         << ", ";
+    file << this->final_poses[iter].value.matrix().format(CSVFormat);
     file << std::endl;
   }
   file.close();
@@ -676,9 +707,9 @@ void ScanMatcher::outputInitTraj(std::string path_) {
   const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision,
                                          Eigen::DontAlignCols, ", ", ", ");
   file.open(path_ + dateandtime + "_init_traj" + ".txt");
-  for (auto iter = init_pose.begin(); iter != init_pose.end(); iter++) {
-    file << iter->time_point.time_since_epoch().count() << ", ";
-    file << iter->value.matrix().format(CSVFormat);
+  for (uint64_t iter = 0; iter < this->init_pose.size(); iter++) {
+    file << this->init_pose[iter].time_point.time_since_epoch().count() << ", ";
+    file << this->init_pose[iter].value.matrix().format(CSVFormat);
     file << std::endl;
   }
   file.close();
@@ -720,9 +751,9 @@ bool ICPScanMatcher::matchScans(
         new pcl::PointCloud<pcl::PointXYZ>);
     timepoint_j = ros_data->lidar_container[pose_scan_map.at(j)].time_point;
     timepoint_i = ros_data->lidar_container[pose_scan_map.at(i)].time_point;
-    int map_index_j =
+    uint64_t map_index_j =
         getLidarTimeWindow(ros_data->lidar_container_map, timepoint_j);
-    int map_index_i =
+    uint64_t map_index_i =
         getLidarTimeWindow(ros_data->lidar_container_map, timepoint_i);
     pcl::transformPointCloud(
         *(ros_data->lidar_container_map[map_index_j].value), *cloud_ref_tmp,
@@ -808,7 +839,7 @@ bool GICPScanMatcher::matchScans(
   *cloud_tgt2 = *ros_data->lidar_container[pose_scan_map.at(i)].value;
   TimePoint timepoint_j, timepoint_i;
 
-  // Combine sacns if specified
+  // Combine scans if specified
   if (this->params.combine_scans) {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ref_tmp(
         new pcl::PointCloud<pcl::PointXYZ>);
@@ -816,9 +847,9 @@ bool GICPScanMatcher::matchScans(
         new pcl::PointCloud<pcl::PointXYZ>);
     timepoint_j = ros_data->lidar_container[pose_scan_map.at(j)].time_point;
     timepoint_i = ros_data->lidar_container[pose_scan_map.at(i)].time_point;
-    int map_index_j =
+    uint64_t map_index_j =
         getLidarTimeWindow(ros_data->lidar_container_map, timepoint_j);
-    int map_index_i =
+    uint64_t map_index_i =
         getLidarTimeWindow(ros_data->lidar_container_map, timepoint_i);
     pcl::transformPointCloud(
         *(ros_data->lidar_container_map[map_index_j].value), *cloud_ref_tmp,
