@@ -47,7 +47,8 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
 
   // build graph
   for (int outer_loops = 0; outer_loops < this->params.iterations;
-       outer_loops++) { // Iterate to update initial estimates and redo matches
+       outer_loops++) {
+    // Iterate to update initial estimates and redo matches
     LOG_INFO("Iteration No. %d of %d.", outer_loops + 1,
              this->params.iterations);
     cnt_match = 0;
@@ -60,8 +61,8 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
     // Determine how many scans to register against for each pose and save
     findLoops();
 
-    for (uint64_t j = 0; j < this->adjacency->size();
-         j++) { // iterate over all j scans
+    // iterate over all j scans
+    for (uint64_t j = 0; j < this->adjacency->size(); j++) {
       if (j == 0) {
         last_timestamp =
             ros_data->getLidarScanTimePoint(this->pose_scan_map.at(j));
@@ -103,17 +104,17 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
         }
       }
 
-      if (this->params.use_gps) { // only if we want to use gps priors
-                                  // TODO: Implement the gps priors.
+      if (this->params.use_gps) {
+        // only if we want to use gps priors
+        // TODO: Implement the gps priors.
         // Careful because currently GPS has no rotation info
         // See Ben's code
       }
       graph.addInitialPose(this->init_pose.at(j).value, j);
     }
 
-    for (uint64_t j = 0; j < this->loops->size();
-         j++) { // iterate over all j loop closures
-
+    for (uint64_t j = 0; j < this->loops->size(); j++) {
+      // iterate over all j loop closures
       Eigen::Affine3d T_L1_L2;
       wave::Mat6 info;
       bool match_success;
@@ -129,8 +130,8 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
         continue;
       }
 
-      if (match_success) // create factor in graph if scan successful
-      {
+      // create factor in graph if scan successful
+      if (match_success) {
         wave::Mat6 mgtsam; // Eigen::Matrix<double, 6, 6>
         // this next bit is a major gotcha, whole thing blows up
         // without it. This just rearranges the info matrix to the correct form
@@ -157,6 +158,7 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
 
     // Loop through and get final alignment
     LOG_INFO("Updating Poses for Next Iteration.");
+    this->final_poses.clear();
     Eigen::Affine3d temp_trans, prev;
     for (uint64_t k = 0; k < graph.poses.size(); k++) {
       // get resulting transform for pose k
@@ -168,7 +170,6 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
 
       // Add result to final pose measurement container
       this->final_poses.emplace_back(
-          // ros_data->getLidarScanTimePoint(graph.poses.at(k)), 0, temp_trans);
           ros_data->getLidarScanTimePoint(this->pose_scan_map[k]), 0,
           temp_trans);
     }
@@ -181,7 +182,7 @@ void ScanMatcher::saveParamsFile(std::string save_path_) {
   std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
   std::string dstFileName = save_path_ + dateandtime + "_params.txt";
   std::string yamlDirStr = __FILE__;
-  yamlDirStr.erase(yamlDirStr.end() - 12, yamlDirStr.end());
+  yamlDirStr.erase(yamlDirStr.end() - 20, yamlDirStr.end());
   yamlDirStr += "config/ig_graph_slam_config.yaml";
   std::ifstream src(yamlDirStr, std::ios::binary);
   std::ofstream dst(dstFileName, std::ios::binary);
@@ -514,7 +515,6 @@ void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
         }
       }
       break;
-
     case 2:
       // transform current pose scan to target cloud
       pcl::transformPointCloud(
@@ -628,21 +628,21 @@ void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
     // each scan is filtered individually when saved in measurements
     // containers, then the whole set of n
     // combined scans is filtered once (default, n=15)
-    if ((k % this->params.int_map_size) ==
-        0) { // every nth pose, filter the intermediate map if specified then
-             // move to next
-      if ((i != 0) &&
-          !(this->params.downsample_output_method ==
-            3)) { // if not first intermediate map, then filter it and
+    if ((k % this->params.int_map_size) == 0) {
+      // every nth pose, filter the intermediate map if specified then
+      // move to next
+      if ((i != 0) && !(this->params.downsample_output_method == 3)) {
+        // if not first intermediate map, then filter it and
         // move to the next intermediate map
         *intermediaries.at(i) = downSampleFilterIG(
             intermediaries.at(i), this->params.downsample_cell_size);
         i++;
-      } else // if first intermediate map
-      {
-        if (k != 0) { // if it's the first scan, do nothing.
-                      // if it's not the first scan, but it is the first
-                      // intermediate map , then increase iterator of int. maps
+      } else {
+        // if first intermediate map
+        if (k != 0) {
+          // if it's the first scan, do nothing.
+          // if it's not the first scan, but it is the first
+          // intermediate map , then increase iterator of int. maps
           i++;
         }
       }
