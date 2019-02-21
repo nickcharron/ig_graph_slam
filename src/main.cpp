@@ -94,6 +94,9 @@ int main() {
                           "/";
   boost::filesystem::create_directories(save_path);
 
+  // Save yaml file
+  scan_matcher->saveParamsFile(save_path);
+
   GTSAMGraph graph;
   if (p_->use_prev_poses) {
     // load poses from file
@@ -111,9 +114,6 @@ int main() {
 
     // perform graph optimization:
     graph = scan_matcher->buildGTSAMGraph(load_ros_data);
-
-    // Save yaml file
-    scan_matcher->saveParamsFile(save_path);
 
     // Save Graph file
     scan_matcher->saveGraphFile(graph, save_path);
