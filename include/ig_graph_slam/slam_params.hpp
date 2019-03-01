@@ -42,12 +42,15 @@ struct Params {
       downsample_output_method;
   float trajectory_sampling_dist, map_sampling_dist,
       trajectory_rotation_change, map_rotation_change, distance_match_limit,
-      distance_match_min, input_downsample_size, downsample_cell_size,
-      set_search_radius, x_lower_threshold, x_upper_threshold,
-      y_lower_threshold, y_upper_threshold, z_lower_threshold,
-      z_upper_threshold, x_lower_threshold_map, x_upper_threshold_map,
-      y_lower_threshold_map, y_upper_threshold_map, z_lower_threshold_map,
-      z_upper_threshold_map, loop_max_distance, loop_min_travel_distance;
+      distance_match_min, rotation_match_limit, rotation_match_min,
+      input_downsample_size, downsample_cell_size, set_search_radius,
+      x_lower_threshold, x_upper_threshold,
+      y_lower_threshold, y_upper_threshold,
+      z_lower_threshold, z_upper_threshold,
+      x_lower_threshold_map, x_upper_threshold_map,
+      y_lower_threshold_map, y_upper_threshold_map,
+      z_lower_threshold_map, z_upper_threshold_map,
+      loop_max_distance, loop_min_travel_distance;
 
   bool ground_segment, combine_scans, use_gps, visualize, downsample_input,
       step_matches, optimize_gps_lidar, fixed_scan_transform_cov,

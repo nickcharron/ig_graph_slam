@@ -330,7 +330,8 @@ void ScanMatcher::createPoseScanMapFromPoses(
 
 void ScanMatcher::findAdjacentScans() {
   double distancejk;
-  Eigen::Vector3d posej, posek;
+  std::vector<double> minmaxrotjk;
+  Eigen::Affine3d posej, posek;
   this->total_matches = 0; // reset the counter of matches
 
   // Scan registration class
@@ -346,10 +347,7 @@ void ScanMatcher::findAdjacentScans() {
    */
   for (uint64_t j = 0; j < this->init_pose.size(); j++) {
     // posej is the position of the current pose
-    posej(0, 0) = this->init_pose.at(j).value(0, 3);
-    posej(1, 0) = this->init_pose.at(j).value(1, 3);
-    posej(2, 0) = this->init_pose.at(j).value(2, 3);
-
+    posej = this->init_pose.at(j).value;
     // Do this for all poses except the last one
     if (j + 1 < this->init_pose.size()) {
       // ensures that trajectory is connected
@@ -367,13 +365,19 @@ void ScanMatcher::findAdjacentScans() {
      */
     for (uint16_t k = j + 2;
          (k < j + 1 + this->params.knn) && (k < this->init_pose.size()); k++) {
-      posek(0, 0) = this->init_pose.at(k).value(0, 3);
-      posek(1, 0) = this->init_pose.at(k).value(1, 3);
-      posek(2, 0) = this->init_pose.at(k).value(2, 3);
+      posek = this->init_pose.at(k).value;
       distancejk = calculateLength(posej, posek);
+      minmaxrotjk = calculateMinMaxRotationChange(posej, posek);
 
       if ((distancejk > this->params.distance_match_min) &&
           (distancejk < this->params.distance_match_limit)) {
+        // add index to back of vector for scan j
+        this->adjacency->at(j).emplace_back(k);
+        this->total_matches++;
+      } else if (minmaxrotjk[1] >
+                     this->params.rotation_match_min * DEG_TO_RAD &&
+                 minmaxrotjk[1] <
+                     this->params.rotation_match_limit * DEG_TO_RAD) {
         // add index to back of vector for scan j
         this->adjacency->at(j).emplace_back(k);
         this->total_matches++;
@@ -743,7 +747,7 @@ bool ICPScanMatcher::matchScans(
   *cloud_tgt2 = *ros_data->lidar_container[pose_scan_map.at(i)].value;
   TimePoint timepoint_j, timepoint_i;
 
-  // Combine sacns if specified
+  // Combine scans if specified
   if (this->params.combine_scans) {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ref_tmp(
         new pcl::PointCloud<pcl::PointXYZ>);

@@ -5,13 +5,14 @@
 #include <chrono>
 #include <cmath>
 #include <ctime>
-#include <utility>
 #include <fstream>
 #include <iostream>
 #include <math.h>
 #include <unsupported/Eigen/MatrixFunctions>
+#include <utility>
 #include <wave/utils/log.hpp>
 #include <wave/utils/math.hpp>
+#include "conversions.hpp"
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;
@@ -48,6 +49,34 @@ inline double calculateLength(const Eigen::Vector3d &p1,
   return sqrt((p1(0, 0) - p2(0, 0)) * (p1(0, 0) - p2(0, 0)) +
               (p1(1, 0) - p2(1, 0)) * (p1(1, 0) - p2(1, 0)) +
               (p1(2, 0) - p2(2, 0)) * (p1(2, 0) - p2(2, 0)));
+}
+
+inline double calculateLength(const Eigen::Affine3d &p1,
+                              const Eigen::Affine3d &p2) {
+  return sqrt((p1.matrix()(0, 3) - p2.matrix()(0, 3)) *
+                  (p1.matrix()(0, 3) - p2.matrix()(0, 3)) +
+              (p1.matrix()(1, 3) - p2.matrix()(1, 3)) *
+                  (p1.matrix()(1, 3) - p2.matrix()(1, 3)) +
+              (p1.matrix()(2, 3) - p2.matrix()(2, 3)) *
+                  (p1.matrix()(2, 3) - p2.matrix()(2, 3)));
+}
+
+inline std::vector<double>
+calculateMinMaxRotationChange(const Eigen::Affine3d &p1,
+                              const Eigen::Affine3d &p2) {
+  Eigen::Vector3d eps1, eps2, diffSq;
+  std::vector<double> minmax;
+  double minsq, maxsq;
+  eps1 = RToLieAlgebra(p1.rotation());
+  eps2 = RToLieAlgebra(p2.rotation());
+  diffSq(0, 0) = (eps2(0, 0) - eps1(0, 0)) * (eps2(0, 0) - eps1(0, 0));
+  diffSq(1, 0) = (eps2(1, 0) - eps1(1, 0)) * (eps2(1, 0) - eps1(1, 0));
+  diffSq(2, 0) = (eps2(2, 0) - eps1(2, 0)) * (eps2(2, 0) - eps1(2, 0));
+  minsq = diffSq.minCoeff();
+  maxsq = diffSq.maxCoeff();
+  minmax.push_back(sqrt(minsq));
+  minmax.push_back(sqrt(maxsq));
+  return minmax;
 }
 
 inline bool isTransformationMatrix(Eigen::Matrix4d T) {
@@ -141,24 +170,24 @@ readPoseFile(const std::string filename) {
   infile.open(filename);
 
   // extract poses
-  while(! infile.eof()){
+  while (!infile.eof()) {
     // get timestamp k
     std::getline(infile, line, ',');
-    try{
+    try {
       tk = std::stod(line);
-    } catch (const std::invalid_argument &e){
+    } catch (const std::invalid_argument &e) {
       LOG_INFO("Invalid argument, probably at end of file");
       return poses;
     }
 
-    for(int i = 0; i < 4; i++){
-      for(int j = 0; j < 4; j++){
-        if(i == 3 && j == 3){
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        if (i == 3 && j == 3) {
           std::getline(infile, line, '\n');
-          Tk(i,j) = std::stod(line);
-        }else{
+          Tk(i, j) = std::stod(line);
+        } else {
           std::getline(infile, line, ',');
-          Tk(i,j) = std::stod(line);
+          Tk(i, j) = std::stod(line);
         }
       }
     }

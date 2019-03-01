@@ -58,6 +58,8 @@ Params::Params() {
   parser.addParam("map_rotation_change", &(this->map_rotation_change));
   parser.addParam("distance_match_min", &(this->distance_match_min));
   parser.addParam("distance_match_limit", &(this->distance_match_limit));
+  parser.addParam("rotation_match_min", &(this->rotation_match_min));
+  parser.addParam("rotation_match_limit", &(this->rotation_match_limit));
   parser.addParam("loop_max_distance", &(this->loop_max_distance));
   parser.addParam("loop_min_travel_distance",
                   &(this->loop_min_travel_distance));
@@ -141,6 +143,8 @@ void Params::outputParams() {
       << "map_sampling_distance: " << this->map_sampling_dist << std::endl
       << "distance_match_min: " << this->distance_match_min << std::endl
       << "distance_match_limit: " << this->distance_match_limit << std::endl
+      << "rotation_match_min: " << this->rotation_match_min << std::endl
+      << "rotation_match_limit: " << this->rotation_match_limit << std::endl
       << "loop_max_distance: " << this->loop_max_distance << std::endl
       << "loop_min_travel_distance: " << this->loop_min_travel_distance
       << std::endl
@@ -336,6 +340,22 @@ bool Params::validateParams() {
 
   if (this->map_rotation_change < 3) {
     LOG_ERROR("parameter map_rotation_change invalid. Might be too small");
+    return 0;
+  }
+
+  if (this->rotation_match_min > this->rotation_match_limit) {
+    LOG_ERROR("Parameter rotation_match_limit must be greater than "
+              "parameter rotation_match_min");
+    return 0;
+  }
+
+  if (this->rotation_match_min < 5) {
+    LOG_ERROR("Parameter rotation_match_min is too small. Min = 5deg.");
+    return 0;
+  }
+
+  if (this->rotation_match_limit > 360) {
+    LOG_ERROR("Parameter rotation_match_limit is too large. Max = 360deg.");
     return 0;
   }
 
