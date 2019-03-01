@@ -1,0 +1,27 @@
+sudo: required
+cache:
+  - apt
+
+# Specify what combinations of Ubuntu/ROS we want to build
+# Limited to what is available on Travis VMs.
+language: generic
+matrix:
+  allow_failures:
+    - env: CHECK_COMMIT_FORMAT=ON
+  include:
+    - name: "Xenial kinetic"
+      dist: xenial
+      env: ROS_DISTRO=kinetic
+
+# Configuration variables. All variables are global now, but this can be used to
+# trigger a build matrix for different ROS distributions if desired.
+env:
+  global:
+    - CI_SOURCE_PATH=$(pwd)
+
+################################################################################
+
+# Install barebones ROS setup.
+script:
+  - cd $CI_SOURCE_PATH
+  - bash ./scripts/install.bash
