@@ -370,14 +370,16 @@ void ScanMatcher::findAdjacentScans() {
       minmaxrotjk = calculateMinMaxRotationChange(posej, posek);
 
       if ((distancejk > this->params.distance_match_min) &&
-          (distancejk < this->params.distance_match_limit)) {
+          (distancejk < this->params.distance_match_limit &&
+           minmaxrotjk[1] < this->params.rotation_match_limit * DEG_TO_RAD)) {
         // add index to back of vector for scan j
         this->adjacency->at(j).emplace_back(k);
         this->total_matches++;
       } else if (minmaxrotjk[1] >
                      this->params.rotation_match_min * DEG_TO_RAD &&
                  minmaxrotjk[1] <
-                     this->params.rotation_match_limit * DEG_TO_RAD) {
+                     this->params.rotation_match_limit * DEG_TO_RAD &&
+                 distancejk < this->params.distance_match_limit) {
         // add index to back of vector for scan j
         this->adjacency->at(j).emplace_back(k);
         this->total_matches++;
