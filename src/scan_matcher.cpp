@@ -450,8 +450,7 @@ void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
     // Define transforms we will need
     Eigen::Affine3d T_MAP_LLOC_k, T_MAP_LLOC_kp1, T_MAP_LMAP_k, T_MAP_LMAP_kp1,
         T_LMAP_LLOC, T_MAP_LLOC_Jprev, T_MAP_LMAP_Jprev;
-    // T_MAP_LLOC_k = this->final_poses.at(k).value;                 // for pose
-    // k
+
     T_MAP_LLOC_k = this->final_poses[k].value;
     T_LMAP_LLOC = this->params.T_LMAP_LLOC;                       // static
     T_MAP_LMAP_k = T_MAP_LLOC_k * T_LMAP_LLOC.inverse();
@@ -463,7 +462,6 @@ void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
 
     // get all time and transforms for next pose for interpolation
     if (!(k == this->final_poses.size() - 1)) {
-      // T_MAP_LLOC_kp1 = this->final_poses.at(k + 1).value; // for pose k + 1
       T_MAP_LLOC_kp1 = this->final_poses[k + 1].value; // for pose k + 1
       T_MAP_LMAP_kp1 = T_MAP_LLOC_kp1 * T_LMAP_LLOC.inverse();
       T_MAP_LLOC_Jprev = T_MAP_LLOC_k;
@@ -672,8 +670,10 @@ void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
 }
 
 void ScanMatcher::outputAggregateMap(int mapping_method, std::string path_) {
-  *this->aggregate =
-      downSampleFilterIG(this->aggregate, this->params.downsample_cell_size);
+  if (this->params.downsample_output_method == 3) {
+    *this->aggregate =
+        downSampleFilterIG(this->aggregate, this->params.downsample_cell_size);
+  }
   std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
   std::string mapType;
   switch (mapping_method) {
