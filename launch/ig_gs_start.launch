@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="ig_graph_slam" type="joy_mapping_controller.py" name="joy_mapping_control_mapping" output="screen"/>
+
+</launch>

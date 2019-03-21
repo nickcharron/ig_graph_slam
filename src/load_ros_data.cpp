@@ -22,6 +22,7 @@
 #include "measurementtypes.hpp"
 #include "pcl_filters.hpp"
 #include "scan_matcher.hpp"
+#include "slam_params.hpp"
 #include "utils.hpp"
 
 #define DEG_TO_RAD 0.0174532925199433
@@ -33,34 +34,6 @@ using TimePoint = std::chrono::time_point<Clock>;
 int gpsMsgCount = 0, imuMsgCount = 0, odomMsgCount = 0, pointCloudMsgCount = 0,
     pointCloudMsgCountMap = 0;
 double initial_heading = 0;
-
-// class constructor
-ROSBag::ROSBag(std::string path, std::vector<std::string> topics_) {
-  this->bag_file_path = path;
-  this->bag_topics = topics_;
-  this->T_ECEF_MAP.setIdentity();
-  this->have_GPS_datum = false;
-  this->pcl_pc2_tmp = boost::make_shared<pcl::PCLPointCloud2>();
-  this->cloud_tmp = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-}
-
-// General Functions
-bool takeNewScan(const Eigen::Affine3d &p1, const Eigen::Affine3d &p2,
-                 const double &dist) {
-  // calculate the norm of the distance between the two points
-  double l2sqrd = (p1(0, 3) - p2(0, 3)) * (p1(0, 3) - p2(0, 3)) +
-                  (p1(1, 3) - p2(1, 3)) * (p1(1, 3) - p2(1, 3)) +
-                  (p1(2, 3) - p2(2, 3)) * (p1(2, 3) - p2(2, 3));
-
-  // if the norm is greater than the specified minimum sampling distance
-  if (l2sqrd > dist * dist) {
-    // then yes take a new scan
-    return true;
-  } else {
-    // then no, do not take a new scan
-    return false;
-  }
-}
 
 Eigen::Affine3d ROSBag::getGPSTransform(const TimePoint &time_point,
                                         bool applyT_ENU_GPS) {
@@ -172,6 +145,14 @@ Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,
   }
 }
 
+ROSBag::ROSBag(Params &p_) {
+  this->params = p_;
+  this->T_ECEF_MAP.setIdentity();
+  this->have_GPS_datum = false;
+  this->pcl_pc2_tmp = boost::make_shared<pcl::PCLPointCloud2>();
+  this->cloud_tmp = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+}
+
 // Messages needed for IG
 void ROSBag::loadGPSDataFromNavSatFix(
     boost::shared_ptr<sensor_msgs::NavSatFix> gps_msg) {
@@ -244,9 +225,8 @@ void ROSBag::loadOdomDataFromNavMsgsOdometry(
 }
 
 void ROSBag::loadIMUMessage(rosbag::View::iterator &rosbag_iter,
-                            bool end_of_bag, bool start_of_bag,
-                            std::string imu_topic) {
-  if (rosbag_iter->getTopic() == imu_topic) {
+                            bool end_of_bag, bool start_of_bag) {
+  if (rosbag_iter->getTopic() == this->params.imu_topic) {
     imuMsgCount++;
     auto imu_msg = rosbag_iter->instantiate<geometry_msgs::Vector3Stamped>();
 
@@ -273,20 +253,20 @@ void ROSBag::loadIMUMessage(rosbag::View::iterator &rosbag_iter,
   }
 }
 
-void ROSBag::loadIMUMessagesAll(std::string imu_topic) {
+void ROSBag::loadIMUMessagesAll() {
 
-  if (imu_topic == "") {
+  if (this->params.imu_topic == "") {
     return;
   }
 
   // Read bag file and create view
   rosbag::Bag bag;
   try {
-    bag.open(this->bag_file_path, rosbag::bagmode::Read);
+    bag.open(this->params.bag_file_path, rosbag::bagmode::Read);
   } catch (rosbag::BagException &ex) {
     LOG_ERROR("Bag exception : %s", ex.what());
   }
-  rosbag::View view(bag, rosbag::TopicQuery(this->bag_topics), ros::TIME_MIN,
+  rosbag::View view(bag, rosbag::TopicQuery(this->params.topics), ros::TIME_MIN,
                     ros::TIME_MAX, true);
 
   int bag_counter = 0, total_messages = view.size();
@@ -302,36 +282,36 @@ void ROSBag::loadIMUMessagesAll(std::string imu_topic) {
     if (bag_counter == total_messages) {
       end_of_bag = true;
     }
-    loadIMUMessage(iter, end_of_bag, start_of_bag, imu_topic);
+    loadIMUMessage(iter, end_of_bag, start_of_bag);
     start_of_bag = false;
   }
   bag.close();
 }
 
 void ROSBag::loadROSBagMessage(rosbag::View::iterator &rosbag_iter,
-                               bool end_of_bag, boost::shared_ptr<Params> p_) {
-  if (rosbag_iter->getTopic() == p_->gps_topic) {
+                               bool end_of_bag) {
+  if (rosbag_iter->getTopic() == this->params.gps_topic) {
     gpsMsgCount++;
     auto gps_msg_navsatfix = rosbag_iter->instantiate<sensor_msgs::NavSatFix>();
     auto gps_msg_inspvax = rosbag_iter->instantiate<novatel_msgs::INSPVAX>();
-    if (p_->gps_type == "NavSatFix") {
+    if (this->params.gps_type == "NavSatFix") {
       this->loadGPSDataFromNavSatFix(gps_msg_navsatfix);
-    } else if (p_->gps_type == "INSPVAX") {
+    } else if (this->params.gps_type == "INSPVAX") {
       this->loadGPSDataFromINSPVAX(gps_msg_inspvax);
     } else {
       LOG_ERROR("Improper gps_type entered in config file. input: %s. Use "
                 "NavSatFix or INSPVAX.",
-                p_->gps_type);
+                this->params.gps_type);
     }
-  } else if (rosbag_iter->getTopic() == p_->lidar_topic_loc) {
+  } else if (rosbag_iter->getTopic() == this->params.lidar_topic_loc) {
     pointCloudMsgCount++;
     auto lidar_msg = rosbag_iter->instantiate<sensor_msgs::PointCloud2>();
-    this->loadPCLPointCloudFromPointCloud2(lidar_msg, p_);
-  } else if (rosbag_iter->getTopic() == p_->lidar_topic_map) {
+    this->loadPCLPointCloudFromPointCloud2(lidar_msg);
+  } else if (rosbag_iter->getTopic() == this->params.lidar_topic_map) {
     pointCloudMsgCountMap++;
     auto lidar_msg = rosbag_iter->instantiate<sensor_msgs::PointCloud2>();
-    this->loadPCLPointCloudFromPointCloud2Map(lidar_msg, p_);
-  } else if (rosbag_iter->getTopic() == p_->odom_topic) {
+    this->loadPCLPointCloudFromPointCloud2Map(lidar_msg);
+  } else if (rosbag_iter->getTopic() == this->params.odom_topic) {
     odomMsgCount++;
     auto odom_msg = rosbag_iter->instantiate<nav_msgs::Odometry>();
     this->loadOdomDataFromNavMsgsOdometry(odom_msg);
@@ -346,16 +326,16 @@ void ROSBag::loadROSBagMessage(rosbag::View::iterator &rosbag_iter,
   }
 }
 
-void ROSBag::loadROSBagMessagesAll(boost::shared_ptr<Params> p_) {
+void ROSBag::loadROSBagMessagesAll() {
 
   // Read bag file and create view
   rosbag::Bag bag;
   try {
-    bag.open(this->bag_file_path, rosbag::bagmode::Read);
+    bag.open(this->params.bag_file_path, rosbag::bagmode::Read);
   } catch (rosbag::BagException &ex) {
     LOG_ERROR("Bag exception : %s", ex.what());
   }
-  rosbag::View view(bag, rosbag::TopicQuery(this->bag_topics), ros::TIME_MIN,
+  rosbag::View view(bag, rosbag::TopicQuery(this->params.topics), ros::TIME_MIN,
                     ros::TIME_MAX, true);
 
   int bag_counter = 0, total_messages = view.size();
@@ -368,37 +348,38 @@ void ROSBag::loadROSBagMessagesAll(boost::shared_ptr<Params> p_) {
     }
     outputPercentComplete(bag_counter, total_messages,
                           "Loading all other messages...");
-    loadROSBagMessage(iter, end_of_bag, p_);
+    loadROSBagMessage(iter, end_of_bag);
   }
   bag.close();
 }
 
 void ROSBag::loadPCLPointCloudFromPointCloud2(
-    boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg,
-    boost::shared_ptr<Params> p_) {
+    boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg) {
   pcl_conversions::toPCL(*lidar_msg, *this->pcl_pc2_tmp);
   pcl::fromPCLPointCloud2(*this->pcl_pc2_tmp, *this->cloud_tmp);
 
   // check this, it might not be implemented correctly! See how CropXY is used
-  if (p_->use_pass_through_filter) {
+  if (this->params.use_pass_through_filter) {
     wave::Vec6 threshold_vec;
-    threshold_vec << p_->x_lower_threshold, p_->x_upper_threshold,
-        p_->y_lower_threshold, p_->y_upper_threshold, p_->z_lower_threshold,
-        p_->z_upper_threshold;
+    threshold_vec << this->params.x_lower_threshold,
+        this->params.x_upper_threshold, this->params.y_lower_threshold,
+        this->params.y_upper_threshold, this->params.z_lower_threshold,
+        this->params.z_upper_threshold;
 
     *this->cloud_tmp = passThroughFilterIG(this->cloud_tmp, threshold_vec);
   }
 
   // ***Add ground segmenter here?
 
-  if (p_->downsample_input) {
+  if (this->params.downsample_input) {
     *this->cloud_tmp =
-        downSampleFilterIG(this->cloud_tmp, p_->input_downsample_size);
+        downSampleFilterIG(this->cloud_tmp, this->params.input_downsample_size);
   }
 
-  if (p_->use_rad_filter) {
-    *this->cloud_tmp = radFilterIG(this->cloud_tmp, p_->set_min_neighbours,
-                                   p_->set_search_radius);
+  if (this->params.use_rad_filter) {
+    *this->cloud_tmp =
+        radFilterIG(this->cloud_tmp, this->params.set_min_neighbours,
+                    this->params.set_search_radius);
   }
 
   wave::PCLPointCloudPtr temp =
@@ -409,31 +390,32 @@ void ROSBag::loadPCLPointCloudFromPointCloud2(
 }
 
 void ROSBag::loadPCLPointCloudFromPointCloud2Map(
-    boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg,
-    boost::shared_ptr<Params> p_) {
+    boost::shared_ptr<sensor_msgs::PointCloud2> lidar_msg) {
   pcl_conversions::toPCL(*lidar_msg, *this->pcl_pc2_tmp);
   pcl::fromPCLPointCloud2(*this->pcl_pc2_tmp, *this->cloud_tmp);
 
   // check this, it might not be implemented correctly! See how CropXY is used
-  if (p_->use_pass_through_filter) {
+  if (this->params.use_pass_through_filter) {
     wave::Vec6 threshold_vec;
-    threshold_vec << p_->x_lower_threshold_map, p_->x_upper_threshold_map,
-        p_->y_lower_threshold_map, p_->y_upper_threshold_map,
-        p_->z_lower_threshold_map, p_->z_upper_threshold_map;
+    threshold_vec << this->params.x_lower_threshold_map,
+        this->params.x_upper_threshold_map, this->params.y_lower_threshold_map,
+        this->params.y_upper_threshold_map, this->params.z_lower_threshold_map,
+        this->params.z_upper_threshold_map;
 
     *this->cloud_tmp = passThroughFilterIG(this->cloud_tmp, threshold_vec);
   }
 
   // ***Add ground segmenter here?
 
-  if (p_->downsample_input) {
+  if (this->params.downsample_input) {
     *this->cloud_tmp =
-        downSampleFilterIG(this->cloud_tmp, p_->input_downsample_size);
+        downSampleFilterIG(this->cloud_tmp, this->params.input_downsample_size);
   }
 
-  if (p_->use_rad_filter) {
-    *this->cloud_tmp = radFilterIG(this->cloud_tmp, p_->set_min_neighbours,
-                                   p_->set_search_radius);
+  if (this->params.use_rad_filter) {
+    *this->cloud_tmp =
+        radFilterIG(this->cloud_tmp, this->params.set_min_neighbours,
+                    this->params.set_search_radius);
   }
 
   wave::PCLPointCloudPtr temp =
@@ -441,6 +423,24 @@ void ROSBag::loadPCLPointCloudFromPointCloud2Map(
   *temp = *this->cloud_tmp;
   this->lidar_container_map.emplace_back(rosTimeToChrono(lidar_msg->header), 0,
                                          temp);
+}
+
+uint64_t ROSBag::getLidarTimeWindow(const TimePoint T1) {
+  uint64_t start_index_ = 0;
+  for (size_t i = 0; i < this->lidar_container.size(); i++) {
+    if (this->lidar_container[i].time_point == T1) {
+      start_index_ = i;
+      break;
+    } else if (this->lidar_container[i].time_point > T1) {
+      start_index_ = i;
+      break;
+    } else if (i == this->lidar_container.size()) {
+      LOG_ERROR("getLidarTimeWindow: Cannot find lidar time window. Time "
+                "inputs invalid.");
+      return 0;
+    }
+  }
+  return start_index_;
 }
 
 // Messages specific for Moose

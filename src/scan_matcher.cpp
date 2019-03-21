@@ -16,6 +16,8 @@
 
 // WAVE Headers
 #include "wave/matching/gicp.hpp"
+#include <wave/containers/measurement.hpp>
+#include <wave/containers/measurement_container.hpp>
 #include <wave/matching/icp.hpp>
 #include <wave/matching/pointcloud_display.hpp>
 #include <wave/utils/log.hpp>
@@ -23,16 +25,17 @@
 // IG Graph SLAM Headers
 #include "conversions.hpp"
 #include "gtsam_graph.hpp"
-#include "kdtreetype.hpp"
 #include "load_ros_data.hpp"
 #include "measurementtypes.hpp"
 #include "pcl_filters.hpp"
 #include "scan_matcher.hpp"
+#include "slam_params.hpp"
 #include "utils.hpp"
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;
 
+<<<<<<< HEAD
 // General Functions
 
 void fillparams(Params &params) {
@@ -208,15 +211,86 @@ std::string getMatcherConfig(std::string matcher_type_) {
     return "";
   }
 }
+=======
+// Scan Matcher (parent Class) Functions:
 
-bool validateParams(boost::shared_ptr<Params> p_) {
-  // NOTE: These checks need to be performed in the same order as the
-  // fillparams function, or else you may not catch the first error.
-  if (!(p_->gps_type == "NavSatFix" || p_->gps_type == "INSPVAX")) {
-    if (p_->init_method == 1) {
-      LOG_ERROR("Invalid GPS type. Supported: NavSatFix, INSPVAX");
-      return 0;
+GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
+  // init. variables:
+  GTSAMGraph graph;
+  bool no_GPS = true;
+  int cnt_match = 0;
+  TimePoint last_timestamp;
+  bool correction_norm_valid;
+
+  // build graph
+  for (int outer_loops = 0; outer_loops < this->params.iterations;
+       outer_loops++) {
+    // Iterate to update initial estimates and redo matches
+    LOG_INFO("Iteration No. %d of %d.", outer_loops + 1,
+             this->params.iterations);
+    cnt_match = 0;
+    graph.clear();
+    graph.result.clear();
+
+    // Determine how many scans to register against for each pose and save
+    findAdjacentScans();
+
+    // Determine how many scans to register against for each pose and save
+    findLoops();
+
+    // iterate over all j scans
+    for (uint64_t j = 0; j < this->adjacency->size(); j++) {
+      if (j == 0) {
+        last_timestamp =
+            ros_data->getLidarScanTimePoint(this->pose_scan_map.at(j));
+      }
+
+      // iterate over all scans adjacent to scan j
+      for (uint64_t iter = 0; iter < this->adjacency->at(j).size(); iter++) {
+        Eigen::Affine3d T_Liter_Lj;
+        wave::Mat6 info;
+        bool match_success = false;
+
+        // Attempts to match the scans and checks the correction norm
+        // between scan transformation and GPS
+        match_success =
+            this->matchScans(this->adjacency->at(j).at(iter), j, T_Liter_Lj,
+                             info, correction_norm_valid, ros_data);
+
+        if (!correction_norm_valid) // WHAT IS THIS??
+        {
+          continue;
+        }
+        if (match_success) // create factor in graph if scan successful
+        {
+          wave::Mat6 mgtsam; // Eigen::Matrix<double, 6, 6>
+          // this next bit is a major gotcha, whole thing blows up
+          // without it. This just rearranges the info matrix to the correct
+          // form block starting at 0,0 of size 3x3
+          mgtsam.block(0, 0, 3, 3) = info.block(3, 3, 3, 3); // rotation
+          mgtsam.block(3, 3, 3, 3) = info.block(0, 0, 3, 3); // translation
+          mgtsam.block(0, 3, 3, 3) = info.block(0, 3, 3, 3); // off diagonal
+          mgtsam.block(3, 0, 3, 3) = info.block(3, 0, 3, 3); // off diagonal
+          graph.addFactor(this->adjacency->at(j).at(iter), j, T_Liter_Lj,
+                          mgtsam);
+          outputPercentComplete(cnt_match, this->total_matches,
+                                "Matching scans between nearest neighbours...");
+          cnt_match++;
+        } else {
+          LOG_ERROR("Scan match failed");
+        }
+      }
+>>>>>>> a2fc9fa50a457f043cfe830bfe723262ca3c6c73
+
+      if (this->params.use_gps) {
+        // only if we want to use gps priors
+        // TODO: Implement the gps priors.
+        // Careful because currently GPS has no rotation info
+        // See Ben's code
+      }
+      graph.addInitialPose(this->init_pose.at(j).value, j);
     }
+<<<<<<< HEAD
   }
 
   if (p_->gps_topic == "" && p_->init_method == 1) {
@@ -297,121 +371,139 @@ bool validateParams(boost::shared_ptr<Params> p_) {
     LOG_ERROR("Invalid parameter: downsample_input. Enter a boolean.");
     return 0;
   }
+=======
+>>>>>>> a2fc9fa50a457f043cfe830bfe723262ca3c6c73
 
-  if (p_->set_min_neighbours == 0) {
-    LOG_ERROR("Invalid parameter: set_min_neighbours. Enter an integer greater "
-              "than 0.");
-    return 0;
-  }
+    for (uint64_t j = 0; j < this->loops->size(); j++) {
+      // iterate over all j loop closures
+      Eigen::Affine3d T_L1_L2;
+      wave::Mat6 info;
+      bool match_success;
 
-  if (!(p_->ground_segment == 1 || p_->ground_segment == 0)) {
-    LOG_ERROR("Invalid parameter: ground_segment. Enter a boolean.");
-    return 0;
-  }
+      uint64_t L1 = this->loops->at(j)[0];
+      uint64_t L2 = this->loops->at(j)[1];
 
-  if (!(p_->downsample_output_method == 1 ||
-        p_->downsample_output_method == 2 ||
-        p_->downsample_output_method == 3)) {
-    LOG_ERROR("Invalid parameter: downsample_output_method. Enter 1, 2, or 3.");
-    return 0;
-  }
+      match_success = this->matchScans(L1, L2, T_L1_L2, info,
+                                       correction_norm_valid, ros_data);
 
-  if (p_->int_map_size == 0) {
-    LOG_ERROR(
-        "Invalid parameter: int_map_size. Enter an integer greater than 0.");
-    return 0;
-  }
+      if (!correction_norm_valid) // WHAT IS THIS??
+      {
+        continue;
+      }
 
-  if (!(p_->use_pass_through_filter_map == 1 ||
-        p_->use_pass_through_filter_map == 0)) {
-    LOG_ERROR(
-        "Invalid parameter: use_pass_through_filter_map. Enter a boolean.");
-    return 0;
-  }
-
-  if (p_->x_upper_threshold < p_->x_lower_threshold ||
-      p_->y_upper_threshold < p_->y_lower_threshold ||
-      p_->z_upper_threshold < p_->z_lower_threshold ||
-      p_->x_upper_threshold_map < p_->x_lower_threshold_map ||
-      p_->y_upper_threshold_map < p_->y_lower_threshold_map ||
-      p_->z_upper_threshold_map < p_->z_lower_threshold_map) {
-    LOG_ERROR("Check pass through filter parameters. Limits not correct.");
-    return 0;
-  }
-
-  if (p_->knn == 0) {
-    LOG_ERROR("Invalid parameter: k_nearest_neighbours. Enter an integer "
-              "greater than 0.");
-    return 0;
-  }
-
-  if (p_->loop_min_travel_distance < p_->distance_match_limit) {
-    LOG_ERROR("Parameter loop_min_travel_distance must be greater than "
-              "parameter distance_match_limit");
-    return 0;
-  }
-
-  if (p_->trajectory_sampling_dist < p_->map_sampling_dist) {
-    LOG_ERROR("parameter trajectory_sampling_distance must be greater or equal "
-              "to parameter map_sampling_distance");
-    return 0;
-  }
-
-  if (p_->distance_match_limit < p_->distance_match_min) {
-    LOG_ERROR("parameter distance_match_limit must be greater than parameter "
-              "distance_match_min");
-    return 0;
-  }
-
-  if (p_->iterations == 0) {
-    LOG_ERROR(
-        "Invalid parameter: iterations. Enter an integer greater than 0.");
-    return 0;
-  }
-
-  if (!(p_->use_gps == 1 || p_->use_gps == 0)) {
-    LOG_ERROR("Invalid parameter: use_gps. Enter a boolean.");
-    return 0;
-  }
-
-  if (!(p_->optimize_gps_lidar == 1 || p_->optimize_gps_lidar == 0)) {
-    LOG_ERROR("Invalid parameter: optimize_gps_lidar. Enter a boolean.");
-    return 0;
-  }
-
-  if (!(p_->fixed_scan_transform_cov == 1 ||
-        p_->fixed_scan_transform_cov == 0)) {
-    LOG_ERROR("Invalid parameter: fixed_scan_transform_cov. Enter a boolean.");
-    return 0;
-  }
-
-  if (!(p_->visualize == 1 || p_->visualize == 0)) {
-    LOG_ERROR("Invalid parameter: visualize. Enter a boolean.");
-    return 0;
-  }
-
-  if (!(p_->step_matches == 1 || p_->step_matches == 0)) {
-    LOG_ERROR("Invalid parameter: step_matches. Enter a boolean.");
-    return 0;
-  }
-
-  if (!(p_->combine_scans == 1 || p_->combine_scans == 0)) {
-    LOG_ERROR("Invalid parameter: combine_scans. Enter a boolean.");
-    return 0;
-  }
-
-  if (!(p_->matcher_type == "icp" || p_->matcher_type == "gicp" ||
-        p_->matcher_type == "loam")) {
-    if (p_->matcher_type == "loam") {
-      LOG_ERROR("LOAM Matcher not yet implemented");
-    } else {
-      LOG_ERROR("Invalid parameter: matcher_type. Supported: icp, gicp, loam");
+      // create factor in graph if scan successful
+      if (match_success) {
+        wave::Mat6 mgtsam; // Eigen::Matrix<double, 6, 6>
+        // this next bit is a major gotcha, whole thing blows up
+        // without it. This just rearranges the info matrix to the correct form
+        // block starting at 0,0 of size 3x3
+        mgtsam.block(0, 0, 3, 3) = info.block(3, 3, 3, 3); // rotation
+        mgtsam.block(3, 3, 3, 3) = info.block(0, 0, 3, 3); // translation
+        mgtsam.block(0, 3, 3, 3) = info.block(0, 3, 3, 3); // off diagonal
+        mgtsam.block(3, 0, 3, 3) = info.block(3, 0, 3, 3); // off diagonal
+        graph.addFactor(L1, L2, T_L1_L2, mgtsam);
+        outputPercentComplete(cnt_match, this->total_matches,
+                              "Matching scans between nearest neighbours...");
+        cnt_match++;
+      } else {
+        LOG_ERROR("Scan match failed");
+      }
     }
-    return 0;
+
+    if (no_GPS) {
+      LOG_INFO("Fixing first pose.");
+      graph.fixFirstPose();
+    }
+    LOG_INFO("Done building graph.");
+    graph.optimize();
+
+    // Loop through and get final alignment
+    LOG_INFO("Updating Poses for Next Iteration.");
+    this->final_poses.clear();
+    Eigen::Affine3d temp_trans, prev;
+    for (uint64_t k = 0; k < graph.poses.size(); k++) {
+      // get resulting transform for pose k
+      temp_trans.matrix() =
+          graph.result.at<gtsam::Pose3>(graph.poses.at(k)).matrix();
+
+      // update initial pose estimate for next iteration (if needed)
+      this->init_pose.at(graph.poses.at(k)).value = temp_trans;
+
+      // Add result to final pose measurement container
+      this->final_poses.emplace_back(
+          ros_data->getLidarScanTimePoint(this->pose_scan_map[k]), 0,
+          temp_trans);
+    }
   }
 
-  std::string matcherConfigFilePath = getMatcherConfig(p_->matcher_type);
+  return graph;
+}
 
+void ScanMatcher::saveParamsFile(std::string save_path_) {
+  std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
+  std::string dstFileName = save_path_ + dateandtime + "_params.txt";
+  std::string yamlDirStr = __FILE__;
+  yamlDirStr.erase(yamlDirStr.end() - 20, yamlDirStr.end());
+  yamlDirStr += "config/ig_graph_slam_config.yaml";
+  std::ifstream src(yamlDirStr, std::ios::binary);
+  std::ofstream dst(dstFileName, std::ios::binary);
+  dst << src.rdbuf();
+}
+
+void ScanMatcher::saveGraphFile(GTSAMGraph graph_, std::string save_path_) {
+  std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
+  std::string graphFileName = save_path_ + dateandtime + "gtsam_graph.dot";
+  graph_.print(graphFileName, false);
+}
+
+bool ScanMatcher::takeNewScan(const Eigen::Affine3d &p1,
+                              const Eigen::Affine3d &p2, const double &dist,
+                              const double &rot) {
+  // calculate the norm of the distance between the two points
+  double l2sqrd = (p1(0, 3) - p2(0, 3)) * (p1(0, 3) - p2(0, 3)) +
+                  (p1(1, 3) - p2(1, 3)) * (p1(1, 3) - p2(1, 3)) +
+                  (p1(2, 3) - p2(2, 3)) * (p1(2, 3) - p2(2, 3));
+
+  double minRotSq = rot * DEG_TO_RAD * rot * DEG_TO_RAD;
+  Eigen::Vector3d eps1, eps2, diffSq;
+  eps1 = RToLieAlgebra(p1.rotation());
+  eps2 = RToLieAlgebra(p2.rotation());
+  diffSq(0, 0) = (eps2(0, 0) - eps1(0, 0)) * (eps2(0, 0) - eps1(0, 0));
+  diffSq(1, 0) = (eps2(1, 0) - eps1(1, 0)) * (eps2(1, 0) - eps1(1, 0));
+  diffSq(2, 0) = (eps2(2, 0) - eps1(2, 0)) * (eps2(2, 0) - eps1(2, 0));
+
+  // if the norm is greater than the specified minimum sampling distance or
+  // if the change in rotation is greater than specified min.
+  if (l2sqrd > dist * dist) {
+    // then yes take a new scan
+    return true;
+  } else if (diffSq(0, 0) > minRotSq || diffSq(1, 0) > minRotSq ||
+             diffSq(2, 0) > minRotSq) {
+    // then yes take a new scan
+    return true;
+  } else {
+    // then no, do not take a new scan
+    return false;
+  }
+}
+
+void ScanMatcher::loadPrevPoses() {
+  Eigen::Affine3d PoseK;
+  uint64_t tk;
+  TimePoint timepointk;
+  std::vector<std::pair<uint64_t, Eigen::Matrix4d>> poses_;
+
+  poses_ = readPoseFile(this->params.prev_poses_path);
+  LOG_INFO("Loaded a total of %d poses.", poses_.size());
+
+  for (uint64_t k = 0; k < poses_.size(); k++) {
+    // get resulting transform and timestamp for pose k
+    tk = poses_[k].first;
+    PoseK.matrix() = poses_[k].second;
+    TimePoint timepointk{std::chrono::duration_cast<TimePoint::duration>(
+        std::chrono::nanoseconds(tk))};
+
+<<<<<<< HEAD
   if (!boost::filesystem::exists(matcherConfigFilePath)) {
     if (p_->matcher_type == "icp") {
       LOG_ERROR("icp.yaml not found. Looking in: %s",
@@ -427,11 +519,12 @@ bool validateParams(boost::shared_ptr<Params> p_) {
                 matcherConfigFilePath.c_str());
     }
     return 0;
+=======
+    // Add result to final pose measurement container
+    this->final_poses.emplace_back(timepointk, 0, PoseK);
+>>>>>>> a2fc9fa50a457f043cfe830bfe723262ca3c6c73
   }
-  return 1;
 }
-
-// Scan Matcher (parent Class) Functions:
 
 void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
   LOG_INFO("Storing pose scans...");
@@ -439,8 +532,9 @@ void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
   // corresponding to these scans
   int i = 0;
   Eigen::Affine3d T_ECEF_GPS, T_MAP_LIDAR;
-  for (uint64_t iter = 0; iter < ros_data->lidar_container.size();
-       iter++) { // this ierates through the lidar measurements
+
+  // this ierates through the lidar measurements
+  for (uint64_t iter = 0; iter < ros_data->lidar_container.size(); iter++) {
     bool use_next_scan = false;
     switch (this->params.init_method) {
     case 1:
@@ -479,15 +573,18 @@ void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
     // If i = 0, then save the scan - first scan
     if (i > 0) {
       bool take_new_scan;
-      take_new_scan = takeNewScan(T_MAP_LIDAR, init_pose.poses[i - 1],
-                                  this->params.trajectory_sampling_dist);
+      take_new_scan = takeNewScan(T_MAP_LIDAR, init_pose.at(i - 1).value,
+                                  this->params.trajectory_sampling_dist,
+                                  this->params.trajectory_rotation_change);
       if (take_new_scan && !use_next_scan) {
-        this->init_pose.poses.push_back(T_MAP_LIDAR);
+        this->init_pose.emplace_back(ros_data->getLidarScanTimePoint(iter), 0,
+                                     T_MAP_LIDAR);
         this->pose_scan_map.push_back(iter);
         ++i;
       }
     } else if (!use_next_scan) {
-      this->init_pose.poses.push_back(T_MAP_LIDAR);
+      this->init_pose.emplace_back(ros_data->getLidarScanTimePoint(iter), 0,
+                                   T_MAP_LIDAR);
       this->pose_scan_map.push_back(iter);
       ++i;
     }
@@ -496,14 +593,30 @@ void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
            ros_data->lidar_container.size());
 }
 
+void ScanMatcher::createPoseScanMapFromPoses(
+    boost::shared_ptr<ROSBag> ros_data) {
+  LOG_INFO("Creating pose scan map from inputted poses...");
+  uint64_t index;
+  TimePoint timepointk;
+  for (uint64_t i = 0; i < this->final_poses.size(); i++) {
+    timepointk = this->final_poses[i].time_point;
+    index = getLidarTimeWindow(ros_data->lidar_container, timepointk);
+    this->pose_scan_map.push_back(index);
+  }
+  LOG_INFO("Stored %d pose scans of %d available scans.",
+           this->pose_scan_map.size(), ros_data->lidar_container.size());
+}
+
 void ScanMatcher::findAdjacentScans() {
   double distancejk;
-  Eigen::Vector3d posej, posek;
+  std::vector<double> minmaxrotjk;
+  Eigen::Affine3d posej, posek;
+  this->total_matches = 0; // reset the counter of matches
 
   // Scan registration class
   // As factors are added, factor id will just be counter value
   this->adjacency = boost::make_shared<std::vector<std::vector<uint64_t>>>(
-      this->init_pose.poses.size());
+      this->init_pose.size());
 
   /*
    * For each pose within the initial pose, get the position.
@@ -511,17 +624,14 @@ void ScanMatcher::findAdjacentScans() {
    * at that point
    *
    */
-  for (uint64_t j = 0; j < this->init_pose.poses.size(); j++) {
-    // query is the position of the current pose
-    posej(0, 0) = this->init_pose.poses[j](0, 3);
-    posej(1, 0) = this->init_pose.poses[j](1, 3);
-    posej(2, 0) = this->init_pose.poses[j](2, 3);
-
+  for (uint64_t j = 0; j < this->init_pose.size(); j++) {
+    // posej is the position of the current pose
+    posej = this->init_pose.at(j).value;
     // Do this for all poses except the last one
-    if (j + 1 <
-        this->init_pose.poses.size()) { // ensures that trajectory is connected
-                                        //  this is also accounted for in nn
-                                        //  search (see if j < ret_indices[k]-1)
+    if (j + 1 < this->init_pose.size()) {
+      // ensures that trajectory is connected
+      //  this is also accounted for in nn
+      //  search (see if j < ret_indices[k]-1)
       this->adjacency->at(j).emplace_back(j + 1);
       this->total_matches++;
     }
@@ -530,18 +640,26 @@ void ScanMatcher::findAdjacentScans() {
      * For each pose position, check the next scans to see if they are
      * within the boundaries specified
      * If they are and they are after j, add them to the adjacency
-     * If the points were discovered before j, they won't be added
      *
      */
-    for (uint16_t k = j + 1; k < j + 2 + this->params.knn; k++) {
-      posek(0, 0) = this->init_pose.poses[k](0, 3);
-      posek(1, 0) = this->init_pose.poses[k](1, 3);
-      posek(2, 0) = this->init_pose.poses[k](2, 3);
+    for (uint16_t k = j + 2;
+         (k < j + 1 + this->params.knn) && (k < this->init_pose.size()); k++) {
+      posek = this->init_pose.at(k).value;
       distancejk = calculateLength(posej, posek);
+      minmaxrotjk = calculateMinMaxRotationChange(posej, posek);
 
       if ((distancejk > this->params.distance_match_min) &&
-          (distancejk < this->params.distance_match_limit) &&
-          j + 1 < k) { // add index to back of vector for scan j
+          (distancejk < this->params.distance_match_limit &&
+           minmaxrotjk[1] < this->params.rotation_match_limit * DEG_TO_RAD)) {
+        // add index to back of vector for scan j
+        this->adjacency->at(j).emplace_back(k);
+        this->total_matches++;
+      } else if (minmaxrotjk[1] >
+                     this->params.rotation_match_min * DEG_TO_RAD &&
+                 minmaxrotjk[1] <
+                     this->params.rotation_match_limit * DEG_TO_RAD &&
+                 distancejk < this->params.distance_match_limit) {
+        // add index to back of vector for scan j
         this->adjacency->at(j).emplace_back(k);
         this->total_matches++;
       }
@@ -558,21 +676,21 @@ void ScanMatcher::findLoops() {
   // creating a vector (size nx1) of vectors (will be size 2x1)
   this->loops = boost::make_shared<std::vector<std::vector<uint64_t>>>();
 
-  for (uint64_t j = 0; j < this->init_pose.poses.size() - knn_; j++) {
+  for (uint64_t j = 0; j < this->init_pose.size() - knn_; j++) {
     pathLength = 0;
     distanceP1P2 = 0;
-    pose1(0, 0) = this->init_pose.poses[j](0, 3);
-    pose1(1, 0) = this->init_pose.poses[j](1, 3);
-    pose1(2, 0) = this->init_pose.poses[j](2, 3);
+    pose1(0, 0) = this->init_pose.at(j).value(0, 3);
+    pose1(1, 0) = this->init_pose.at(j).value(1, 3);
+    pose1(2, 0) = this->init_pose.at(j).value(2, 3);
     poseLast = pose1;
 
     // For each pose (pose1) position, check all the poses j + 1 and up
     // if within loop_max_distance and outside of loop_min_travel_distance,
     // then add the constraint (or add to loops object)
-    for (uint16_t k = j + 1; k < init_pose.poses.size(); k++) {
-      pose2(0, 0) = this->init_pose.poses[k](0, 3);
-      pose2(1, 0) = this->init_pose.poses[k](1, 3);
-      pose2(2, 0) = this->init_pose.poses[k](2, 3);
+    for (uint16_t k = j + 1; k < init_pose.size(); k++) {
+      pose2(0, 0) = this->init_pose.at(k).value(0, 3);
+      pose2(1, 0) = this->init_pose.at(k).value(1, 3);
+      pose2(2, 0) = this->init_pose.at(k).value(2, 3);
 
       distanceP1P2 = calculateLength(pose1, pose2);
       pathLength += calculateLength(poseLast, pose2);
@@ -602,41 +720,37 @@ void ScanMatcher::displayPointCloud(wave::PCLPointCloudPtr cloud_display,
   }
 }
 
-void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
-                                     boost::shared_ptr<ROSBag> ros_data,
+void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
                                      int mapping_method) {
   std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> intermediaries;
   this->aggregate->clear();
   int i = 0;
-  for (uint64_t k = 0; k < graph.poses.size();
-       k++) // NOTE: Sometimes I get seg fault on the last scan
-  {         // iterate through all poses in graph
-
+  for (uint64_t k = 0; k < this->final_poses.size(); k++) {
     // Define transforms we will need
     Eigen::Affine3d T_MAP_LLOC_k, T_MAP_LLOC_kp1, T_MAP_LMAP_k, T_MAP_LMAP_kp1,
         T_LMAP_LLOC, T_MAP_LLOC_Jprev, T_MAP_LMAP_Jprev;
-    T_MAP_LLOC_k = this->final_poses.at(graph.poses.at(k)).value; // for pose k
+
+    T_MAP_LLOC_k = this->final_poses[k].value;
     T_LMAP_LLOC = this->params.T_LMAP_LLOC;                       // static
     T_MAP_LMAP_k = T_MAP_LLOC_k * T_LMAP_LLOC.inverse();
 
-    int curr_index = this->pose_scan_map.at(graph.poses.at(k));
+    int curr_index = this->pose_scan_map.at(k);
     TimePoint curr_pose_time = ros_data->lidar_container[curr_index].time_point;
     int next_index;
     TimePoint next_pose_time = curr_pose_time;
 
     // get all time and transforms for next pose for interpolation
-    if (!(k == graph.poses.size() - 1)) {
-      T_MAP_LLOC_kp1 =
-          this->final_poses.at(graph.poses.at(k + 1)).value; // for pose k + 1
+    if (!(k == this->final_poses.size() - 1)) {
+      T_MAP_LLOC_kp1 = this->final_poses[k + 1].value; // for pose k + 1
       T_MAP_LMAP_kp1 = T_MAP_LLOC_kp1 * T_LMAP_LLOC.inverse();
       T_MAP_LLOC_Jprev = T_MAP_LLOC_k;
       T_MAP_LMAP_Jprev = T_MAP_LMAP_k;
-      next_index = this->pose_scan_map.at(graph.poses.at(k + 1));
+      next_index = this->pose_scan_map.at(k + 1);
       next_pose_time = ros_data->lidar_container[next_index].time_point;
     }
 
     // find scan range for map scans:
-    std::pair<int, int> scan_range_map;
+    std::pair<uint64_t, uint64_t> scan_range_map;
     scan_range_map = getLidarTimeWindow(ros_data->lidar_container_map,
                                         curr_pose_time, next_pose_time);
 
@@ -649,7 +763,7 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
       // iterate through all scans between pose k and k+1
       if ((this->params.trajectory_sampling_dist >
            this->params.map_sampling_dist) &&
-          !(k == graph.poses.size() - 1)) {
+          !(k == this->final_poses.size() - 1)) {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_interp(
             new pcl::PointCloud<pcl::PointXYZ>);
 
@@ -669,8 +783,9 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
               T_MAP_LLOC_k.matrix(), curr_pose_time, T_MAP_LLOC_kp1.matrix(),
               next_pose_time, time_point_J);
 
-          bool take_new_map_scan = takeNewScan(T_MAP_LLOC_Jprev, T_MAP_LLOC_J,
-                                               this->params.map_sampling_dist);
+          bool take_new_map_scan = takeNewScan(
+              T_MAP_LLOC_Jprev, T_MAP_LLOC_J, this->params.map_sampling_dist,
+              this->params.map_rotation_change);
 
           // interpolate pose and add new scan to current target cloud
           if (take_new_map_scan) {
@@ -692,7 +807,7 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
       // iterate through all scans between pose k and k+1
       if ((this->params.trajectory_sampling_dist >
            this->params.map_sampling_dist) &&
-          !(k == graph.poses.size() - 1)) {
+          !(k == this->final_poses.size() - 1)) {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_interp(
             new pcl::PointCloud<pcl::PointXYZ>);
 
@@ -712,8 +827,9 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
           T_MAP_LMAP_J.matrix() = interpolateTransform(
               T_MAP_LMAP_k.matrix(), curr_pose_time, T_MAP_LMAP_kp1.matrix(),
               next_pose_time, time_point_J);
-          bool take_new_map_scan = takeNewScan(T_MAP_LMAP_Jprev, T_MAP_LMAP_J,
-                                               this->params.map_sampling_dist);
+          bool take_new_map_scan = takeNewScan(
+              T_MAP_LMAP_Jprev, T_MAP_LMAP_J, this->params.map_sampling_dist,
+              this->params.map_rotation_change);
 
           // interpolate pose and add new scan to current target cloud
           if (take_new_map_scan) {
@@ -744,7 +860,7 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
       // iterate through all scans between pose k and k+1
       if ((this->params.trajectory_sampling_dist >
            this->params.map_sampling_dist) &&
-          !(k == graph.poses.size() - 1)) {
+          !(k == this->final_poses.size() - 1)) {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_interp(
             new pcl::PointCloud<pcl::PointXYZ>);
         int j = 0;
@@ -766,8 +882,9 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
               T_MAP_LMAP_k.matrix(), curr_pose_time, T_MAP_LMAP_kp1.matrix(),
               next_pose_time, time_point_J);
 
-          bool take_new_map_scan = takeNewScan(T_MAP_LLOC_Jprev, T_MAP_LLOC_J,
-                                               this->params.map_sampling_dist);
+          bool take_new_map_scan = takeNewScan(
+              T_MAP_LLOC_Jprev, T_MAP_LLOC_J, this->params.map_sampling_dist,
+              this->params.map_rotation_change);
 
           // interpolate pose and add new scan to current target cloud
           if (take_new_map_scan) {
@@ -829,11 +946,11 @@ void ScanMatcher::createAggregateMap(GTSAMGraph &graph,
   }
 }
 
-void ScanMatcher::outputAggregateMap(GTSAMGraph &graph,
-                                     boost::shared_ptr<ROSBag> ros_data,
-                                     int mapping_method, std::string path_) {
-  *this->aggregate =
-      downSampleFilterIG(this->aggregate, this->params.downsample_cell_size);
+void ScanMatcher::outputAggregateMap(int mapping_method, std::string path_) {
+  if (this->params.downsample_output_method == 3) {
+    *this->aggregate =
+        downSampleFilterIG(this->aggregate, this->params.downsample_cell_size);
+  }
   std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
   std::string mapType;
   switch (mapping_method) {
@@ -850,72 +967,35 @@ void ScanMatcher::outputAggregateMap(GTSAMGraph &graph,
 
   pcl::io::savePCDFileBinary(path_ + dateandtime + mapType, *this->aggregate);
   LOG_INFO("outputting map at time: %s", dateandtime.c_str());
+}
 
-  // TODO: move this to another function
-  // now save trajectory to file
+void ScanMatcher::outputOptTraj(std::string path_) {
   std::ofstream file;
+  std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
   const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision,
                                          Eigen::DontAlignCols, ", ", ", ");
   file.open(path_ + dateandtime + "_opt_traj" + ".txt");
-  for (auto iter = final_poses.begin(); iter != final_poses.end(); iter++) {
-    file << iter->time_point.time_since_epoch().count() << ", ";
-    file << iter->value.matrix().format(CSVFormat);
+  for (uint64_t iter = 0; iter < this->final_poses.size(); iter++) {
+    file << this->final_poses[iter].time_point.time_since_epoch().count()
+         << ", ";
+    file << this->final_poses[iter].value.matrix().format(CSVFormat);
     file << std::endl;
   }
   file.close();
+}
 
-  std::ofstream bias_file;
-  bias_file.open(path_ + dateandtime + "_GPSbias.txt");
-  for (auto iter = graph.biases.begin(); iter != graph.biases.end(); iter++) {
-    auto curbias = graph.result.at<gtsam::Point3>(*iter);
-    bias_file << curbias.x() << ", " << curbias.y() << ", " << curbias.z()
-              << std::endl;
+void ScanMatcher::outputInitTraj(std::string path_) {
+  std::ofstream file;
+  std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
+  const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision,
+                                         Eigen::DontAlignCols, ", ", ", ");
+  file.open(path_ + dateandtime + "_init_traj" + ".txt");
+  for (uint64_t iter = 0; iter < this->init_pose.size(); iter++) {
+    file << this->init_pose[iter].time_point.time_since_epoch().count() << ", ";
+    file << this->init_pose[iter].value.matrix().format(CSVFormat);
+    file << std::endl;
   }
-  bias_file.close();
-
-  // TODO: Make this work even without GPS data
-  if (this->params.init_method == 1) {
-    // This file contains the input traj to the GTSAM since we want to compare
-    // the pose difference betweem the input and the output of GTSAM
-    std::ofstream gt_file;
-    gt_file.open(path_ + dateandtime + "_GTSAMinputTraj.txt");
-    for (uint64_t j = 0; j < adjacency->size(); j++) {
-      Eigen::Affine3d T_ECEF_GPSIMU = ros_data->getGPSTransform(
-          ros_data->getLidarScanTimePoint(pose_scan_map.at(j)), true);
-      Eigen::Affine3d T_MAP_GPSIMU, T_MAP_LIDAR;
-      T_MAP_GPSIMU = ros_data->T_ECEF_MAP.inverse() * T_ECEF_GPSIMU;
-      if (this->params.optimize_gps_lidar) {
-        auto result = graph.result.at<gtsam::Pose3>(6000000);
-        T_MAP_LIDAR = T_MAP_GPSIMU * result.matrix();
-      } else {
-        auto result = params.T_LIDAR_GPS.inverse();
-        T_MAP_LIDAR = T_MAP_GPSIMU * result.matrix();
-      }
-      gt_file << ros_data->getLidarScanTimePoint(pose_scan_map.at(j))
-                     .time_since_epoch()
-                     .count()
-              << ", ";
-      gt_file << T_MAP_LIDAR.matrix().format(CSVFormat);
-      gt_file << std::endl;
-    }
-    gt_file.close();
-
-    std::ofstream datumfile;
-    using dbl = std::numeric_limits<double>;
-    datumfile.open(path_ + dateandtime + "map_ecef_datum" + ".txt");
-    datumfile.precision(dbl::max_digits10);
-    datumfile << ros_data->T_ECEF_MAP.matrix().format(CSVFormat);
-    datumfile.close();
-    if (this->params.optimize_gps_lidar) {
-      auto result = graph.result.at<gtsam::Pose3>(6000000);
-      std::ofstream datumfile;
-      using dbl = std::numeric_limits<double>;
-      datumfile.open(dateandtime + "T_LIDAR_GPS" + ".txt");
-      datumfile.precision(dbl::max_digits10);
-      datumfile << result.inverse().matrix().format(CSVFormat);
-      datumfile.close();
-    }
-  }
+  file.close();
 }
 
 void ScanMatcher::outputForColourization(boost::shared_ptr<ROSBag> ros_data,
@@ -989,8 +1069,8 @@ bool ICPScanMatcher::matchScans(
     bool &correction_norm_valid,
     boost::shared_ptr<ROSBag> ros_data) { // j: current, (reference scan)
   // i: adjacent scan (target)
-  auto T_MAP_Lj = init_pose.poses[j]; // set initial guess of current scan
-  auto T_MAP_Li = init_pose.poses[i]; // set initial guess of adjacent scan
+  auto T_MAP_Lj = init_pose.at(j).value; // set initial guess of current scan
+  auto T_MAP_Li = init_pose.at(i).value; // set initial guess of adjacent scan
   correction_norm_valid = true;
 
   // Get scans
@@ -1002,7 +1082,7 @@ bool ICPScanMatcher::matchScans(
   *cloud_tgt2 = *ros_data->lidar_container[pose_scan_map.at(i)].value;
   TimePoint timepoint_j, timepoint_i;
 
-  // Combine sacns if specified
+  // Combine scans if specified
   if (this->params.combine_scans) {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ref_tmp(
         new pcl::PointCloud<pcl::PointXYZ>);
@@ -1010,9 +1090,9 @@ bool ICPScanMatcher::matchScans(
         new pcl::PointCloud<pcl::PointXYZ>);
     timepoint_j = ros_data->lidar_container[pose_scan_map.at(j)].time_point;
     timepoint_i = ros_data->lidar_container[pose_scan_map.at(i)].time_point;
-    int map_index_j =
+    uint64_t map_index_j =
         getLidarTimeWindow(ros_data->lidar_container_map, timepoint_j);
-    int map_index_i =
+    uint64_t map_index_i =
         getLidarTimeWindow(ros_data->lidar_container_map, timepoint_i);
     pcl::transformPointCloud(
         *(ros_data->lidar_container_map[map_index_j].value), *cloud_ref_tmp,
@@ -1085,8 +1165,8 @@ bool GICPScanMatcher::matchScans(
     bool &correction_norm_valid,
     boost::shared_ptr<ROSBag> ros_data) { // j: current, (reference scan)
   // i: adjacent scan (target)
-  auto T_MAP_Lj = init_pose.poses[j]; // set initial guess of current scan
-  auto T_MAP_Li = init_pose.poses[i]; // set initial guess of adjacent scan
+  auto T_MAP_Lj = init_pose.at(j).value; // set initial guess of current scan
+  auto T_MAP_Li = init_pose.at(i).value; // set initial guess of adjacent scan
   correction_norm_valid = true;
 
   // Get scans
@@ -1098,7 +1178,7 @@ bool GICPScanMatcher::matchScans(
   *cloud_tgt2 = *ros_data->lidar_container[pose_scan_map.at(i)].value;
   TimePoint timepoint_j, timepoint_i;
 
-  // Combine sacns if specified
+  // Combine scans if specified
   if (this->params.combine_scans) {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ref_tmp(
         new pcl::PointCloud<pcl::PointXYZ>);
@@ -1106,9 +1186,9 @@ bool GICPScanMatcher::matchScans(
         new pcl::PointCloud<pcl::PointXYZ>);
     timepoint_j = ros_data->lidar_container[pose_scan_map.at(j)].time_point;
     timepoint_i = ros_data->lidar_container[pose_scan_map.at(i)].time_point;
-    int map_index_j =
+    uint64_t map_index_j =
         getLidarTimeWindow(ros_data->lidar_container_map, timepoint_j);
-    int map_index_i =
+    uint64_t map_index_i =
         getLidarTimeWindow(ros_data->lidar_container_map, timepoint_i);
     pcl::transformPointCloud(
         *(ros_data->lidar_container_map[map_index_j].value), *cloud_ref_tmp,

@@ -4,9 +4,9 @@
   <arg name="frame_id" value="/map"/>
   <!-- IG Results: -->
     <arg name="pcd_file1"
-    value="/home/robot/results/ig_maps/ig_graph_slam/2019_2_12_18_27_28_map.pcd"/>
+    value="/home/nick/results/ig_maps/map1.pcd"/>
     <arg name="pcd_file2"
-    value="/home/robot/results/ig_maps/ig_graph_slam/2019_2_12_18_27_27_loc_map.pcd"/>
+    value="/home/nick/results/ig_maps/map2.pcd"/>
 
 <!-- Start RVIZ -->
   <node name="rviz_mapping" pkg="rviz" type="rviz"
