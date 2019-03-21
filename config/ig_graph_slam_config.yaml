@@ -19,6 +19,8 @@ bag_file_path: "/home/nick/bag_files/ig_scans/2018_07_06_UW_Campus/ig_scan_2018-
 use_prev_poses: true             # if you want to use pre-calculated pose results and just rebuild the maps, set to true
 prev_poses_path: "/home/nick/results/ig_maps/map1/opt_traj.txt"
 
+camera_topics: ["/F1/image_raw", "/F2/image_raw"]
+intrinsics: ["F1.yaml","F2.yaml"]
 T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization
   rows: 4
   cols: 4

@@ -129,6 +129,8 @@ int main() {
   // scan_matcher->createAggregateMap(load_ros_data, 3);
   // scan_matcher->outputAggregateMap(3, save_path);
 
+  scan_matcher->outputForColourization(load_ros_data, save_path);
+
   outputTimePointDiff(time_start, std::chrono::system_clock::now(),
                       "Total computation time: ");
 }
