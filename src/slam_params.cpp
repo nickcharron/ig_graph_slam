@@ -22,8 +22,8 @@ Params::Params() {
   parser.addParam("bag_file_path", &(this->bag_file_path));
   parser.addParam("use_prev_poses", &(this->use_prev_poses));
   parser.addParam("prev_poses_path", &(this->prev_poses_path));
-  parser.addParam("camera_topics", &(params.camera_topics));
-  parser.addParam("intrinsics", &(params.intrinsics));
+  parser.addParam("camera_topics", &(this->camera_topics));
+  parser.addParam("intrinsics", &(this->intrinsics));
   parser.addParam("T_LIDAR_GPS", &(this->T_LIDAR_GPS.matrix()));
   parser.addParam("T_LMAP_LLOC", &(this->T_LMAP_LLOC.matrix()));
   parser.addParam("use_pass_through_filter", &(this->use_pass_through_filter));
@@ -110,11 +110,11 @@ void Params::outputParams() {
             << "bag_file_path: " << this->bag_file_path << std::endl
             << "use_prev_poses: " << this->use_prev_poses << std::endl
             << "prev_poses_path: " << this->prev_poses_path << std::endl;
-  for (uint16_t i = 0; i < p_->camera_topics.size(); i++) {
-    std::cout << "camera_topics: " << p_->camera_topics[i] << std::endl;
+  for (uint16_t i = 0; i < this->camera_topics.size(); i++) {
+    std::cout << "camera_topics: " << this->camera_topics[i] << std::endl;
   }
-  for (uint16_t i = 0; i < p_->camera_topics.size(); i++) {
-    std::cout << "intrinsics: " << p_->intrinsics[i] << std::endl;
+  for (uint16_t i = 0; i < this->camera_topics.size(); i++) {
+    std::cout << "intrinsics: " << this->intrinsics[i] << std::endl;
   }
   std::cout
       << "T_LIDAR_GPS: " << this->T_LIDAR_GPS.matrix() << std::endl
@@ -247,7 +247,7 @@ bool Params::validateParams() {
     return 0;
   }
 
-  if (p_->camera_topics.size() != p_->intrinsics.size()) {
+  if (this->camera_topics.size() != this->intrinsics.size()) {
     LOG_ERROR(
         "Number of camera topics not equal to number of intrinsic files.");
     return 0;

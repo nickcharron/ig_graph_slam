@@ -11,6 +11,7 @@
 
 // OpenCV headers
 #include <cv_bridge/cv_bridge.h>
+#include <opencv2/opencv.hpp>
 
 // WAVE Headers
 #include <wave/containers/measurement_container.hpp>
@@ -43,52 +44,6 @@ Eigen::Affine3d ROSBag::getGPSTransform(const TimePoint &time_point,
 
 TimePoint ROSBag::getLidarScanTimePoint(int index) {
   return this->lidar_container[index].time_point;
-}
-
-void outputImage(const TimePoint &time_point, const std::string output_path,
-                 const std::string camera_topic, const int imgNo) {
-
-  // Read bag file and create view
-  rosbag::Bag bag;
-  try {
-    bag.open(this->bag_file_path, rosbag::bagmode::Read);
-  } catch (rosbag::BagException &ex) {
-    LOG_ERROR("Bag exception : %s", ex.what());
-  }
-  rosbag::View view(bag, rosbag::TopicQuery(camera_topic), ros::TIME_MIN,
-                    ros::TIME_MAX, true);
-
-  if (view.size() == 0) {
-    LOG_ERROR("No image messages read. Check your topics in config file.");
-    break;
-  }
-
-  // iterate through bag:
-  int imageCount =
-      0 for (auto iter = view.begin(); iter != view.end(); iter++) {
-    if (iter->getTopic() == camera_topic) {
-
-      // save ros message
-      auto img_msg = iter->instantiate<sensor_msgs::Image>();
-
-      // check timepoint
-      TimePoint curImgTimepoint =
-          rosTimeToChrono(img_msg.header) if (curImgTimepoint >= time_point) {
-        imageCount++;
-
-        // first we need to change to opencv object
-        cv::Mat curImg = cv_bridge::toCvShare(msg, "bgr8")->image;
-
-        // save this image and swith to next image topic.
-        cv::imwrite(output_path + "image" + std::to_string(imgNo) + ".jpg",
-                    curImg);
-        break;
-      }
-    }
-  }
-  bag.close();
-  LOG_INFO("Saved a total of %d images.", imageCount);
-  LOG_INFO("Images saved to: %s", output_path);
 }
 
 Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,
@@ -441,6 +396,58 @@ uint64_t ROSBag::getLidarTimeWindow(const TimePoint T1) {
     }
   }
   return start_index_;
+}
+
+void ROSBag::outputImage(const TimePoint &time_point,
+                         const std::string output_path,
+                         const std::string camera_topic, const int imgNo) {
+
+  // Read bag file and create view
+  rosbag::Bag bag;
+
+  try {
+    bag.open(this->params.bag_file_path, rosbag::bagmode::Read);
+  } catch (rosbag::BagException &ex) {
+    LOG_ERROR("Bag exception : %s", ex.what());
+  }
+  rosbag::View view(bag, rosbag::TopicQuery(camera_topic), ros::TIME_MIN,
+                    ros::TIME_MAX, true);
+
+  if (view.size() == 0) {
+    LOG_ERROR("No image messages read. Check your topics in config file.");
+    return;
+  }
+
+  // iterate through bag:
+  int imageCount = 0;
+
+  for (auto iter = view.begin(); iter != view.end(); iter++) {
+    if (iter->getTopic() == camera_topic) {
+
+      // save ros message
+      auto img_msg = iter->instantiate<sensor_msgs::Image>();
+
+      // check timepoint
+      TimePoint curImgTimepoint = rosTimeToChrono(img_msg->header);
+      if (curImgTimepoint >= time_point) {
+        imageCount++;
+
+        // first we need to change to opencv object
+        cv_bridge::CvImagePtr cv_img_ptr;
+        cv_img_ptr =
+            cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::BGR8);
+
+        // save this image and swith to next image topic.
+        cv::imwrite(output_path + "image" + std::to_string(imgNo) + ".jpg",
+                    cv_img_ptr->image);
+        break;
+      }
+    }
+  }
+
+  bag.close();
+  LOG_INFO("Saved a total of %d images.", imageCount);
+  LOG_INFO("Images saved to: %s", output_path);
 }
 
 // Messages specific for Moose

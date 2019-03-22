@@ -58,7 +58,7 @@ struct Params {
       use_pass_through_filter_map;
   Eigen::Affine3d T_LIDAR_GPS, T_LMAP_LLOC;
   wave::MatX scan_transform_cov;
-  std::vector<std::string> topics, camera_topic, intrinsics;
+  std::vector<std::string> topics, camera_topics, intrinsics;
 
 };
 

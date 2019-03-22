@@ -54,14 +54,6 @@ struct ROSBag {
   TimePoint getLidarScanTimePoint(int index);
 
   /***
-   * Save image from a ROS bag that is closest to a specified timepoint
-   * @param time_point
-   * @param output_path
-   */
-  void outputImage(const TimePoint &time_point, const std::string output_path,
-                   const std::string camera_topic, const int imgNo);
-
-  /***
    * Gets the GPS Transform at a certain time point
    * @param time_point
    * @param applyT_ENU_GPS
@@ -140,6 +132,14 @@ struct ROSBag {
    * @return
    */
   uint64_t getLidarTimeWindow(const TimePoint T1);
+
+  /***
+   * Save image from a ROS bag that is closest to a specified timepoint
+   * @param time_point
+   * @param output_path
+   */
+  void outputImage(const TimePoint &time_point, const std::string output_path,
+                   const std::string camera_topic, const int imgNo);
 
   // declare containers
   wave::MeasurementContainer<

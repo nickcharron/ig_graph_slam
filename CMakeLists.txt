@@ -68,6 +68,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}_node
         roscpp
         cpp_common
         roslib
+        cv_bridge
         rostime
         rosbag
         rosconsole
