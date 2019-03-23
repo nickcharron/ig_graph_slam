@@ -447,7 +447,7 @@ void ROSBag::outputImage(const TimePoint &time_point,
 
   bag.close();
   LOG_INFO("Saved a total of %d images.", imageCount);
-  LOG_INFO("Images saved to: %s", output_path);
+  LOG_INFO("Images saved to: %s", output_path.c_str());
 }
 
 // Messages specific for Moose

@@ -294,8 +294,10 @@ bool Params::validateParams() {
 
   if (!(this->downsample_output_method == 1 ||
         this->downsample_output_method == 2 ||
-        this->downsample_output_method == 3)) {
-    LOG_ERROR("Invalid parameter: downsample_output_method. Enter 1, 2, or 3.");
+        this->downsample_output_method == 3 ||
+        this->downsample_output_method == 4)) {
+    LOG_ERROR(
+        "Invalid parameter: downsample_output_method. Enter 1, 2, 3, or 4.");
     return 0;
   }
 

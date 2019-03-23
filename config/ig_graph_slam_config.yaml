@@ -15,9 +15,9 @@ odom_topic: "/ig/loam/lidar_odom"
 init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
-bag_file_path: "/home/nick/bag_files/ig_scans/2018_07_06_UW_Campus/ig_scan_2018-07-06-09-15-39_A_loam_shorter.bag"
+bag_file_path: "/home/nick/bag_files/ig_scans/2018_02_14_OPG_Darlington/ig_scan_2019-02-14-12-44-12.bag"
 use_prev_poses: true             # if you want to use pre-calculated pose results and just rebuild the maps, set to true
-prev_poses_path: "/home/nick/results/ig_maps/map1/opt_traj.txt"
+prev_poses_path: "/home/nick/results/ig_maps/opt_traj.txt"
 
 camera_topics: ["/F1/image_raw", "/F2/image_raw"]
 intrinsics: ["F1.yaml","F2.yaml"]

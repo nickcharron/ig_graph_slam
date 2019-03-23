@@ -734,11 +734,11 @@ void ScanMatcher::outputForColourization(boost::shared_ptr<ROSBag> ros_data,
       new pcl::PointCloud<pcl::PointXYZ>);
   TimePoint poseTimePoint;
 
-  for (uint32_t i = 0; i < this->params.intrinsics.size(); i++) {
+  for (uint32_t k = 0; k < this->params.intrinsics.size(); k++) {
     // For each camera, create separate save directories
-    outputPathThisCam = outputPathRoot + this->params.intrinsics[i];
+    outputPathThisCam = outputPathRoot + this->params.intrinsics[k];
     outputPathThisCam.erase(outputPathThisCam.end() - 5,
-                            outputPathThisCam.end());
+                            outputPathThisCam.end()); // removes '.yaml'
     outputPathThisCamPCDs = outputPathThisCam + "/pcds/";
     outputPathThisCamImgs = outputPathThisCam + "/images/";
     boost::filesystem::create_directories(outputPathThisCamPCDs);
@@ -747,20 +747,22 @@ void ScanMatcher::outputForColourization(boost::shared_ptr<ROSBag> ros_data,
     // Output the intrinsics to results folder
     std::string intrinsicsPath = __FILE__;
     intrinsicsPath.erase(intrinsicsPath.end() - 20, intrinsicsPath.end());
-    intrinsicsPath += "calibrations/" + this->params.intrinsics[i];
+    intrinsicsPath += "calibrations/" + this->params.intrinsics[k];
     std::ifstream src(intrinsicsPath, std::ios::binary);
-    std::ofstream dst(outputPathThisCam + "/" + this->params.intrinsics[i],
+    std::ofstream dst(outputPathThisCam + "/" + this->params.intrinsics[k],
                       std::ios::binary);
+    std::cout << "intrinsicsPath: " << intrinsicsPath << std::endl;
     dst << src.rdbuf();
 
     // Iterate through poses and save images + transformed clouds
     // TODO: add parameter for how many images are taken
     int mapCounter = 0;
-    for (uint32_t i = 0 + 10; i < final_poses.size(); i += 10) {
+    for (uint32_t i = 0 + 2; i < final_poses.size(); i += 2) {
       mapCounter++;
 
       // Get transform for pose i. Here L is lidar map frame, and C is
       // camera frame which is also the current pose
+      // T_M_L
       T_C_L = final_poses.at(i).value;
 
       // transform the aggregate map to the image frame
@@ -772,7 +774,7 @@ void ScanMatcher::outputForColourization(boost::shared_ptr<ROSBag> ros_data,
       // Get image closest to timestamp of pose i
       poseTimePoint = ros_data->getLidarScanTimePoint(pose_scan_map.at(i));
       ros_data->outputImage(poseTimePoint, outputPathThisCamImgs,
-                            this->params.camera_topics[i], mapCounter);
+                            this->params.camera_topics[k], mapCounter);
     }
   }
 }
