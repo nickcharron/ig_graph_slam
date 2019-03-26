@@ -8,10 +8,12 @@
 #include <pcl/filters/radius_outlier_removal.h>
 
 // WAVE headers
-#include <wave/utils/math.hpp>
 #include <wave/matching/icp.hpp>
 
-inline pcl::PointCloud<pcl::PointXYZ> passThroughFilterIG(wave::PCLPointCloudPtr cloud_in_, wave::Vec6 threshold_)
+// libbeam specific headers
+#include <beam/utils/math.hpp>
+
+inline pcl::PointCloud<pcl::PointXYZ> passThroughFilterIG(wave::PCLPointCloudPtr cloud_in_, beam::Vec6 threshold_)
 {
   pcl::PassThrough<pcl::PointXYZ> pass_filter_x, pass_filter_y, pass_filter_z;
   pass_filter_x.setFilterFieldName("x");

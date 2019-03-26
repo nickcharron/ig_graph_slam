@@ -18,7 +18,9 @@
 
 // WAVE Headers
 #include <wave/matching/icp.hpp>
-#include <wave/utils/log.hpp>
+
+// libbeam specific headers
+#include <beam/utils/math.hpp>
 
 // IG Graph SLAM Headers
 #include "conversions.hpp"

@@ -12,9 +12,9 @@
 #include <wave/utils/math.hpp>
 
 using GPSMeasurement =
-    wave::Measurement<std::pair<wave::Vec6, wave::Vec6>, uint>;
+    wave::Measurement<std::pair<beam::Vec6, beam::Vec6>, uint>;
 using TransformMeasurement =
-    wave::Measurement<std::pair<wave::Mat4, wave::Vec6>, uint>;
+    wave::Measurement<std::pair<beam::Mat4, beam::Vec6>, uint>;
 using PCLLidarMeasurement = wave::Measurement<wave::PCLPointCloudPtr, uint>;
 using LidarContainer =
     std::vector<wave::Measurement<wave::PCLPointCloudPtr, uint>>;
@@ -43,9 +43,9 @@ inline decltype(GPSMeasurement::value) interpolate(const GPSMeasurement &m1,
                                                    const TimeType &t) {
   double w2 = 1.0 * (t - m1.time_point) / (m2.time_point - m1.time_point);
 
-  wave::Vec6 first =
+  beam::Vec6 first =
       (1 - w2) * std::get<0>(m1.value) + w2 * std::get<0>(m2.value);
-  wave::Vec6 second =
+  beam::Vec6 second =
       (1 - w2) * std::get<1>(m1.value) + w2 * std::get<1>(m2.value);
 
   auto yaw1 = std::get<0>(m1.value)(5);
@@ -64,19 +64,19 @@ interpolate(const TransformMeasurement &m1, const TransformMeasurement &m2,
             const TimeType &t) {
   double w2 = 1.0 * (t - m1.time_point) / (m2.time_point - m1.time_point);
 
-  wave::Mat4 T1 = std::get<0>(m1.value);
-  wave::Mat4 T2 = std::get<0>(m2.value);
-  wave::Mat4 T;
-  wave::Vec6 std_dev =
+  beam::Mat4 T1 = std::get<0>(m1.value);
+  beam::Mat4 T2 = std::get<0>(m2.value);
+  beam::Mat4 T;
+  beam::Vec6 std_dev =
       (1 - w2) * std::get<1>(m1.value) + w2 * std::get<1>(m2.value);
 
-  wave::Mat3 R1 = T1.block<3, 3>(0, 0);
-  wave::Mat3 R2 = T2.block<3, 3>(0, 0);
-  wave::Mat3 R = (R2 * R1.transpose()).pow(w2) * R1;
+  beam::Mat3 R1 = T1.block<3, 3>(0, 0);
+  beam::Mat3 R2 = T2.block<3, 3>(0, 0);
+  beam::Mat3 R = (R2 * R1.transpose()).pow(w2) * R1;
 
-  wave::Vec4 t1 = T1.rightCols<1>();
-  wave::Vec4 t2 = T2.rightCols<1>();
-  wave::Vec4 trans = (1 - w2) * t1 + w2 * t2;
+  beam::Vec4 t1 = T1.rightCols<1>();
+  beam::Vec4 t2 = T2.rightCols<1>();
+  beam::Vec4 trans = (1 - w2) * t1 + w2 * t2;
 
   T.setIdentity();
   T.block<3, 3>(0, 0) = R;

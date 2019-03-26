@@ -3,7 +3,9 @@
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <wave/utils/math.hpp>
+
+// libbeam specific headers
+#include <beam/utils/math.hpp>
 
 /***
  * Params loaded from the ig_graph_slam_config file
@@ -12,7 +14,7 @@ struct Params {
 
   /***
    * Params constructor. Fills all variables in Params using config file and
-   * wave parser
+   * beam parser
    */
   Params();
 
@@ -57,7 +59,7 @@ struct Params {
       use_prev_poses, use_rad_filter, use_pass_through_filter,
       use_pass_through_filter_map;
   Eigen::Affine3d T_LIDAR_GPS, T_LMAP_LLOC;
-  wave::MatX scan_transform_cov;
+  beam::MatX scan_transform_cov;
   std::vector<std::string> topics;
 
 };

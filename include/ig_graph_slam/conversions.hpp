@@ -6,7 +6,6 @@
 #include <chrono>
 #include <cmath>
 #include <ctime>
-#include <wave/utils/math.hpp>
 #include <wave_spatial_utils/world_frame_conversions.hpp>
 #include <unsupported/Eigen/MatrixFunctions>
 
