@@ -9,7 +9,9 @@
 #include "wave/matching/gicp.hpp"
 #include <wave/matching/icp.hpp>
 #include <wave/matching/pointcloud_display.hpp>
-#include <wave/utils/log.hpp>
+
+// libbeam specific headers
+#include <beam/utils/math.hpp>
 
 // IG Graph SLAM headers
 #include "gtsam_graph.hpp"
@@ -117,7 +119,7 @@ struct ScanMatcher {
    * @return
    */
   virtual bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj,
-                          wave::Mat6 &info, bool &correction_norm_valid,
+                          beam::Mat6 &info, bool &correction_norm_valid,
                           boost::shared_ptr<ROSBag> ros_data) = 0;
 
   /***
@@ -186,7 +188,7 @@ public:
   ~ICPScanMatcher() {}
 
   bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj,
-                  wave::Mat6 &info, bool &correction_norm_valid,
+                  beam::Mat6 &info, bool &correction_norm_valid,
                   boost::shared_ptr<ROSBag> ros_data);
 
   wave::ICPMatcher matcher;
@@ -201,7 +203,7 @@ public:
   ~GICPScanMatcher() {}
 
   bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj,
-                  wave::Mat6 &info, bool &correction_norm_valid,
+                  beam::Mat6 &info, bool &correction_norm_valid,
                   boost::shared_ptr<ROSBag> ros_data);
 
   wave::GICPMatcher matcher;

@@ -15,6 +15,7 @@ FIND_PACKAGE(yaml-cpp REQUIRED)
 FIND_PACKAGE(GTSAM REQUIRED)
 FIND_PACKAGE(GeographicLib 1.49 REQUIRED)
 FIND_PACKAGE(wave REQUIRED utils matching containers geometry gtsam)
+FIND_PACKAGE(beam REQUIRED utils)
 FIND_PACKAGE(catkin REQUIRED COMPONENTS wave_spatial_utils)
 
 ADD_DEFINITIONS(${PCL_DEFINITIONS})
@@ -56,6 +57,7 @@ ADD_EXECUTABLE(${PROJECT_NAME}_node
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}_node
 #        yaml-cpp
         wave::wave
+        beam::beam
         wave_spatial_utils
         ${catkin_LIBRARIES}
         ${PCL_LIBRARIES}

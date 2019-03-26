@@ -10,9 +10,11 @@
 #include <math.h>
 #include <unsupported/Eigen/MatrixFunctions>
 #include <utility>
-#include <wave/utils/log.hpp>
-#include <wave/utils/math.hpp>
 #include "conversions.hpp"
+
+// libbeam specific headers
+#include <beam/utils/math.hpp>
+#include <beam/utils/log.hpp>
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;
@@ -126,24 +128,24 @@ inline void outputPercentComplete(int current_, int total_,
   }
 }
 
-inline wave::Mat4 interpolateTransform(const wave::Mat4 &m1,
+inline beam::Mat4 interpolateTransform(const beam::Mat4 &m1,
                                        const TimePoint &t1,
-                                       const wave::Mat4 &m2,
+                                       const beam::Mat4 &m2,
                                        const TimePoint &t2,
                                        const TimePoint &t) {
   double w2 = 1.0 * (t - t1) / (t2 - t1);
 
-  wave::Mat4 T1 = m1;
-  wave::Mat4 T2 = m2;
-  wave::Mat4 T;
+  beam::Mat4 T1 = m1;
+  beam::Mat4 T2 = m2;
+  beam::Mat4 T;
 
-  wave::Mat3 R1 = T1.block<3, 3>(0, 0);
-  wave::Mat3 R2 = T2.block<3, 3>(0, 0);
-  wave::Mat3 R = (R2 * R1.transpose()).pow(w2) * R1;
+  beam::Mat3 R1 = T1.block<3, 3>(0, 0);
+  beam::Mat3 R2 = T2.block<3, 3>(0, 0);
+  beam::Mat3 R = (R2 * R1.transpose()).pow(w2) * R1;
 
-  wave::Vec4 tr1 = T1.rightCols<1>();
-  wave::Vec4 tr2 = T2.rightCols<1>();
-  wave::Vec4 tr = (1 - w2) * tr1 + w2 * tr2;
+  beam::Vec4 tr1 = T1.rightCols<1>();
+  beam::Vec4 tr2 = T2.rightCols<1>();
+  beam::Vec4 tr = (1 - w2) * tr1 + w2 * tr2;
 
   T.setIdentity();
   T.block<3, 3>(0, 0) = R;

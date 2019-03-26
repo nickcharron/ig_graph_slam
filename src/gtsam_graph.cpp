@@ -3,6 +3,9 @@
 #include <wave/gtsam/decaying_bias.hpp>
 #include <wave/gtsam/hand_eye.hpp>
 
+// libbeam specific headers
+#include <beam/utils/math.hpp>
+
 GTSAMGraph::GTSAMGraph() {}
 
 void GTSAMGraph::clear() {
@@ -14,7 +17,7 @@ void GTSAMGraph::clear() {
 
 void GTSAMGraph::addFactor(uint64_t from, uint64_t to,
                            const Eigen::Affine3d &transform,
-                           const wave::Mat6 &info) {
+                           const beam::Mat6 &info) {
   gtsam::Key id1 = from;
   gtsam::Key id2 = to;
   gtsam::Pose3 pose(transform.matrix());

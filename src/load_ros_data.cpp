@@ -15,7 +15,9 @@
 
 // WAVE Headers
 #include <wave/containers/measurement_container.hpp>
-#include <wave/utils/log.hpp>
+
+// libbeam specific headers
+#include <beam/utils/math.hpp>
 
 // IG Graph SLAM Headers
 #include "conversions.hpp"
@@ -118,13 +120,13 @@ void ROSBag::loadGPSDataFromNavSatFix(
     // std::endl;
     auto rpy_msg =
         this->imu_container.get(imu_msg_time, 1); // (vector6, vector6)
-    wave::Vec6 gps_measurement;                   // LLA, RPY
+    beam::Vec6 gps_measurement;                   // LLA, RPY
     gps_measurement << gps_msg->latitude, gps_msg->longitude, gps_msg->altitude,
         rpy_msg.first(0), // roll
         rpy_msg.first(1), // pitch
         rpy_msg.first(2); // yaw
 
-    wave::Vec6 gps_stdev;
+    beam::Vec6 gps_stdev;
     gps_stdev << sqrt(gps_msg->position_covariance[0]),
         sqrt(gps_msg->position_covariance[4]),
         sqrt(gps_msg->position_covariance[8]),
@@ -161,13 +163,13 @@ void ROSBag::loadOdomDataFromNavMsgsOdometry(
   t_MAP_LIDAR << odom_msg->pose.pose.position.x, odom_msg->pose.pose.position.y,
       odom_msg->pose.pose.position.z, 1;
 
-  wave::Mat4 T_MAP_LIDAR;
+  beam::Mat4 T_MAP_LIDAR;
   T_MAP_LIDAR.setIdentity();
   T_MAP_LIDAR.block<3, 3>(0, 0) = R_MAP_LIDAR;
   T_MAP_LIDAR.rightCols<1>() = t_MAP_LIDAR;
 
   // Get covariances
-  wave::Vec6 odom_stdev;
+  beam::Vec6 odom_stdev;
   odom_stdev << sqrt(odom_msg->pose.covariance[0]),
       sqrt(odom_msg->pose.covariance[7]), sqrt(odom_msg->pose.covariance[14]),
       sqrt(odom_msg->pose.covariance[21]), sqrt(odom_msg->pose.covariance[28]),
@@ -189,14 +191,14 @@ void ROSBag::loadIMUMessage(rosbag::View::iterator &rosbag_iter,
       initial_heading = -imu_msg->vector.z;
     }
 
-    wave::Vec6 rpy_measurement;
+    beam::Vec6 rpy_measurement;
     rpy_measurement << -imu_msg->vector.y,    // roll
         imu_msg->vector.x - 1.570796327,      // pitch (starts at pi/2)
         -imu_msg->vector.z - initial_heading, // yaw
-        0,                                    // cannot use Vec3 in libwave for
+        0,                                    // cannot use Vec3 in libbeam for
         0,                                    // measurement containters
         0;
-    wave::Vec6 rpy_stdev;
+    beam::Vec6 rpy_stdev;
     rpy_stdev << 10, // TODO: get real std dev from imu data
         10, 100, 0, 0, 0;
     this->imu_container.emplace(
@@ -315,7 +317,7 @@ void ROSBag::loadPCLPointCloudFromPointCloud2(
 
   // check this, it might not be implemented correctly! See how CropXY is used
   if (this->params.use_pass_through_filter) {
-    wave::Vec6 threshold_vec;
+    beam::Vec6 threshold_vec;
     threshold_vec << this->params.x_lower_threshold,
         this->params.x_upper_threshold, this->params.y_lower_threshold,
         this->params.y_upper_threshold, this->params.z_lower_threshold,
@@ -351,7 +353,7 @@ void ROSBag::loadPCLPointCloudFromPointCloud2Map(
 
   // check this, it might not be implemented correctly! See how CropXY is used
   if (this->params.use_pass_through_filter) {
-    wave::Vec6 threshold_vec;
+    beam::Vec6 threshold_vec;
     threshold_vec << this->params.x_lower_threshold_map,
         this->params.x_upper_threshold_map, this->params.y_lower_threshold_map,
         this->params.y_upper_threshold_map, this->params.z_lower_threshold_map,
@@ -453,11 +455,11 @@ void ROSBag::outputImage(const TimePoint &time_point,
 // Messages specific for Moose
 void ROSBag::loadGPSDataFromINSPVAX(
     boost::shared_ptr<novatel_msgs::INSPVAX> gps_msg) {
-  wave::Vec6 gps_measurement; // LLA, RPY
+  beam::Vec6 gps_measurement; // LLA, RPY
   gps_measurement << gps_msg->latitude, gps_msg->longitude,
       gps_msg->altitude + gps_msg->undulation, gps_msg->roll * DEG_TO_RAD,
       gps_msg->pitch * DEG_TO_RAD, -gps_msg->azimuth * DEG_TO_RAD;
-  wave::Vec6 gps_stdev;
+  beam::Vec6 gps_stdev;
   gps_stdev << gps_msg->latitude_std, gps_msg->longitude_std,
       gps_msg->altitude_std, gps_msg->roll_std * DEG_TO_RAD,
       gps_msg->pitch_std * DEG_TO_RAD, gps_msg->azimuth_std * DEG_TO_RAD;

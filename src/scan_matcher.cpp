@@ -20,7 +20,9 @@
 #include <wave/containers/measurement_container.hpp>
 #include <wave/matching/icp.hpp>
 #include <wave/matching/pointcloud_display.hpp>
-#include <wave/utils/log.hpp>
+
+// libbeam specific headers
+#include <beam/utils/math.hpp>
 
 // IG Graph SLAM Headers
 #include "conversions.hpp"
@@ -71,7 +73,7 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
       // iterate over all scans adjacent to scan j
       for (uint64_t iter = 0; iter < this->adjacency->at(j).size(); iter++) {
         Eigen::Affine3d T_Liter_Lj;
-        wave::Mat6 info;
+        beam::Mat6 info;
         bool match_success = false;
 
         // Attempts to match the scans and checks the correction norm
@@ -86,7 +88,7 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
         }
         if (match_success) // create factor in graph if scan successful
         {
-          wave::Mat6 mgtsam; // Eigen::Matrix<double, 6, 6>
+          beam::Mat6 mgtsam; // Eigen::Matrix<double, 6, 6>
           // this next bit is a major gotcha, whole thing blows up
           // without it. This just rearranges the info matrix to the correct
           // form block starting at 0,0 of size 3x3
@@ -116,7 +118,7 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
     for (uint64_t j = 0; j < this->loops->size(); j++) {
       // iterate over all j loop closures
       Eigen::Affine3d T_L1_L2;
-      wave::Mat6 info;
+      beam::Mat6 info;
       bool match_success;
 
       uint64_t L1 = this->loops->at(j)[0];
@@ -132,7 +134,7 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
 
       // create factor in graph if scan successful
       if (match_success) {
-        wave::Mat6 mgtsam; // Eigen::Matrix<double, 6, 6>
+        beam::Mat6 mgtsam; // Eigen::Matrix<double, 6, 6>
         // this next bit is a major gotcha, whole thing blows up
         // without it. This just rearranges the info matrix to the correct form
         // block starting at 0,0 of size 3x3
@@ -790,7 +792,7 @@ ICPScanMatcher::ICPScanMatcher(Params &p_, std::string matcherConfigPath)
 }
 
 bool ICPScanMatcher::matchScans(
-    uint64_t i, uint64_t j, Eigen::Affine3d &T_Li_Lj, wave::Mat6 &info,
+    uint64_t i, uint64_t j, Eigen::Affine3d &T_Li_Lj, beam::Mat6 &info,
     bool &correction_norm_valid,
     boost::shared_ptr<ROSBag> ros_data) { // j: current, (reference scan)
   // i: adjacent scan (target)
@@ -885,7 +887,7 @@ GICPScanMatcher::GICPScanMatcher(Params &p_, std::string matcherConfigPath)
 }
 
 bool GICPScanMatcher::matchScans(
-    uint64_t i, uint64_t j, Eigen::Affine3d &T_Li_Lj, wave::Mat6 &info,
+    uint64_t i, uint64_t j, Eigen::Affine3d &T_Li_Lj, beam::Mat6 &info,
     bool &correction_norm_valid,
     boost::shared_ptr<ROSBag> ros_data) { // j: current, (reference scan)
   // i: adjacent scan (target)

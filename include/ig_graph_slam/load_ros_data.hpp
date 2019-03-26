@@ -19,7 +19,9 @@
 // WAVE specific headers
 #include <wave/containers/measurement.hpp>
 #include <wave/containers/measurement_container.hpp>
-#include <wave/utils/log.hpp>
+
+// libbeam specific headers
+#include <beam/utils/math.hpp>
 
 // IG Graph SLAM specific headers
 #include "pcl_filters.hpp"
@@ -143,13 +145,13 @@ struct ROSBag {
 
   // declare containers
   wave::MeasurementContainer<
-      wave::Measurement<std::pair<wave::Vec6, wave::Vec6>, uint>>
+      wave::Measurement<std::pair<beam::Vec6, beam::Vec6>, uint>>
       gps_container;
   wave::MeasurementContainer<
-      wave::Measurement<std::pair<wave::Vec6, wave::Vec6>, uint>>
+      wave::Measurement<std::pair<beam::Vec6, beam::Vec6>, uint>>
       imu_container;
   wave::MeasurementContainer<
-      wave::Measurement<std::pair<wave::Mat4, wave::Vec6>, uint>>
+      wave::Measurement<std::pair<beam::Mat4, beam::Vec6>, uint>>
       odom_container;
   std::vector<wave::Measurement<wave::PCLPointCloudPtr, uint>> lidar_container;
   std::vector<wave::Measurement<wave::PCLPointCloudPtr, uint>>

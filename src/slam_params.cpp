@@ -6,12 +6,13 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <string>
-#include <wave/utils/config.hpp>
-#include <wave/utils/log.hpp>
-#include <wave/utils/math.hpp>
+
+// libbeam specific headers
+#include <beam/utils/math.hpp>
+#include <beam/utils/config.hpp>
 
 Params::Params() {
-  wave::ConfigParser parser;
+  beam::ConfigParser parser;
   parser.addParam("gps_type", &(this->gps_type));
   parser.addParam("gps_topic", &(this->gps_topic));
   parser.addParam("imu_topic", &(this->imu_topic));
@@ -297,7 +298,7 @@ bool Params::validateParams() {
         this->downsample_output_method == 3 ||
         this->downsample_output_method == 4)) {
     LOG_ERROR(
-        "Invalid parameter: downsample_output_method. Enter 1, 2, 3, or 4.");
+        "Invalid parameter: downsample_output_method. Enter 1, 2, 3 or 4.");
     return 0;
   }
 
