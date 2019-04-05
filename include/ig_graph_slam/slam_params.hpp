@@ -1,11 +1,25 @@
 #ifndef IG_GRAPH_SLAM_SLAM_PARAMS_HPP
 #define IG_GRAPH_SLAM_SLAM_PARAMS_HPP
 
+// basic includes
+#include <boost/filesystem.hpp>
+#include <fstream>
+#include <iostream>
+#include <string>
+
+// PCL includes
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
 // libbeam specific headers
 #include <beam/utils/math.hpp>
+
+// libwave headers
+#include <wave/utils/config.hpp>
+
+// graph slam includes
+#include "utils.hpp"
+
 
 /***
  * Params loaded from the ig_graph_slam_config file

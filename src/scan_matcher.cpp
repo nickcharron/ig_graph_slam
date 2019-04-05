@@ -1,38 +1,4 @@
-// ROS and other Headers
-#include <boost/filesystem.hpp>
-#include <fstream>
-#include <math.h>
-#include <sstream>
-#include <string>
-#include <unistd.h>
-
-#include <chrono>
-#include <ctime>
-
-// PCL headers
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-
-// WAVE Headers
-#include "wave/matching/gicp.hpp"
-#include <wave/containers/measurement.hpp>
-#include <wave/containers/measurement_container.hpp>
-#include <wave/matching/icp.hpp>
-#include <wave/matching/pointcloud_display.hpp>
-
-// libbeam specific headers
-#include <beam/utils/math.hpp>
-
-// IG Graph SLAM Headers
-#include "conversions.hpp"
-#include "gtsam_graph.hpp"
-#include "load_ros_data.hpp"
-#include "measurementtypes.hpp"
-#include "pcl_filters.hpp"
 #include "scan_matcher.hpp"
-#include "slam_params.hpp"
-#include "utils.hpp"
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;

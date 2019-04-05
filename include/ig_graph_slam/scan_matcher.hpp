@@ -1,12 +1,26 @@
 #ifndef IG_GRAPH_SLAM_SCAN_MATCHER_HPP
 #define IG_GRAPH_SLAM_SCAN_MATCHER_HPP
 
-// PCL headers and other
+// Basic headers
+#include <boost/filesystem.hpp>
+#include <fstream>
+#include <math.h>
+#include <sstream>
+#include <string>
+#include <unistd.h>
+#include <chrono>
+#include <ctime>
+#include <unsupported/Eigen/MatrixFunctions>
+
+// PCL headers
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <unsupported/Eigen/MatrixFunctions>
+#include <pcl/io/pcd_io.h>
+
 // WAVE headers
 #include "wave/matching/gicp.hpp"
+#include <wave/containers/measurement.hpp>
+#include <wave/containers/measurement_container.hpp>
 #include <wave/matching/icp.hpp>
 #include <wave/matching/pointcloud_display.hpp>
 
@@ -14,9 +28,14 @@
 #include <beam/utils/math.hpp>
 
 // IG Graph SLAM headers
+#include "conversions.hpp"
 #include "gtsam_graph.hpp"
 #include "load_ros_data.hpp"
+#include "measurementtypes.hpp"
+#include "pcl_filters.hpp"
 #include "slam_params.hpp"
+#include "utils.hpp"
+
 
 // Declare some templates:
 using Clock = std::chrono::steady_clock;

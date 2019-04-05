@@ -19,14 +19,18 @@
 // WAVE specific headers
 #include <wave/containers/measurement.hpp>
 #include <wave/containers/measurement_container.hpp>
+#include <wave/matching/icp.hpp>
 
 // libbeam specific headers
 #include <beam/utils/math.hpp>
 
 // IG Graph SLAM specific headers
+#include "conversions.hpp"
+#include "measurementtypes.hpp"
 #include "pcl_filters.hpp"
 #include "scan_matcher.hpp"
 #include "slam_params.hpp"
+#include "utils.hpp"
 
 // Declare some templates:
 using Clock = std::chrono::steady_clock;

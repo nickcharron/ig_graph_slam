@@ -1,18 +1,7 @@
 #include "slam_params.hpp"
-#include "utils.hpp"
-#include <boost/filesystem.hpp>
-#include <fstream>
-#include <iostream>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <string>
-
-// libbeam specific headers
-#include <beam/utils/math.hpp>
-#include <beam/utils/config.hpp>
 
 Params::Params() {
-  beam::ConfigParser parser;
+  wave::ConfigParser parser;
   parser.addParam("gps_type", &(this->gps_type));
   parser.addParam("gps_topic", &(this->gps_topic));
   parser.addParam("imu_topic", &(this->imu_topic));
