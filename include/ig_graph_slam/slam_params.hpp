@@ -13,6 +13,8 @@
 
 // libbeam specific headers
 #include <beam/utils/math.hpp>
+#include <beam/calibration/TfTree.h>
+#include <beam/calibration/Pinhole.h>
 
 // libwave headers
 #include <wave/utils/config.hpp>
@@ -50,7 +52,6 @@ struct Params {
    */
   bool validateParams();
 
-  //EIGEN_MAKE_ALIGNED_OPERATOR_NEW -> what does this do?
   std::string bag_file_path, lidar_topic_loc, lidar_topic_map, gps_topic,
       prev_poses_path, imu_topic, odom_topic, gps_type, matcher_type,
       output_path, config_file_path;
@@ -72,9 +73,10 @@ struct Params {
       step_matches, optimize_gps_lidar, fixed_scan_transform_cov,
       use_prev_poses, use_rad_filter, use_pass_through_filter,
       use_pass_through_filter_map;
-  Eigen::Affine3d T_LIDAR_GPS, T_LMAP_LLOC;
   beam::MatX scan_transform_cov;
   std::vector<std::string> topics;
+  beam_calibration::TfTree Tree();
+  beam_calibration::Pinhole calib;
 
 };
 

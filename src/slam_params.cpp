@@ -12,8 +12,6 @@ Params::Params() {
   parser.addParam("bag_file_path", &(this->bag_file_path));
   parser.addParam("use_prev_poses", &(this->use_prev_poses));
   parser.addParam("prev_poses_path", &(this->prev_poses_path));
-  parser.addParam("T_LIDAR_GPS", &(this->T_LIDAR_GPS.matrix()));
-  parser.addParam("T_LMAP_LLOC", &(this->T_LMAP_LLOC.matrix()));
   parser.addParam("use_pass_through_filter", &(this->use_pass_through_filter));
   parser.addParam("x_upper_threshold", &(this->x_upper_threshold));
   parser.addParam("x_lower_threshold", &(this->x_lower_threshold));
@@ -99,8 +97,6 @@ void Params::outputParams() {
       << "bag_file_path: " << this->bag_file_path << std::endl
       << "use_prev_poses: " << this->use_prev_poses << std::endl
       << "prev_poses_path: " << this->prev_poses_path << std::endl
-      << "T_LIDAR_GPS: " << this->T_LIDAR_GPS.matrix() << std::endl
-      << "T_LMAP_LLOC: " << this->T_LMAP_LLOC.matrix() << std::endl
       << "use_pass_through_filter: " << this->use_pass_through_filter
       << std::endl
       << "x_upper_threshold: " << this->x_upper_threshold << std::endl
@@ -226,18 +222,6 @@ bool Params::validateParams() {
   if (!boost::filesystem::exists(this->prev_poses_path) &&
       this->use_prev_poses == 1) {
     LOG_ERROR("Cannot find previous poses file.");
-    return 0;
-  }
-
-  if (!isTransformationMatrix(this->T_LIDAR_GPS.matrix())) {
-    LOG_ERROR("Invalid transformation matrix: T_LIDAR_GPS. Did not pass "
-              "transformation check.");
-    return 0;
-  }
-
-  if (!isTransformationMatrix(this->T_LMAP_LLOC.matrix())) {
-    LOG_ERROR("Invalid transformation matrix: T_LMAP_LLOC. Did not pass "
-              "transformation check.");
     return 0;
   }
 

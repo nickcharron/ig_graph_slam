@@ -234,7 +234,7 @@ void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
             ros_data->lidar_container[iter].time_point, 0);
         T_ECEF_GPS = gpsToEigen(gps_pose.first, true); // true: apply T_ENU_GPS
         T_MAP_LIDAR = ros_data->T_ECEF_MAP.inverse() * T_ECEF_GPS *
-                      this->params.T_LIDAR_GPS.inverse();
+                      this->T_LIDAR_GPS.inverse();
       } catch (const std::out_of_range &e) {
         LOG_INFO("No gps pose for time of scan, may happen at edges of "
                  "recorded data");
@@ -420,7 +420,7 @@ void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
         T_LMAP_LLOC, T_MAP_LLOC_Jprev, T_MAP_LMAP_Jprev;
 
     T_MAP_LLOC_k = this->final_poses[k].value;
-    T_LMAP_LLOC = this->params.T_LMAP_LLOC;                       // static
+    T_LMAP_LLOC = this->T_LMAP_LLOC;                       // static
     T_MAP_LMAP_k = T_MAP_LLOC_k * T_LMAP_LLOC.inverse();
 
     int curr_index = this->pose_scan_map.at(k);
@@ -697,6 +697,10 @@ ICPScanMatcher::ICPScanMatcher(Params &p_, std::string matcherConfigPath)
   this->params = p_;
   this->cloud_ref = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   this->cloud_tgt = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  this->T_LIDAR_GPS.setIdentity();
+  this->T_LMAP_LLOC.setIdentity();
+  this->T_GPS_LIDAR.setIdentity();
+  this->T_LLOC_LMAP.setIdentity();
 }
 
 bool ICPScanMatcher::matchScans(
@@ -729,12 +733,13 @@ bool ICPScanMatcher::matchScans(
         getLidarTimeWindow(ros_data->lidar_container_map, timepoint_j);
     uint64_t map_index_i =
         getLidarTimeWindow(ros_data->lidar_container_map, timepoint_i);
+        Eigen::Matrix4d T_ = this->T_LMAP_LLOC.inverse();
     pcl::transformPointCloud(
         *(ros_data->lidar_container_map[map_index_j].value), *cloud_ref_tmp,
-        this->params.T_LMAP_LLOC.inverse());
+        T_);
     pcl::transformPointCloud(
         *(ros_data->lidar_container_map[map_index_i].value), *cloud_tgt_tmp,
-        this->params.T_LMAP_LLOC.inverse());
+        T_);
     *cloud_ref2 += *cloud_ref_tmp;
     *cloud_tgt2 += *cloud_tgt_tmp;
   }
@@ -825,12 +830,13 @@ bool GICPScanMatcher::matchScans(
         getLidarTimeWindow(ros_data->lidar_container_map, timepoint_j);
     uint64_t map_index_i =
         getLidarTimeWindow(ros_data->lidar_container_map, timepoint_i);
+    Eigen::Matrix4d T_ = this->T_LMAP_LLOC.inverse();
     pcl::transformPointCloud(
         *(ros_data->lidar_container_map[map_index_j].value), *cloud_ref_tmp,
-        this->params.T_LMAP_LLOC.inverse());
+        T_);
     pcl::transformPointCloud(
         *(ros_data->lidar_container_map[map_index_i].value), *cloud_tgt_tmp,
-        this->params.T_LMAP_LLOC.inverse());
+        T_);
     *cloud_ref2 += *cloud_ref_tmp;
     *cloud_tgt2 += *cloud_tgt_tmp;
   }

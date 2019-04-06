@@ -26,6 +26,8 @@
 
 // libbeam specific headers
 #include <beam/utils/math.hpp>
+#include <beam/calibration/TfTree.h>
+#include <beam/calibration/Pinhole.h>
 
 // IG Graph SLAM headers
 #include "conversions.hpp"
@@ -186,6 +188,7 @@ struct ScanMatcher {
   boost::shared_ptr<std::vector<std::vector<uint64_t>>> loops;
   pcl::PCLPointCloud2::Ptr pcl_pc2;
   wave::PCLPointCloudPtr cloud_temp_display, aggregate, cloud_target;
+  beam::Mat4 T_LIDAR_GPS, T_GPS_LIDAR, T_LMAP_LLOC, T_LLOC_LMAP;
 };
 
 class ICPScanMatcher : public ScanMatcher {
