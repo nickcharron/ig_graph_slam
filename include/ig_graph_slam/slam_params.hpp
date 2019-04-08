@@ -13,8 +13,6 @@
 
 // libbeam specific headers
 #include <beam/utils/math.hpp>
-#include <beam/calibration/TfTree.h>
-#include <beam/calibration/Pinhole.h>
 
 // libwave headers
 #include <wave/utils/config.hpp>
@@ -53,8 +51,9 @@ struct Params {
   bool validateParams();
 
   std::string bag_file_path, lidar_topic_loc, lidar_topic_map, gps_topic,
+      lidar_frame_loc, lidar_frame_map, gps_frame,
       prev_poses_path, imu_topic, odom_topic, gps_type, matcher_type,
-      output_path, config_file_path;
+      output_path, config_file_path, extrinsics_filename;
   int knn, set_min_neighbours, iterations, init_method, int_map_size,
       downsample_output_method;
   float trajectory_sampling_dist, map_sampling_dist,
@@ -75,9 +74,6 @@ struct Params {
       use_pass_through_filter_map;
   beam::MatX scan_transform_cov;
   std::vector<std::string> topics;
-  beam_calibration::TfTree Tree();
-  beam_calibration::Pinhole calib;
-
 };
 
 

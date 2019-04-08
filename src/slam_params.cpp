@@ -4,14 +4,18 @@ Params::Params() {
   wave::ConfigParser parser;
   parser.addParam("gps_type", &(this->gps_type));
   parser.addParam("gps_topic", &(this->gps_topic));
+  parser.addParam("gps_frame", &(this->gps_frame));
   parser.addParam("imu_topic", &(this->imu_topic));
   parser.addParam("odom_topic", &(this->odom_topic));
   parser.addParam("init_method", &(this->init_method));
   parser.addParam("lidar_topic_loc", &(this->lidar_topic_loc));
   parser.addParam("lidar_topic_map", &(this->lidar_topic_map));
+  parser.addParam("lidar_frame_loc", &(this->lidar_frame_loc));
+  parser.addParam("lidar_frame_map", &(this->lidar_frame_map));
   parser.addParam("bag_file_path", &(this->bag_file_path));
   parser.addParam("use_prev_poses", &(this->use_prev_poses));
   parser.addParam("prev_poses_path", &(this->prev_poses_path));
+  parser.addParam("extrinsics_filename", &(this->extrinsics_filename));
   parser.addParam("use_pass_through_filter", &(this->use_pass_through_filter));
   parser.addParam("x_upper_threshold", &(this->x_upper_threshold));
   parser.addParam("x_lower_threshold", &(this->x_lower_threshold));
@@ -63,6 +67,7 @@ Params::Params() {
   parser.addParam("matcher_type", &(this->matcher_type));
   parser.addParam("output_path", &(this->output_path));
 
+  // get config file path
   std::string yamlDirStr = __FILE__;
   yamlDirStr.erase(yamlDirStr.end() - 19, yamlDirStr.end());
   yamlDirStr += "config/ig_graph_slam_config.yaml";
@@ -89,11 +94,14 @@ void Params::outputParams() {
       << "----------------------------" << std::endl
       << "gps_type: " << this->gps_type << std::endl
       << "gps_topic: " << this->gps_topic << std::endl
+      << "gps_frame: " << this->gps_frame << std::endl
       << "imu_topic: " << this->imu_topic << std::endl
       << "odom_topic: " << this->odom_topic << std::endl
       << "init_method: " << this->init_method << std::endl
       << "lidar_topic_loc: " << this->lidar_topic_loc << std::endl
       << "lidar_topic_map: " << this->lidar_topic_map << std::endl
+      << "lidar_frame_loc: " << this->lidar_frame_loc << std::endl
+      << "lidar_frame_map: " << this->lidar_frame_map << std::endl
       << "bag_file_path: " << this->bag_file_path << std::endl
       << "use_prev_poses: " << this->use_prev_poses << std::endl
       << "prev_poses_path: " << this->prev_poses_path << std::endl
@@ -184,6 +192,11 @@ bool Params::validateParams() {
     return 0;
   }
 
+  if (this->gps_frame == "") {
+    LOG_ERROR("Please enter GPS frame.");
+    return 0;
+  }
+
   if (this->imu_topic == "" && this->init_method == 1 &&
       this->gps_type == "NavSatFix") {
     LOG_ERROR("Please enter GPS/IMU topic.");
@@ -207,6 +220,16 @@ bool Params::validateParams() {
 
   if (this->lidar_topic_map == "") {
     LOG_INFO("WARNING: No lidar map topic.");
+  }
+
+  if (this->lidar_frame_loc == "") {
+    LOG_ERROR("Please enter localization lidar frame.");
+    return 0;
+  }
+
+  if (this->lidar_topic_map == "") {
+    LOG_ERROR("Please enter lidar map frame.");
+    return 0;
   }
 
   if (!boost::filesystem::exists(this->bag_file_path)) {

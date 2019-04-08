@@ -27,7 +27,6 @@
 // libbeam specific headers
 #include <beam/utils/math.hpp>
 #include <beam/calibration/TfTree.h>
-#include <beam/calibration/Pinhole.h>
 
 // IG Graph SLAM headers
 #include "conversions.hpp"
@@ -62,6 +61,12 @@ struct ScanMatcher {
     this->aggregate = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     this->cloud_target = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     this->pcl_pc2 = boost::make_shared<pcl::PCLPointCloud2>();
+
+    // Get extrinsics path and load
+    std::string extrinsicsDir = __FILE__;
+    extrinsicsDir.erase(extrinsicsDir.end() - 38, extrinsicsDir.end());
+    extrinsicsDir += "calibrations/" + this->params.extrinsics_filename;
+    this->Tree.LoadJSON(extrinsicsDir);
   }
   ~ScanMatcher() {
     if (this->params.visualize) {
@@ -188,7 +193,7 @@ struct ScanMatcher {
   boost::shared_ptr<std::vector<std::vector<uint64_t>>> loops;
   pcl::PCLPointCloud2::Ptr pcl_pc2;
   wave::PCLPointCloudPtr cloud_temp_display, aggregate, cloud_target;
-  beam::Mat4 T_LIDAR_GPS, T_GPS_LIDAR, T_LMAP_LLOC, T_LLOC_LMAP;
+  beam_calibration::TfTree Tree;
 };
 
 class ICPScanMatcher : public ScanMatcher {
