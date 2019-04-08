@@ -1,11 +1,25 @@
 #ifndef IG_GRAPH_SLAM_SLAM_PARAMS_HPP
 #define IG_GRAPH_SLAM_SLAM_PARAMS_HPP
 
+// basic includes
+#include <boost/filesystem.hpp>
+#include <fstream>
+#include <iostream>
+#include <string>
+
+// PCL includes
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
 // libbeam specific headers
 #include <beam/utils/math.hpp>
+
+// libwave headers
+#include <wave/utils/config.hpp>
+
+// graph slam includes
+#include "utils.hpp"
+
 
 /***
  * Params loaded from the ig_graph_slam_config file
@@ -36,10 +50,10 @@ struct Params {
    */
   bool validateParams();
 
-  //EIGEN_MAKE_ALIGNED_OPERATOR_NEW -> what does this do?
   std::string bag_file_path, lidar_topic_loc, lidar_topic_map, gps_topic,
+      lidar_frame_loc, lidar_frame_map, gps_frame,
       prev_poses_path, imu_topic, odom_topic, gps_type, matcher_type,
-      output_path, config_file_path;
+      output_path, config_file_path, extrinsics_filename;
   int knn, set_min_neighbours, iterations, init_method, int_map_size,
       downsample_output_method;
   float trajectory_sampling_dist, map_sampling_dist,
@@ -58,10 +72,8 @@ struct Params {
       step_matches, optimize_gps_lidar, fixed_scan_transform_cov,
       use_prev_poses, use_rad_filter, use_pass_through_filter,
       use_pass_through_filter_map;
-  Eigen::Affine3d T_LIDAR_GPS, T_LMAP_LLOC;
   beam::MatX scan_transform_cov;
-  std::vector<std::string> topics;
-
+  std::vector<std::string> topics, camera_topics, intrinsics;
 };
 
 

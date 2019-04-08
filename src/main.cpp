@@ -1,35 +1,8 @@
-// Basic Headers
-#include <Eigen/Core>
-#include <boost/filesystem.hpp>
 #include <chrono>
-#include <fstream>
-#include <iostream>
-#include <limits>
-
-// ROS Headers
-#include <ros/ros.h>
-#include <ros/time.h>
-#include <rosbag/bag.h>
-#include <rosbag/view.h>
-
-// PCL Headers
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-
-// WAVE Headers
-#include <wave/matching/icp.hpp>
-
-// libbeam specific headers
-#include <beam/utils/math.hpp>
-
-// IG Graph SLAM Headers
-#include "conversions.hpp"
-#include "gtsam_graph.hpp"
-#include "load_ros_data.hpp"
-#include "measurementtypes.hpp"
-#include "pcl_filters.hpp"
+#include <boost/filesystem.hpp>
 #include "scan_matcher.hpp"
-#include "utils.hpp"
+#include "load_ros_data.hpp"
+#include "gtsam_graph.hpp"
 
 const uint64_t bias_offset = 1000000;
 using Clock = std::chrono::steady_clock;

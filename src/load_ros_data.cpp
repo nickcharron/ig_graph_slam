@@ -1,32 +1,4 @@
-// ROS Headers
-#include <geometry_msgs/Vector3Stamped.h>
-#include <nav_msgs/Odometry.h>
-#include <novatel_msgs/INSPVAX.h>
-#include <ros/time.h>
-#include <rosbag/bag.h>
-#include <rosbag/view.h>
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <sensor_msgs/PointCloud2.h>
-
-// OpenCV headers
-#include <cv_bridge/cv_bridge.h>
-#include <opencv2/opencv.hpp>
-
-// WAVE Headers
-#include <wave/containers/measurement_container.hpp>
-
-// libbeam specific headers
-#include <beam/utils/math.hpp>
-
-// IG Graph SLAM Headers
-#include "conversions.hpp"
 #include "load_ros_data.hpp"
-#include "measurementtypes.hpp"
-#include "pcl_filters.hpp"
-#include "scan_matcher.hpp"
-#include "slam_params.hpp"
-#include "utils.hpp"
 
 #define DEG_TO_RAD 0.0174532925199433
 #define RAD_TO_DEG 57.2957795130823209
