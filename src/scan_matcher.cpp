@@ -1,38 +1,4 @@
-// ROS and other Headers
-#include <boost/filesystem.hpp>
-#include <fstream>
-#include <math.h>
-#include <sstream>
-#include <string>
-#include <unistd.h>
-
-#include <chrono>
-#include <ctime>
-
-// PCL headers
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-
-// WAVE Headers
-#include "wave/matching/gicp.hpp"
-#include <wave/containers/measurement.hpp>
-#include <wave/containers/measurement_container.hpp>
-#include <wave/matching/icp.hpp>
-#include <wave/matching/pointcloud_display.hpp>
-
-// libbeam specific headers
-#include <beam/utils/math.hpp>
-
-// IG Graph SLAM Headers
-#include "conversions.hpp"
-#include "gtsam_graph.hpp"
-#include "load_ros_data.hpp"
-#include "measurementtypes.hpp"
-#include "pcl_filters.hpp"
 #include "scan_matcher.hpp"
-#include "slam_params.hpp"
-#include "utils.hpp"
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;
@@ -254,8 +220,11 @@ void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
   // save initial poses of the lidar scans based on GPS data and save iterators
   // corresponding to these scans
   int i = 0;
-  Eigen::Affine3d T_ECEF_GPS, T_MAP_LIDAR;
-
+  Eigen::Affine3d T_ECEF_GPS, T_MAP_LIDAR, T_GPS_LIDAR;
+  T_GPS_LIDAR =
+      this->Tree
+          .GetTransform(this->params.gps_frame, this->params.lidar_frame_loc)
+          .matrix();
   // this ierates through the lidar measurements
   for (uint64_t iter = 0; iter < ros_data->lidar_container.size(); iter++) {
     bool use_next_scan = false;
@@ -267,8 +236,7 @@ void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
         auto gps_pose = ros_data->gps_container.get(
             ros_data->lidar_container[iter].time_point, 0);
         T_ECEF_GPS = gpsToEigen(gps_pose.first, true); // true: apply T_ENU_GPS
-        T_MAP_LIDAR = ros_data->T_ECEF_MAP.inverse() * T_ECEF_GPS *
-                      this->params.T_LIDAR_GPS.inverse();
+        T_MAP_LIDAR = ros_data->T_ECEF_MAP.inverse() * T_ECEF_GPS * T_GPS_LIDAR;
       } catch (const std::out_of_range &e) {
         LOG_INFO("No gps pose for time of scan, may happen at edges of "
                  "recorded data");
@@ -454,9 +422,10 @@ void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
         T_LMAP_LLOC, T_MAP_LLOC_Jprev, T_MAP_LMAP_Jprev;
 
     T_MAP_LLOC_k = this->final_poses[k].value;
-    T_LMAP_LLOC = this->params.T_LMAP_LLOC;                       // static
+    T_LMAP_LLOC =
+        this->Tree.GetTransform(this->params.lidar_frame_map,
+                                this->params.lidar_frame_loc); // static
     T_MAP_LMAP_k = T_MAP_LLOC_k * T_LMAP_LLOC.inverse();
-
     int curr_index = this->pose_scan_map.at(k);
     TimePoint curr_pose_time = ros_data->lidar_container[curr_index].time_point;
     int next_index;
@@ -741,7 +710,8 @@ bool ICPScanMatcher::matchScans(
   auto T_MAP_Lj = init_pose.at(j).value; // set initial guess of current scan
   auto T_MAP_Li = init_pose.at(i).value; // set initial guess of adjacent scan
   correction_norm_valid = true;
-
+  Eigen::Matrix4d T_LLOC_LMAP = this->Tree.GetTransform(
+      this->params.lidar_frame_loc, this->params.lidar_frame_map).matrix();
   // Get scans
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ref2(
       new pcl::PointCloud<pcl::PointXYZ>);
@@ -765,10 +735,10 @@ bool ICPScanMatcher::matchScans(
         getLidarTimeWindow(ros_data->lidar_container_map, timepoint_i);
     pcl::transformPointCloud(
         *(ros_data->lidar_container_map[map_index_j].value), *cloud_ref_tmp,
-        this->params.T_LMAP_LLOC.inverse());
+        T_LLOC_LMAP);
     pcl::transformPointCloud(
         *(ros_data->lidar_container_map[map_index_i].value), *cloud_tgt_tmp,
-        this->params.T_LMAP_LLOC.inverse());
+        T_LLOC_LMAP);
     *cloud_ref2 += *cloud_ref_tmp;
     *cloud_tgt2 += *cloud_tgt_tmp;
   }
@@ -846,7 +816,8 @@ bool GICPScanMatcher::matchScans(
   *cloud_ref2 = *ros_data->lidar_container[pose_scan_map.at(j)].value;
   *cloud_tgt2 = *ros_data->lidar_container[pose_scan_map.at(i)].value;
   TimePoint timepoint_j, timepoint_i;
-
+  Eigen::Matrix4d T_LLOC_LMAP = this->Tree.GetTransform(
+      this->params.lidar_frame_loc, this->params.lidar_frame_map).matrix();
   // Combine scans if specified
   if (this->params.combine_scans) {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ref_tmp(
@@ -861,10 +832,10 @@ bool GICPScanMatcher::matchScans(
         getLidarTimeWindow(ros_data->lidar_container_map, timepoint_i);
     pcl::transformPointCloud(
         *(ros_data->lidar_container_map[map_index_j].value), *cloud_ref_tmp,
-        this->params.T_LMAP_LLOC.inverse());
+        T_LLOC_LMAP);
     pcl::transformPointCloud(
         *(ros_data->lidar_container_map[map_index_i].value), *cloud_tgt_tmp,
-        this->params.T_LMAP_LLOC.inverse());
+        T_LLOC_LMAP);
     *cloud_ref2 += *cloud_ref_tmp;
     *cloud_tgt2 += *cloud_tgt_tmp;
   }

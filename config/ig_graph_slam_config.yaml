@@ -4,6 +4,7 @@
   # For IG:
 gps_type: "NavSatFix" # For IG use "NavSatFix", for Moose use "INSPVAX"
 gps_topic: ""
+gps_frame: "GPS_link"
 # gps_topic: "/piksi/navsatfix_best_fix"
 # gps_topic: "/gps/filtered"
 imu_topic: ""
@@ -15,33 +16,12 @@ odom_topic: "/ig/loam/lidar_odom"
 init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
+lidar_frame_loc: "hvlp_link"
+lidar_frame_map: "vvlp_link"
 bag_file_path: "/home/nick/bag_files/ig_scans/2018_07_06_UW_Campus/ig_scan_2018-07-06-09-15-39_A_loam_shorter.bag"
-use_prev_poses: true             # if you want to use pre-calculated pose results and just rebuild the maps, set to true
+use_prev_poses: false             # if you want to use pre-calculated pose results and just rebuild the maps, set to true
 prev_poses_path: "/home/nick/results/ig_maps/map1/opt_traj.txt"
-
-T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization
-  rows: 4
-  cols: 4
-  data: [ 1.00000,   0.00000,   0.00000,  -0.16450,
-          0.00000,   1.00000,   0.00000,   0.16100,
-          0.00000,   0.00000,   1.00000,   0.22860,
-          0.00000,   0.00000,   0.00000,   1.00000]
-T_LMAP_LLOC: # tranformation from localization lidar to map lidar
-  rows: 4
-  cols: 4
-  data: [  0.00000,    0.00000,   1.00000,   -0.12000,
-           0.00000,   -1.00000,   0.00000,    0.00000,
-           1.00000,    0.00000,   0.00000,    0.13500,
-           0.00000,    0.00000,   0.00000,    1.00000 ]
-
-# The following is for IG's first sensor configuration:
-# T_LMAP_LLOC: # tranformation from localization lidar to map lidar
-#   rows: 4
-#   cols: 4
-#   data: [  0.00000,    0.00000,   1.00000,   -0.25240,
-#            0.00000,    1.00000,   0.00000,    0.00000,
-#           -1.00000,    0.00000,   0.00000,   -0.24560,
-#            0.00000,    0.00000,   0.00000,    1.00000 ]
+extrinsics_filename: "extrinsics_2018_05.json"
 
   # For Moose:
 # gps_type: "INSPVAX" # For IG use "NavSatFix", for Moose use "INSPVAX"
@@ -52,20 +32,6 @@ T_LMAP_LLOC: # tranformation from localization lidar to map lidar
 # lidar_topic_loc: "/velodyne_points"
 # lidar_topic_map: "/velodyne_points"
 # bag_file_path: "/home/nick/bag_files/moose/Colby-Drive-2018-03-07-15-All_processed.bag"
-# T_LIDAR_GPS:
-#   rows: 4
-#   cols: 4
-#   data: [0.01509071528209, 0.999682453252146, 0.020180757469545, -1.13100671456291,
-#          -0.999885273300259, 0.0150612284003753, 0.00161233877866006, 0.0537695687956896,
-#          0.00130787978818302, -0.0202027735432893, 0.999795047693085, -1.21218592853368,
-#          -0, 0, -0, 1]
-# T_LMAP_LLOC: # tranformation from localization lidar to map lidar
-#   rows: 4
-#   cols: 4
-#   data: [  1.00000,    0.00000,   0.00000,    0.0,
-#            0.00000,    1.00000,   0.00000,    0.0,
-#            0.00000,    0.00000,   1.00000,    0.0,
-#            0.00000,    0.00000,   0.00000,    1.0 ]
 # ------------------------------------------------------------------------------
 # Filters:
 # ------------------------------------------------------------------------------
@@ -115,7 +81,7 @@ z_lower_threshold_map: -4
 # ------------------------------------------------------------------------------
 
 # Graph Parameters:
-k_nearest_neighbours: 7             # maximum number of nearest neighbours for graph links
+k_nearest_neighbours: 5             # maximum number of nearest neighbours for graph links
 trajectory_sampling_distance: 0.50  # Minimum distance in m at which we should take new scans for localization
 map_sampling_distance: 0.001         # Minimum distance in m at which we should take new scans for mapping
 trajectory_rotation_change: 20      # Minimum change in rotation in Deg at which we should take new scans for localization
