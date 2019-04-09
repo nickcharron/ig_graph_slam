@@ -55,6 +55,16 @@ inline TimePoint rosTimeToChrono(const std_msgs::Header &hdr) {
   return TimePoint(dur);
 }
 
+inline ros::Time chronoToRosTime(const TimePoint &time_point) {
+  uint32_t seconds, nanoseconds;
+  seconds = std::round(time_point.time_since_epoch().count()/1000000000);
+  double tmp = time_point.time_since_epoch().count() -
+               std::round(time_point.time_since_epoch().count());
+  nanoseconds = std::round(tmp*1000000000);
+  ros::Time ros_time(seconds, nanoseconds);
+  return ros_time;
+}
+
 inline Eigen::AngleAxisd enu_to_ecef_rotation(const double *lla) {
   Eigen::AngleAxisd retval;
   Eigen::Matrix3d rot;

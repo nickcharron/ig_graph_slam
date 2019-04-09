@@ -373,28 +373,11 @@ uint64_t ROSBag::getLidarTimeWindow(const TimePoint T1) {
 }
 
 void ROSBag::outputImage(const TimePoint &time_point,
-                         const std::string output_path,
-                         const std::string camera_topic, const int imgNo) {
-
-  // Read bag file and create view
-  rosbag::Bag bag;
-
-  try {
-    bag.open(this->params.bag_file_path, rosbag::bagmode::Read);
-  } catch (rosbag::BagException &ex) {
-    LOG_ERROR("Bag exception : %s", ex.what());
-  }
-  rosbag::View view(bag, rosbag::TopicQuery(camera_topic), ros::TIME_MIN,
-                    ros::TIME_MAX, true);
-
-  if (view.size() == 0) {
-    LOG_ERROR("No image messages read. Check your topics in config file.");
-    return;
-  }
-
+                         const std::string &output_path,
+                         const std::string &camera_topic,
+                         const int &imgNo,
+                         rosbag::View &view) {
   // iterate through bag:
-  int imageCount = 0;
-
   for (auto iter = view.begin(); iter != view.end(); iter++) {
     if (iter->getTopic() == camera_topic) {
 
@@ -404,8 +387,6 @@ void ROSBag::outputImage(const TimePoint &time_point,
       // check timepoint
       TimePoint curImgTimepoint = rosTimeToChrono(img_msg->header);
       if (curImgTimepoint >= time_point) {
-        imageCount++;
-
         // first we need to change to opencv object
         cv_bridge::CvImagePtr cv_img_ptr;
         cv_img_ptr =
@@ -418,10 +399,7 @@ void ROSBag::outputImage(const TimePoint &time_point,
       }
     }
   }
-
-  bag.close();
-  LOG_INFO("Saved a total of %d images.", imageCount);
-  LOG_INFO("Images saved to: %s", output_path.c_str());
+  return;
 }
 
 // Messages specific for Moose

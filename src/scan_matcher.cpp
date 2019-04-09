@@ -694,16 +694,25 @@ void ScanMatcher::outputInitTraj(std::string path_) {
 
 void ScanMatcher::outputForColourization(boost::shared_ptr<ROSBag> ros_data,
                                          std::string path_) {
-
+  LOG_INFO("Outputting images and maps for colourization...");
   std::string outputPathRoot, outputPathThisCam, outputPathThisCamPCDs,
       outputPathThisCamImgs;
 
-  outputPathRoot = path_ + "/colourization/";
+  outputPathRoot = path_ + "colourization/";
 
-  Eigen::Affine3d T_C_L;
   pcl::PointCloud<pcl::PointXYZ>::Ptr aggregateTransformed(
       new pcl::PointCloud<pcl::PointXYZ>);
+
   TimePoint poseTimePoint;
+
+  rosbag::Bag bag;
+
+  try {
+    bag.open(this->params.bag_file_path, rosbag::bagmode::Read);
+  } catch (rosbag::BagException &ex) {
+    LOG_ERROR("Bag exception : %s", ex.what());
+    return;
+  }
 
   for (uint32_t k = 0; k < this->params.intrinsics.size(); k++) {
     // For each camera, create separate save directories
@@ -722,31 +731,52 @@ void ScanMatcher::outputForColourization(boost::shared_ptr<ROSBag> ros_data,
     std::ifstream src(intrinsicsPath, std::ios::binary);
     std::ofstream dst(outputPathThisCam + "/" + this->params.intrinsics[k],
                       std::ios::binary);
-    std::cout << "intrinsicsPath: " << intrinsicsPath << std::endl;
     dst << src.rdbuf();
 
     // Iterate through poses and save images + transformed clouds
     // TODO: add parameter for how many images are taken
     int mapCounter = 0;
-    for (uint32_t i = 0 + 2; i < final_poses.size(); i += 2) {
+    rosbag::View::iterator iterCur;
+
+    for (uint32_t i = 0 + 5; i < final_poses.size(); i += 5) {
       mapCounter++;
 
-      // Get transform for pose i. Here L is lidar map frame, and C is
-      // camera frame which is also the current pose
-      // T_M_L
-      T_C_L = final_poses.at(i).value;
+      // Get transform for pose i. Here L is lidar map frame, and C is the
+      // camera frame
+      Eigen::Affine3d T_C_M, T_C_L, T_M_L;
+      std::string to_frame=this->params.camera_frames[k];
+      std::string from_frame =this->params.lidar_frame_loc;
+      T_M_L = final_poses.at(i).value;
+      T_C_L = this->Tree.GetTransform(to_frame, from_frame);
+      T_C_M = T_C_L * T_M_L.inverse();
 
       // transform the aggregate map to the image frame
-      pcl::transformPointCloud(*this->aggregate, *aggregateTransformed, T_C_L);
+      pcl::transformPointCloud(*this->aggregate, *aggregateTransformed, T_C_M);
       pcl::io::savePCDFileASCII(outputPathThisCamPCDs + "map" +
-                                    std::to_string(mapCounter) + ".pcd",
+                                std::to_string(mapCounter) + ".pcd",
                                 *aggregateTransformed);
 
       // Get image closest to timestamp of pose i
       poseTimePoint = ros_data->getLidarScanTimePoint(pose_scan_map.at(i));
+
+      ros::Time search_time_start, search_time_end;
+      double time_window = 2;
+      ros::Duration time_window_half(time_window/2);
+      search_time_start = chronoToRosTime(poseTimePoint) - time_window_half;
+      search_time_end = chronoToRosTime(poseTimePoint) + time_window_half;
+      rosbag::View view(bag, rosbag::TopicQuery(this->params.camera_topics[k]),
+                        search_time_start, search_time_end, true);
+
+      if (view.size() == 0) {
+        LOG_ERROR("No image messages read. Check your topics in config file.");
+      }
+
       ros_data->outputImage(poseTimePoint, outputPathThisCamImgs,
-                            this->params.camera_topics[k], mapCounter);
+                            this->params.camera_topics[k], mapCounter, view);
     }
+    LOG_INFO("Saved a total of %d image/map pairs.", mapCounter);
+    LOG_INFO("Images saved to: %s", outputPathThisCamImgs.c_str());
+    LOG_INFO("Maps saved to: %s", outputPathThisCamPCDs.c_str());
   }
 }
 

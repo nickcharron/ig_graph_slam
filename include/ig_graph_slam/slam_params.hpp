@@ -73,7 +73,7 @@ struct Params {
       use_prev_poses, use_rad_filter, use_pass_through_filter,
       use_pass_through_filter_map;
   beam::MatX scan_transform_cov;
-  std::vector<std::string> topics, camera_topics, intrinsics;
+  std::vector<std::string> topics, camera_topics, camera_frames, intrinsics;
 };
 
 

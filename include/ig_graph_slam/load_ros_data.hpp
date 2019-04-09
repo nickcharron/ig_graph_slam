@@ -148,8 +148,11 @@ struct ROSBag {
    * @param time_point
    * @param output_path
    */
-  void outputImage(const TimePoint &time_point, const std::string output_path,
-                   const std::string camera_topic, const int imgNo);
+  void outputImage(const TimePoint &time_point,
+                   const std::string &output_path,
+                   const std::string &camera_topic,
+                   const int &imgNo,
+                   rosbag::View &view);
 
   // declare containers
   wave::MeasurementContainer<

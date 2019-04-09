@@ -64,7 +64,7 @@ int main() {
                       "Time to load ROS data: ");
 
   // Check output directory and create
-  std::string save_path = p_->output_path + "/" +
+  std::string save_path = p_->output_path +
                           convertTimeToDate(std::chrono::system_clock::now()) +
                           "/";
   boost::filesystem::create_directories(save_path);
