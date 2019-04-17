@@ -19,7 +19,6 @@ FIND_PACKAGE(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
-  wave_spatial_utils
   )
 FIND_PACKAGE(beam REQUIRED utils calibration)
 #FIND_PACKAGE(Catch2 REQUIRED)
@@ -59,13 +58,13 @@ ADD_EXECUTABLE(${PROJECT_NAME}_node
         src/gtsam_graph.cpp
         src/scan_matcher.cpp
         src/slam_params.cpp
+        src/world_frame_conversions.cpp
         )
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME}_node
         wave::wave
         beam::utils
         beam::calibration
-        wave_spatial_utils
         ${catkin_LIBRARIES}
         ${PCL_LIBRARIES}
         ${OpenCV_LIBS}

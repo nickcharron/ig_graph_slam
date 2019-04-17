@@ -6,7 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <ctime>
-#include <wave_spatial_utils/world_frame_conversions.hpp>
+#include "world_frame_conversions.hpp"
 #include <unsupported/Eigen/MatrixFunctions>
 
 #define DEG_TO_RAD 0.0174532925199433
