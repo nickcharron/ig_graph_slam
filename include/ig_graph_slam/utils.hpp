@@ -1,6 +1,7 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include "conversions.hpp"
 #include <Eigen/Dense>
 #include <chrono>
 #include <cmath>
@@ -10,11 +11,10 @@
 #include <math.h>
 #include <unsupported/Eigen/MatrixFunctions>
 #include <utility>
-#include "conversions.hpp"
 
 // libbeam specific headers
-#include <beam/utils/math.hpp>
 #include <beam/utils/log.hpp>
+#include <beam/utils/math.hpp>
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;

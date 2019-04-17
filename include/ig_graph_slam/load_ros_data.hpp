@@ -42,7 +42,7 @@ using TimePoint = std::chrono::time_point<Clock>;
 
 // declare these due to circular reference
 struct ScanMatcher;
-//struct Params;
+// struct Params;
 
 Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,
                            bool applyT_ENU_GPS);
@@ -50,7 +50,7 @@ Eigen::Affine3d gpsToEigen(const Eigen::Matrix<double, 6, 1> measurement,
 struct ROSBag {
   /***
    * ROSBag parent class
-  */
+   */
 
   ROSBag(Params &p_);
   //~ROSBag();
@@ -85,8 +85,8 @@ struct ROSBag {
    * @param end_of_bag
    * @param start_of_bag
    */
-  void loadIMUMessage(rosbag::View::iterator &rosbag_iter,
-                              bool end_of_bag, bool start_of_bag);
+  void loadIMUMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag,
+                      bool start_of_bag);
   /***
    * Loads GPS data into measurement container from an NavSatFix ROS msg
    * @param gps_msg NavSatFix ROS msg
@@ -115,9 +115,9 @@ struct ROSBag {
    */
   void loadROSBagMessage(rosbag::View::iterator &rosbag_iter, bool end_of_bag);
 
- /***
-  * Load all ROS Bag messages into their appropriate containers
-  */
+  /***
+   * Load all ROS Bag messages into their appropriate containers
+   */
   void loadROSBagMessagesAll();
 
   /***
@@ -148,10 +148,8 @@ struct ROSBag {
    * @param time_point
    * @param output_path
    */
-  void outputImage(const TimePoint &time_point,
-                   const std::string &output_path,
-                   const std::string &camera_topic,
-                   const int &imgNo,
+  void outputImage(const TimePoint &time_point, const std::string &output_path,
+                   const std::string &camera_topic, const int &imgNo,
                    rosbag::View &view);
 
   // declare containers
@@ -167,8 +165,7 @@ struct ROSBag {
   std::vector<wave::Measurement<wave::PCLPointCloudPtr, uint>> lidar_container;
   std::vector<wave::Measurement<wave::PCLPointCloudPtr, uint>>
       lidar_container_map;
-  std::vector<wave::Measurement<wave::PCLPointCloudPtr, uint>>
-      image_container;
+  std::vector<wave::Measurement<wave::PCLPointCloudPtr, uint>> image_container;
 
   // declare point cloud objects
   pcl::PCLPointCloud2::Ptr pcl_pc2_tmp;

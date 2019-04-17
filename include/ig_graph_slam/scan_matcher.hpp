@@ -3,19 +3,19 @@
 
 // Basic headers
 #include <boost/filesystem.hpp>
+#include <chrono>
+#include <ctime>
 #include <fstream>
 #include <math.h>
 #include <sstream>
 #include <string>
 #include <unistd.h>
-#include <chrono>
-#include <ctime>
 #include <unsupported/Eigen/MatrixFunctions>
 
 // PCL headers
+#include <pcl/io/pcd_io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <pcl/io/pcd_io.h>
 
 // WAVE headers
 #include "wave/matching/gicp.hpp"
@@ -25,8 +25,8 @@
 #include <wave/matching/pointcloud_display.hpp>
 
 // libbeam specific headers
-#include <beam/utils/math.hpp>
 #include <beam/calibration/TfTree.h>
+#include <beam/utils/math.hpp>
 
 // IG Graph SLAM headers
 #include "conversions.hpp"
@@ -36,7 +36,6 @@
 #include "pcl_filters.hpp"
 #include "slam_params.hpp"
 #include "utils.hpp"
-
 
 // Declare some templates:
 using Clock = std::chrono::steady_clock;
@@ -81,17 +80,17 @@ struct ScanMatcher {
   GTSAMGraph buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data);
 
   /***
-  * Takes the config file for ig_graph_slam and copies it to the output
-  * directory to have a copy of the parameters used for each map
-  * @param save_path_ output directory
-  */
+   * Takes the config file for ig_graph_slam and copies it to the output
+   * directory to have a copy of the parameters used for each map
+   * @param save_path_ output directory
+   */
   void saveParamsFile(std::string save_path_);
 
   /***
-  * Plots the gtsam graph and saves it as a .dot file in the output directory
-  * @param save_path_ output directory
-  * @param graph_ gtsam graph object
-  */
+   * Plots the gtsam graph and saves it as a .dot file in the output directory
+   * @param save_path_ output directory
+   * @param graph_ gtsam graph object
+   */
   void saveGraphFile(GTSAMGraph graph_, std::string save_path_);
 
   /***
@@ -106,9 +105,9 @@ struct ScanMatcher {
   bool takeNewScan(const Eigen::Affine3d &p1, const Eigen::Affine3d &p2,
                    const double &dist, const double &rot);
 
- /***
-  * Load poses from a previous graph
-  */
+  /***
+   * Load poses from a previous graph
+   */
   void loadPrevPoses();
 
   /***
@@ -182,7 +181,8 @@ struct ScanMatcher {
   /***
    * Outputs three things needed for point cloud colourization testing:
    * 1. Camera intrinsic matrix
-   * 2. Aggregate pointcloud maps transformed into the camera frame for each image
+   * 2. Aggregate pointcloud maps transformed into the camera frame for each
+   * image
    * 3. Images for a number of poses
    * @param graph
    * @param ros_data

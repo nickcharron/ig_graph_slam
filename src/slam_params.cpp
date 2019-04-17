@@ -16,6 +16,7 @@ Params::Params() {
   parser.addParam("use_prev_poses", &(this->use_prev_poses));
   parser.addParam("prev_poses_path", &(this->prev_poses_path));
   parser.addParam("extrinsics_filename", &(this->extrinsics_filename));
+  parser.addParam("output_images", &(this->output_images));
   parser.addParam("camera_topics", &(this->camera_topics));
   parser.addParam("camera_frames", &(this->camera_frames));
   parser.addParam("intrinsics", &(this->intrinsics));
@@ -91,9 +92,12 @@ Params::Params() {
 }
 
 void Params::outputParams() {
-  std::cout << "----------------------------" << "\n"
-            << "Outputting all parameters:" << "\n"
-            << "----------------------------" << "\n"
+  std::cout << "----------------------------"
+            << "\n"
+            << "Outputting all parameters:"
+            << "\n"
+            << "----------------------------"
+            << "\n"
             << "gps_type: " << this->gps_type << "\n"
             << "gps_topic: " << this->gps_topic << "\n"
             << "imu_topic: " << this->imu_topic << "\n"
@@ -103,7 +107,8 @@ void Params::outputParams() {
             << "lidar_topic_map: " << this->lidar_topic_map << "\n"
             << "bag_file_path: " << this->bag_file_path << "\n"
             << "use_prev_poses: " << this->use_prev_poses << "\n"
-            << "prev_poses_path: " << this->prev_poses_path << "\n";
+            << "extrinsics_filename: " << this->extrinsics_filename << "\n"
+            << "output_images: " << this->output_images << "\n";
   for (uint16_t i = 0; i < this->camera_topics.size(); i++) {
     std::cout << "camera_topics: " << this->camera_topics[i] << "\n";
   }
@@ -113,67 +118,56 @@ void Params::outputParams() {
   for (uint16_t i = 0; i < this->intrinsics.size(); i++) {
     std::cout << "intrinsics: " << this->intrinsics[i] << "\n";
   }
-  std::cout
-      << "----------------------------" << "\n"
-      << "Outputting all parameters:" << "\n"
-      << "----------------------------" << "\n"
-      << "gps_type: " << this->gps_type << "\n"
-      << "gps_topic: " << this->gps_topic << "\n"
-      << "gps_frame: " << this->gps_frame << "\n"
-      << "imu_topic: " << this->imu_topic << "\n"
-      << "odom_topic: " << this->odom_topic << "\n"
-      << "init_method: " << this->init_method << "\n"
-      << "lidar_topic_loc: " << this->lidar_topic_loc << "\n"
-      << "lidar_topic_map: " << this->lidar_topic_map << "\n"
-      << "lidar_frame_loc: " << this->lidar_frame_loc << "\n"
-      << "lidar_frame_map: " << this->lidar_frame_map << "\n"
-      << "bag_file_path: " << this->bag_file_path << "\n"
-      << "use_prev_poses: " << this->use_prev_poses << "\n"
-      << "prev_poses_path: " << this->prev_poses_path << "\n"
-      << "use_pass_through_filter: " << this->use_pass_through_filter << "\n"
-      << "x_upper_threshold: " << this->x_upper_threshold << "\n"
-      << "x_lower_threshold: " << this->x_lower_threshold << "\n"
-      << "y_upper_threshold: " << this->y_upper_threshold << "\n"
-      << "y_lower_threshold: " << this->y_lower_threshold << "\n"
-      << "z_upper_threshold: " << this->z_upper_threshold << "\n"
-      << "z_lower_threshold: " << this->z_lower_threshold << "\n"
-      << "downsample_input: " << this->downsample_input << "\n"
-      << "input_downsample_size: " << this->input_downsample_size << "\n"
-      << "use_rad_filter: " << this->use_rad_filter << "\n"
-      << "set_min_neighbours: " << this->set_min_neighbours << "\n"
-      << "set_search_radius: " << this->set_search_radius << "\n"
-      << "ground_segment: " << this->ground_segment << "\n"
-      << "downsample_output_method: " << this->downsample_output_method << "\n"
-      << "downsample_cell_size: " << this->downsample_cell_size << "\n"
-      << "int_map_size: " << this->int_map_size << "\n"
-      << "use_pass_through_filter_map: " << this->use_pass_through_filter_map
-      << "\n"
-      << "x_upper_threshold_map: " << this->x_upper_threshold_map << "\n"
-      << "x_lower_threshold_map: " << this->x_lower_threshold_map << "\n"
-      << "y_upper_threshold_map: " << this->y_upper_threshold_map << "\n"
-      << "y_lower_threshold_map: " << this->y_lower_threshold_map << "\n"
-      << "z_upper_threshold_map: " << this->z_upper_threshold_map << "\n"
-      << "z_lower_threshold_map: " << this->z_lower_threshold_map << "\n"
-      << "k_nearest_neighbours: " << this->knn << "\n"
-      << "trajectory_sampling_distance: " << this->trajectory_sampling_dist
-      << "\n"
-      << "map_sampling_distance: " << this->map_sampling_dist << "\n"
-      << "distance_match_min: " << this->distance_match_min << "\n"
-      << "distance_match_limit: " << this->distance_match_limit << "\n"
-      << "rotation_match_min: " << this->rotation_match_min << "\n"
-      << "rotation_match_limit: " << this->rotation_match_limit << "\n"
-      << "loop_max_distance: " << this->loop_max_distance << "\n"
-      << "loop_min_travel_distance: " << this->loop_min_travel_distance << "\n"
-      << "iterations: " << this->iterations << "\n"
-      << "use_gps: " << this->use_gps << "\n"
-      << "optimize_gps_lidar: " << this->optimize_gps_lidar << "\n"
-      << "fixed_scan_transform_cov: " << this->fixed_scan_transform_cov << "\n"
-      << "visualize: " << this->visualize << "\n"
-      << "step_matches: " << this->step_matches << "\n"
-      << "combine_scans: " << this->combine_scans << "\n"
-      << "matcher_type: " << this->matcher_type << "\n"
-      << "output_path: " << this->output_path << "\n"
-      << "----------------------------" << "\n";
+  std::cout << "prev_poses_path: " << this->prev_poses_path << "\n"
+            << "use_pass_through_filter: " << this->use_pass_through_filter
+            << "\n"
+            << "x_upper_threshold: " << this->x_upper_threshold << "\n"
+            << "x_lower_threshold: " << this->x_lower_threshold << "\n"
+            << "y_upper_threshold: " << this->y_upper_threshold << "\n"
+            << "y_lower_threshold: " << this->y_lower_threshold << "\n"
+            << "z_upper_threshold: " << this->z_upper_threshold << "\n"
+            << "z_lower_threshold: " << this->z_lower_threshold << "\n"
+            << "downsample_input: " << this->downsample_input << "\n"
+            << "input_downsample_size: " << this->input_downsample_size << "\n"
+            << "use_rad_filter: " << this->use_rad_filter << "\n"
+            << "set_min_neighbours: " << this->set_min_neighbours << "\n"
+            << "set_search_radius: " << this->set_search_radius << "\n"
+            << "ground_segment: " << this->ground_segment << "\n"
+            << "downsample_output_method: " << this->downsample_output_method
+            << "\n"
+            << "downsample_cell_size: " << this->downsample_cell_size << "\n"
+            << "int_map_size: " << this->int_map_size << "\n"
+            << "use_pass_through_filter_map: "
+            << this->use_pass_through_filter_map << "\n"
+            << "x_upper_threshold_map: " << this->x_upper_threshold_map << "\n"
+            << "x_lower_threshold_map: " << this->x_lower_threshold_map << "\n"
+            << "y_upper_threshold_map: " << this->y_upper_threshold_map << "\n"
+            << "y_lower_threshold_map: " << this->y_lower_threshold_map << "\n"
+            << "z_upper_threshold_map: " << this->z_upper_threshold_map << "\n"
+            << "z_lower_threshold_map: " << this->z_lower_threshold_map << "\n"
+            << "k_nearest_neighbours: " << this->knn << "\n"
+            << "trajectory_sampling_distance: "
+            << this->trajectory_sampling_dist << "\n"
+            << "map_sampling_distance: " << this->map_sampling_dist << "\n"
+            << "distance_match_min: " << this->distance_match_min << "\n"
+            << "distance_match_limit: " << this->distance_match_limit << "\n"
+            << "rotation_match_min: " << this->rotation_match_min << "\n"
+            << "rotation_match_limit: " << this->rotation_match_limit << "\n"
+            << "loop_max_distance: " << this->loop_max_distance << "\n"
+            << "loop_min_travel_distance: " << this->loop_min_travel_distance
+            << "\n"
+            << "iterations: " << this->iterations << "\n"
+            << "use_gps: " << this->use_gps << "\n"
+            << "optimize_gps_lidar: " << this->optimize_gps_lidar << "\n"
+            << "fixed_scan_transform_cov: " << this->fixed_scan_transform_cov
+            << "\n"
+            << "visualize: " << this->visualize << "\n"
+            << "step_matches: " << this->step_matches << "\n"
+            << "combine_scans: " << this->combine_scans << "\n"
+            << "matcher_type: " << this->matcher_type << "\n"
+            << "output_path: " << this->output_path << "\n"
+            << "----------------------------"
+            << "\n";
 }
 
 std::string Params::getMatcherConfig() {
@@ -269,6 +263,11 @@ bool Params::validateParams() {
     return 0;
   }
 
+  if (!(this->output_images == 1 || this->output_images == 0)) {
+    LOG_ERROR("Invalid parameter: output_images. Enter a boolean.");
+    return 0;
+  }
+
   if (this->camera_topics.size() != this->intrinsics.size()) {
     LOG_ERROR(
         "Number of camera topics not equal to number of intrinsic files.");
@@ -276,8 +275,7 @@ bool Params::validateParams() {
   }
 
   if (this->camera_topics.size() != this->camera_frames.size()) {
-    LOG_ERROR(
-        "Number of camera topics not equal to number of camera frames.");
+    LOG_ERROR("Number of camera topics not equal to number of camera frames.");
     return 0;
   }
 

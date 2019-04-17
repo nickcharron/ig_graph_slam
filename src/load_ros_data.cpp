@@ -374,8 +374,7 @@ uint64_t ROSBag::getLidarTimeWindow(const TimePoint T1) {
 
 void ROSBag::outputImage(const TimePoint &time_point,
                          const std::string &output_path,
-                         const std::string &camera_topic,
-                         const int &imgNo,
+                         const std::string &camera_topic, const int &imgNo,
                          rosbag::View &view) {
   // iterate through bag:
   for (auto iter = view.begin(); iter != view.end(); iter++) {

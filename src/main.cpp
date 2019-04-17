@@ -1,8 +1,8 @@
-#include <chrono>
-#include <boost/filesystem.hpp>
-#include "scan_matcher.hpp"
-#include "load_ros_data.hpp"
 #include "gtsam_graph.hpp"
+#include "load_ros_data.hpp"
+#include "scan_matcher.hpp"
+#include <boost/filesystem.hpp>
+#include <chrono>
 
 const uint64_t bias_offset = 1000000;
 using Clock = std::chrono::steady_clock;
@@ -104,7 +104,9 @@ int main() {
   // scan_matcher->createAggregateMap(load_ros_data, 3);
   // scan_matcher->outputAggregateMap(3, save_path);
 
-  scan_matcher->outputForColourization(load_ros_data, save_path);
+  if (p_->output_images) {
+    scan_matcher->outputForColourization(load_ros_data, save_path);
+  }
 
   outputTimePointDiff(time_start, std::chrono::system_clock::now(),
                       "Total computation time: ");
