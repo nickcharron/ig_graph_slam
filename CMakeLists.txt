@@ -22,8 +22,8 @@ FIND_PACKAGE(catkin REQUIRED COMPONENTS
   wave_spatial_utils
   )
 FIND_PACKAGE(beam REQUIRED utils calibration)
-FIND_PACKAGE(Catch2 REQUIRED)
-FIND_PACKAGE(nlohmann_json  3.2.0 REQUIRED)
+#FIND_PACKAGE(Catch2 REQUIRED)
+#FIND_PACKAGE(nlohmann_json  3.2.0 REQUIRED)
 
 
 ADD_DEFINITIONS(${PCL_DEFINITIONS})
@@ -45,7 +45,6 @@ INCLUDE_DIRECTORIES(
         ${GTSAM_INCLUDE_DIRS}
         ${GeographicLib_INCLUDE_DIRS}
 )
-INCLUDE(cmake/ImportCatkin.cmake)
 
 LINK_DIRECTORIES(
         ${PCL_LIBRARY_DIRS}
