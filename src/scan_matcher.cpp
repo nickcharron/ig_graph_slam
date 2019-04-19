@@ -606,11 +606,13 @@ void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
     if ((k % this->params.int_map_size) == 0) {
       // every nth pose, filter the intermediate map if specified then
       // move to next
-      if ((i != 0) && !(this->params.downsample_output_method == 3)) {
+      if (i != 0) {
         // if not first intermediate map, then filter it and
         // move to the next intermediate map
-        *intermediaries.at(i) = downSampleFilterIG(
-            intermediaries.at(i), this->params.downsample_cell_size);
+        if((this->params.downsample_output_method == 1) || (this->params.downsample_output_method == 2)){
+          *intermediaries.at(i) = downSampleFilterIG(
+              intermediaries.at(i), this->params.downsample_cell_size);
+        }        
         i++;
       } else {
         // if first intermediate map
