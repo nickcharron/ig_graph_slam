@@ -11,7 +11,7 @@
 #include <gtsam/slam/dataset.h>
 
 // libbeam specific headers
-#include <beam/utils/math.hpp>
+#include <beam_utils/math.hpp>
 
 class GTSAMGraph {
 public:

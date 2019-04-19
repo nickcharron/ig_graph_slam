@@ -11,7 +11,7 @@
 #include <wave/matching/icp.hpp>
 
 // libbeam specific headers
-#include <beam/utils/math.hpp>
+#include <beam_utils/math.hpp>
 
 pcl::PointCloud<pcl::PointXYZ> passThroughFilterIG(wave::PCLPointCloudPtr cloud_in_, beam::Vec6 threshold_)
 {

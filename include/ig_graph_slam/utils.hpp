@@ -13,8 +13,8 @@
 #include <utility>
 
 // libbeam specific headers
-#include <beam/utils/log.hpp>
-#include <beam/utils/math.hpp>
+#include <beam_utils/log.hpp>
+#include <beam_utils/math.hpp>
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;

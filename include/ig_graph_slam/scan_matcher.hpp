@@ -25,8 +25,8 @@
 #include <wave/matching/pointcloud_display.hpp>
 
 // libbeam specific headers
-#include <beam/calibration/TfTree.h>
-#include <beam/utils/math.hpp>
+#include <beam_calibration/TfTree.h>
+#include <beam_utils/math.hpp>
 
 // IG Graph SLAM headers
 #include "conversions.hpp"

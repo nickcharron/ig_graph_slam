@@ -22,7 +22,7 @@
 #include <wave/matching/icp.hpp>
 
 // libbeam specific headers
-#include <beam/utils/math.hpp>
+#include <beam_utils/math.hpp>
 
 // OpenCV headers
 #include <cv_bridge/cv_bridge.h>
