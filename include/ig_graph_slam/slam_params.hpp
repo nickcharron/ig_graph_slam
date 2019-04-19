@@ -12,7 +12,7 @@
 #include <pcl/point_types.h>
 
 // libbeam specific headers
-#include <beam/utils/math.hpp>
+#include <beam_utils/math.hpp>
 
 // libwave headers
 #include <wave/utils/config.hpp>

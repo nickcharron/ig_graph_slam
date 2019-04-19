@@ -4,7 +4,7 @@
 #include <wave/gtsam/hand_eye.hpp>
 
 // libbeam specific headers
-#include <beam/utils/math.hpp>
+#include <beam_utils/math.hpp>
 
 GTSAMGraph::GTSAMGraph() {}
 
