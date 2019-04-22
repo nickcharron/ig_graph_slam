@@ -394,7 +394,7 @@ void ROSBag::outputImage(const TimePoint &time_point,
         // save this image and swith to next image topic.
         cv::imwrite(output_path + "image" + std::to_string(imgNo) + ".jpg",
                     cv_img_ptr->image);
-        break;
+        return;
       }
     }
   }

@@ -609,10 +609,11 @@ void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
       if (i != 0) {
         // if not first intermediate map, then filter it and
         // move to the next intermediate map
-        if((this->params.downsample_output_method == 1) || (this->params.downsample_output_method == 2)){
+        if ((this->params.downsample_output_method == 1) ||
+            (this->params.downsample_output_method == 2)) {
           *intermediaries.at(i) = downSampleFilterIG(
               intermediaries.at(i), this->params.downsample_cell_size);
-        }        
+        }
         i++;
       } else {
         // if first intermediate map
@@ -716,9 +717,9 @@ void ScanMatcher::outputForColourization(boost::shared_ptr<ROSBag> ros_data,
     return;
   }
 
-  for (uint32_t k = 0; k < this->params.intrinsics.size(); k++) {
+  for (uint32_t k = 0; k < this->params.camera_topics.size(); k++) {
     // For each camera, create separate save directories
-    outputPathThisCam = outputPathRoot + this->params.intrinsics[k];
+    outputPathThisCam = outputPathRoot + this->params.camera_frames[k];
     outputPathThisCam.erase(outputPathThisCam.end() - 5,
                             outputPathThisCam.end()); // removes '.yaml'
     outputPathThisCamPCDs = outputPathThisCam + "/pcds/";
@@ -726,34 +727,25 @@ void ScanMatcher::outputForColourization(boost::shared_ptr<ROSBag> ros_data,
     boost::filesystem::create_directories(outputPathThisCamPCDs);
     boost::filesystem::create_directories(outputPathThisCamImgs);
 
-    // Output the intrinsics to results folder
-    std::string intrinsicsPath = __FILE__;
-    intrinsicsPath.erase(intrinsicsPath.end() - 20, intrinsicsPath.end());
-    intrinsicsPath += "calibrations/" + this->params.intrinsics[k];
-    std::ifstream src(intrinsicsPath, std::ios::binary);
-    std::ofstream dst(outputPathThisCam + "/" + this->params.intrinsics[k],
-                      std::ios::binary);
-    dst << src.rdbuf();
-
     // Iterate through poses and save images + transformed clouds
     // TODO: add parameter for how many images are taken
-    int mapCounter = 0;
-    rosbag::View::iterator iterCur;
+    int mapCounter = 0, freq = this->params.output_freq;
 
-    for (uint32_t i = 0 + 5; i < final_poses.size(); i += 5) {
+    for (uint32_t i = 0 + freq; i < final_poses.size(); i += freq) {
       mapCounter++;
 
-      // Get transform for pose i. Here L is lidar map frame, and C is the
-      // camera frame
-      Eigen::Affine3d T_C_M, T_C_L, T_M_L;
-      std::string to_frame = this->params.camera_frames[k];
+      std::string to_frame = this->params.map_output_frames[k];
       std::string from_frame = this->params.lidar_frame_loc;
-      T_M_L = final_poses.at(i).value;
-      T_C_L = this->Tree.GetTransform(to_frame, from_frame);
-      T_C_M = T_C_L * T_M_L.inverse();
+      Eigen::Affine3d T_LLOC_Map, T_Out_LLOC, T_Out_Map;
+      T_LLOC_Map = final_poses.at(i).value.inverse();
+      T_Out_LLOC = this->Tree.GetTransform(to_frame, from_frame);
+      T_Out_Map = T_Out_LLOC * T_LLOC_Map;
+
+      // transform the aggregate map to the lidar frame
+      pcl::transformPointCloud(*this->aggregate, *aggregateTransformed,
+                               T_Out_Map);
 
       // transform the aggregate map to the image frame
-      pcl::transformPointCloud(*this->aggregate, *aggregateTransformed, T_C_M);
       pcl::io::savePCDFileASCII(outputPathThisCamPCDs + "map" +
                                     std::to_string(mapCounter) + ".pcd",
                                 *aggregateTransformed);
@@ -762,15 +754,17 @@ void ScanMatcher::outputForColourization(boost::shared_ptr<ROSBag> ros_data,
       poseTimePoint = ros_data->getLidarScanTimePoint(pose_scan_map.at(i));
 
       ros::Time search_time_start, search_time_end;
-      double time_window = 2;
+      double time_window = 5;
       ros::Duration time_window_half(time_window / 2);
-      search_time_start = chronoToRosTime(poseTimePoint) - time_window_half;
-      search_time_end = chronoToRosTime(poseTimePoint) + time_window_half;
+      search_time_start =
+          beam::chronoToRosTime(poseTimePoint) - time_window_half;
+      search_time_end = beam::chronoToRosTime(poseTimePoint) + time_window_half;
       rosbag::View view(bag, rosbag::TopicQuery(this->params.camera_topics[k]),
                         search_time_start, search_time_end, true);
 
       if (view.size() == 0) {
         LOG_ERROR("No image messages read. Check your topics in config file.");
+        mapCounter--;
       }
 
       ros_data->outputImage(poseTimePoint, outputPathThisCamImgs,

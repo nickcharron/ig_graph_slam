@@ -54,7 +54,7 @@ struct Params {
       odom_topic, gps_type, matcher_type, output_path, config_file_path,
       extrinsics_filename;
   int knn, set_min_neighbours, iterations, init_method, int_map_size,
-      downsample_output_method;
+      downsample_output_method, output_freq;
   float trajectory_sampling_dist, map_sampling_dist, trajectory_rotation_change,
       map_rotation_change, distance_match_limit, distance_match_min,
       rotation_match_limit, rotation_match_min, input_downsample_size,
@@ -70,7 +70,7 @@ struct Params {
       use_prev_poses, use_rad_filter, use_pass_through_filter,
       use_pass_through_filter_map, output_images;
   beam::MatX scan_transform_cov;
-  std::vector<std::string> topics, camera_topics, camera_frames, intrinsics;
+  std::vector<std::string> topics, camera_topics, camera_frames, map_output_frames;
 };
 
 #endif // IG_GRAPH_SLAM_SLAM_PARAMS_HPP

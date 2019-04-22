@@ -19,14 +19,15 @@ lidar_topic_map: "/vvlp/velodyne_points"
 
 lidar_frame_loc: "hvlp_link"
 lidar_frame_map: "vvlp_link"
-bag_file_path: "/home/nick/bag_files/ig_scans/2018_02_13_Structures_Lab/ig_scan_2019-02-13-19-44-24.bag"
+bag_file_path: "/home/nick/bag_files/ig_scans/2019_04_11_Market_Square_Parking_Garage/ig_scan_2019-04-11-19-50-38-short.bag"
 use_prev_poses: true             # if you want to use pre-calculated pose results and just rebuild the maps, set to true
-prev_poses_path: "/home/nick/results/ig_maps/opt_traj.txt"
+prev_poses_path: "/home/nick/results/ig_maps/ig_graph_slam/2019_04_11_Market_Square_Parking_Garage/ig_scan_2019-04-11-19-50-38/2019_4_20_19_40_50-short/2019_4_20_19_41_41_opt_traj.txt"
 extrinsics_filename: "extrinsics_2018_12_20.json"
-output_images: false
+output_images: true
+output_freq: 2 # extract an image every 2 poses
 camera_topics: ["/F1/image_raw", "/F2/image_raw"]
 camera_frames: ["F1_link", "F2_link"]
-intrinsics: ["F1.json","F2.json"]
+map_output_frames: ["hvlp_link", "hvlp_link"]
 
   # For Moose:
 # gps_type: "INSPVAX" # For IG use "NavSatFix", for Moose use "INSPVAX"
