@@ -143,15 +143,6 @@ struct ROSBag {
    */
   uint64_t getLidarTimeWindow(const TimePoint T1);
 
-  /***
-   * Save image from a ROS bag that is closest to a specified timepoint
-   * @param time_point
-   * @param output_path
-   */
-  void outputImage(const TimePoint &time_point, const std::string &output_path,
-                   const std::string &camera_topic, const int &imgNo,
-                   rosbag::View &view);
-
   // declare containers
   wave::MeasurementContainer<
       wave::Measurement<std::pair<beam::Vec6, beam::Vec6>, uint>>

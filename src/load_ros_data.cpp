@@ -372,35 +372,6 @@ uint64_t ROSBag::getLidarTimeWindow(const TimePoint T1) {
   return start_index_;
 }
 
-void ROSBag::outputImage(const TimePoint &time_point,
-                         const std::string &output_path,
-                         const std::string &camera_topic, const int &imgNo,
-                         rosbag::View &view) {
-  // iterate through bag:
-  for (auto iter = view.begin(); iter != view.end(); iter++) {
-    if (iter->getTopic() == camera_topic) {
-
-      // save ros message
-      auto img_msg = iter->instantiate<sensor_msgs::Image>();
-
-      // check timepoint
-      TimePoint curImgTimepoint = rosTimeToChrono(img_msg->header);
-      if (curImgTimepoint >= time_point) {
-        // first we need to change to opencv object
-        cv_bridge::CvImagePtr cv_img_ptr;
-        cv_img_ptr =
-            cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::BGR8);
-
-        // save this image and swith to next image topic.
-        cv::imwrite(output_path + "image" + std::to_string(imgNo) + ".jpg",
-                    cv_img_ptr->image);
-        return;
-      }
-    }
-  }
-  return;
-}
-
 // Messages specific for Moose
 void ROSBag::loadGPSDataFromINSPVAX(
     boost::shared_ptr<novatel_msgs::INSPVAX> gps_msg) {

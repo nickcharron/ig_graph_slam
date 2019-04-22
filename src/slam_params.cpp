@@ -16,11 +16,6 @@ Params::Params() {
   parser.addParam("use_prev_poses", &(this->use_prev_poses));
   parser.addParam("prev_poses_path", &(this->prev_poses_path));
   parser.addParam("extrinsics_filename", &(this->extrinsics_filename));
-  parser.addParam("output_images", &(this->output_images));
-  parser.addParam("output_freq", &(this->output_freq));
-  parser.addParam("camera_topics", &(this->camera_topics));
-  parser.addParam("camera_frames", &(this->camera_frames));
-  parser.addParam("map_output_frames", &(this->map_output_frames));
   parser.addParam("use_pass_through_filter", &(this->use_pass_through_filter));
   parser.addParam("x_upper_threshold", &(this->x_upper_threshold));
   parser.addParam("x_lower_threshold", &(this->x_lower_threshold));
@@ -109,18 +104,7 @@ void Params::outputParams() {
             << "bag_file_path: " << this->bag_file_path << "\n"
             << "use_prev_poses: " << this->use_prev_poses << "\n"
             << "extrinsics_filename: " << this->extrinsics_filename << "\n"
-            << "output_images: " << this->output_images << "\n"
-            << "output_freq: " << this->output_freq << "\n";
-  for (uint16_t i = 0; i < this->camera_topics.size(); i++) {
-    std::cout << "camera_topics: " << this->camera_topics[i] << "\n";
-  }
-  for (uint16_t i = 0; i < this->camera_frames.size(); i++) {
-    std::cout << "camera_frames: " << this->camera_frames[i] << "\n";
-  }
-  for (uint16_t i = 0; i < this->map_output_frames.size(); i++) {
-    std::cout << "map_output_frames: " << this->map_output_frames[i] << "\n";
-  }
-  std::cout << "prev_poses_path: " << this->prev_poses_path << "\n"
+            << "prev_poses_path: " << this->prev_poses_path << "\n"
             << "use_pass_through_filter: " << this->use_pass_through_filter
             << "\n"
             << "x_upper_threshold: " << this->x_upper_threshold << "\n"
@@ -262,22 +246,6 @@ bool Params::validateParams() {
   if (!boost::filesystem::exists(this->prev_poses_path) &&
       this->use_prev_poses == 1) {
     LOG_ERROR("Cannot find previous poses file.");
-    return 0;
-  }
-
-  if (!(this->output_images == 1 || this->output_images == 0)) {
-    LOG_ERROR("Invalid parameter: output_images. Enter a boolean.");
-    return 0;
-  }
-
-  if (this->camera_topics.size() != this->map_output_frames.size()) {
-    LOG_ERROR(
-        "Number of camera topics not equal to number of map_output_frames.");
-    return 0;
-  }
-
-  if (this->camera_topics.size() != this->camera_frames.size()) {
-    LOG_ERROR("Number of camera topics not equal to number of camera frames.");
     return 0;
   }
 
