@@ -1,4 +1,5 @@
 #include "scan_matcher.hpp"
+#include "beam_mapping/Poses.h"
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;
@@ -667,6 +668,7 @@ void ScanMatcher::outputAggregateMap(int mapping_method, std::string path_) {
 }
 
 void ScanMatcher::outputOptTraj(std::string path_) {
+  // output to text file
   std::ofstream file;
   std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
   const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision,
@@ -679,6 +681,54 @@ void ScanMatcher::outputOptTraj(std::string path_) {
     file << std::endl;
   }
   file.close();
+
+  // output to json
+  beam_mapping::Poses poses;
+  std::string output_dir = path_ + "/";
+  std::string bag_name = "test"; // figure out how to retrieve this from path to bag
+  std::string fixed_frame = "test"; // get this from odom topic when going through bag
+  poses.SetBagName(bag_name);
+  poses.SetPoseFileDate(dateandtime);
+  poses.SetFixedFrame(fixed_frame);
+  poses.SetMovingFrame(this->params.lidar_frame_map);
+
+  for (uint32_t k = 0; k < this->final_poses.size(); k++){
+    poses.AddSinglePose(this->final_poses[k].value);
+    ros::Time time_stamp_k = chronoToRosTime(this->final_poses[k].time_point);
+    poses.AddSingleTimeStamp(time_stamp_k);
+  }
+
+  poses.WriteToPoseFile(output_dir);
+
+  /*
+  std::string JSONString;
+  std::string bag_name;
+  nlohmann::json J, J_poses;
+  J = {{"bag_name", bag_name},
+       {"poses_file_date", dateandtime},
+       {"fixed_frame", "odom"},
+       {"pose_frame", params.lidar_frame_map}};
+
+  JSONString = J.dump();
+
+  for (uint64_t iter = 0; iter < this->final_poses.size(); iter++) {
+    Eigen::Matrix4f mat = this->final_poses[iter].value.matrix().cast<float>();
+    std::vector<float> transform_k(mat.data(),
+                                   mat.data() + mat.rows() * mat.cols());
+    nlohmann::json J_vec_k(transform_k);
+    nlohmann::json J_pose_k;
+    J_pose_k = {
+      {"time_stamp_nsec",
+      this->final_poses[iter].time_point.time_since_epoch().count()},
+      {"transform", J_vec_k}};
+    J_poses.emplace_back(J_pose_k);
+  }
+
+  J.emplace_back(J_poses);
+  std::string json_file_name = path_ + dateandtime + "_opt_traj" + ".json";
+  std::ofstream filejson(json_file_name);
+  filejson << std::setw(4) << J << std::endl;
+  */
 }
 
 void ScanMatcher::outputInitTraj(std::string path_) {

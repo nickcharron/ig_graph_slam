@@ -19,9 +19,9 @@ lidar_topic_map: "/vvlp/velodyne_points"
 
 lidar_frame_loc: "hvlp_link"
 lidar_frame_map: "vvlp_link"
-bag_file_path: "/home/nick/bag_files/ig_scans/2019_04_11_Market_Square_Parking_Garage/ig_scan_2019-04-11-19-50-38-short.bag"
+bag_file_path: "/home/nick/bag_files/ig_scans/2019_02_13_Structures_Lab/ig_scan_2019-02-13-19-44-24-loam-short1.bag"
 use_prev_poses: true             # if you want to use pre-calculated pose results and just rebuild the maps, set to true
-prev_poses_path: "/home/nick/results/ig_maps/ig_graph_slam/2019_04_11_Market_Square_Parking_Garage/ig_scan_2019-04-11-19-50-38/2019_4_20_19_40_50-short/2019_4_20_19_41_41_opt_traj.txt"
+prev_poses_path: "/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2019-02-13-19-44-24-StructuresLab/2019_7_5_11_30_41/2019_7_5_11_31_28_opt_traj.txt"
 extrinsics_filename: "extrinsics_2018_12_20.json"
 
   # For Moose:
@@ -83,11 +83,11 @@ z_lower_threshold_map: -4
 
 # Graph Parameters:
 k_nearest_neighbours: 5             # maximum number of nearest neighbours for graph links
-trajectory_sampling_distance: 0.50  # Minimum distance in m at which we should take new scans for localization
+trajectory_sampling_distance: 0.25  # Minimum distance in m at which we should take new scans for localization
 map_sampling_distance: 0.001         # Minimum distance in m at which we should take new scans for mapping
 trajectory_rotation_change: 20      # Minimum change in rotation in Deg at which we should take new scans for localization
 map_rotation_change: 5             # Minimum change in rotation in Deg at which we should take new scans for mapping
-distance_match_min: 1.5             # specify minimum and maximum distance between scans to
+distance_match_min: 1.0             # specify minimum and maximum distance between scans to
 distance_match_limit: 10.0           # use for scan registration
 rotation_match_min: 10              # specify minimum and maximum rotation (in deg) between scans to
 rotation_match_limit: 40            # use for scan registration. NOTE: this is not applied to loop closures
