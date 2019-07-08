@@ -1,4 +1,5 @@
 #include "scan_matcher.hpp"
+#include "beam_mapping/Poses.h"
 
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;
@@ -667,6 +668,7 @@ void ScanMatcher::outputAggregateMap(int mapping_method, std::string path_) {
 }
 
 void ScanMatcher::outputOptTraj(std::string path_) {
+  // output to text file
   std::ofstream file;
   std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
   const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision,
@@ -679,6 +681,25 @@ void ScanMatcher::outputOptTraj(std::string path_) {
     file << std::endl;
   }
   file.close();
+
+  // output to json
+  beam_mapping::Poses poses;
+  std::size_t bag_name_start = this->params.bag_file_path.rfind("/") + 1;
+  std::size_t bag_name_end = this->params.bag_file_path.rfind(".bag");
+  std::string bag_name = this->params.bag_file_path.substr(bag_name_start, bag_name_end);
+  std::string output_dir = path_ + "/";
+  std::string fixed_frame = this->params.odom_frame; 
+  poses.SetBagName(bag_name);
+  poses.SetPoseFileDate(dateandtime);
+  poses.SetFixedFrame(fixed_frame);
+  poses.SetMovingFrame(this->params.lidar_frame_map);
+
+  for (uint32_t k = 0; k < this->final_poses.size(); k++){
+    poses.AddSinglePose(this->final_poses[k].value);
+    ros::Time time_stamp_k = chronoToRosTime(this->final_poses[k].time_point);
+    poses.AddSingleTimeStamp(time_stamp_k);
+  }
+  poses.WriteToPoseFile(output_dir);
 }
 
 void ScanMatcher::outputInitTraj(std::string path_) {

@@ -62,6 +62,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}_node
         wave::wave
         beam::utils
         beam::calibration
+        beam::mapping
         ${catkin_LIBRARIES}
         ${PCL_LIBRARIES}
         ${OpenCV_LIBS}

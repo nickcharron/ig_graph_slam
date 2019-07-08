@@ -11,6 +11,7 @@
 #include <string>
 #include <unistd.h>
 #include <unsupported/Eigen/MatrixFunctions>
+#include <nlohmann/json.hpp>
 
 // PCL headers
 #include <pcl/io/pcd_io.h>

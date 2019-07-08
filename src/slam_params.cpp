@@ -7,6 +7,7 @@ Params::Params() {
   parser.addParam("gps_frame", &(this->gps_frame));
   parser.addParam("imu_topic", &(this->imu_topic));
   parser.addParam("odom_topic", &(this->odom_topic));
+  parser.addParam("odom_frame", &(this->odom_frame));
   parser.addParam("init_method", &(this->init_method));
   parser.addParam("lidar_topic_loc", &(this->lidar_topic_loc));
   parser.addParam("lidar_topic_map", &(this->lidar_topic_map));
