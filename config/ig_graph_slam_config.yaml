@@ -13,6 +13,7 @@ imu_topic: ""
                                    # For IG: +x = +pitch, +y = -roll, +z = -yaw
 # odom_topic: "/odometry/filtered_odom"
 odom_topic: "/ig/loam/lidar_odom"
+odom_frame: "odom"
 init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"

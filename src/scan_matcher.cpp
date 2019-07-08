@@ -684,9 +684,11 @@ void ScanMatcher::outputOptTraj(std::string path_) {
 
   // output to json
   beam_mapping::Poses poses;
+  std::size_t bag_name_start = this->params.bag_file_path.rfind("/") + 1;
+  std::size_t bag_name_end = this->params.bag_file_path.rfind(".bag");
+  std::string bag_name = this->params.bag_file_path.substr(bag_name_start, bag_name_end);
   std::string output_dir = path_ + "/";
-  std::string bag_name = "test"; // figure out how to retrieve this from path to bag
-  std::string fixed_frame = "test"; // get this from odom topic when going through bag
+  std::string fixed_frame = this->params.odom_frame; 
   poses.SetBagName(bag_name);
   poses.SetPoseFileDate(dateandtime);
   poses.SetFixedFrame(fixed_frame);
@@ -697,38 +699,7 @@ void ScanMatcher::outputOptTraj(std::string path_) {
     ros::Time time_stamp_k = chronoToRosTime(this->final_poses[k].time_point);
     poses.AddSingleTimeStamp(time_stamp_k);
   }
-
   poses.WriteToPoseFile(output_dir);
-
-  /*
-  std::string JSONString;
-  std::string bag_name;
-  nlohmann::json J, J_poses;
-  J = {{"bag_name", bag_name},
-       {"poses_file_date", dateandtime},
-       {"fixed_frame", "odom"},
-       {"pose_frame", params.lidar_frame_map}};
-
-  JSONString = J.dump();
-
-  for (uint64_t iter = 0; iter < this->final_poses.size(); iter++) {
-    Eigen::Matrix4f mat = this->final_poses[iter].value.matrix().cast<float>();
-    std::vector<float> transform_k(mat.data(),
-                                   mat.data() + mat.rows() * mat.cols());
-    nlohmann::json J_vec_k(transform_k);
-    nlohmann::json J_pose_k;
-    J_pose_k = {
-      {"time_stamp_nsec",
-      this->final_poses[iter].time_point.time_since_epoch().count()},
-      {"transform", J_vec_k}};
-    J_poses.emplace_back(J_pose_k);
-  }
-
-  J.emplace_back(J_poses);
-  std::string json_file_name = path_ + dateandtime + "_opt_traj" + ".json";
-  std::ofstream filejson(json_file_name);
-  filejson << std::setw(4) << J << std::endl;
-  */
 }
 
 void ScanMatcher::outputInitTraj(std::string path_) {
