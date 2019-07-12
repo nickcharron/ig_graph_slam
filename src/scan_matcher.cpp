@@ -224,7 +224,7 @@ void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
   Eigen::Affine3d T_ECEF_GPS, T_MAP_LIDAR, T_GPS_LIDAR;
   T_GPS_LIDAR =
       this->Tree
-          .GetTransform(this->params.gps_frame, this->params.lidar_frame_loc)
+          .GetTransformEigen(this->params.gps_frame, this->params.lidar_frame_loc)
           .matrix();
   // this ierates through the lidar measurements
   for (uint64_t iter = 0; iter < ros_data->lidar_container.size(); iter++) {
@@ -425,7 +425,7 @@ void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
 
     T_MAP_LLOC_k = this->final_poses[k].value;
     T_LMAP_LLOC =
-        this->Tree.GetTransform(this->params.lidar_frame_map,
+        this->Tree.GetTransformEigen(this->params.lidar_frame_map,
                                 this->params.lidar_frame_loc); // static
     T_MAP_LMAP_k = T_MAP_LLOC_k * T_LMAP_LLOC.inverse();
     int curr_index = this->pose_scan_map.at(k);
@@ -688,7 +688,7 @@ void ScanMatcher::outputOptTraj(std::string path_) {
   std::size_t bag_name_end = this->params.bag_file_path.rfind(".bag");
   std::string bag_name = this->params.bag_file_path.substr(bag_name_start, bag_name_end);
   std::string output_dir = path_ + "/";
-  std::string fixed_frame = this->params.odom_frame; 
+  std::string fixed_frame = this->params.odom_frame;
   poses.SetBagName(bag_name);
   poses.SetPoseFileDate(dateandtime);
   poses.SetFixedFrame(fixed_frame);
@@ -735,7 +735,7 @@ bool ICPScanMatcher::matchScans(
   auto T_MAP_Li = init_pose.at(i).value; // set initial guess of adjacent scan
   correction_norm_valid = true;
   Eigen::Matrix4d T_LLOC_LMAP = this->Tree
-                                    .GetTransform(this->params.lidar_frame_loc,
+                                    .GetTransformEigen(this->params.lidar_frame_loc,
                                                   this->params.lidar_frame_map)
                                     .matrix();
   // Get scans
@@ -842,7 +842,7 @@ bool GICPScanMatcher::matchScans(
   *cloud_tgt2 = *ros_data->lidar_container[pose_scan_map.at(i)].value;
   TimePoint timepoint_j, timepoint_i;
   Eigen::Matrix4d T_LLOC_LMAP = this->Tree
-                                    .GetTransform(this->params.lidar_frame_loc,
+                                    .GetTransformEigen(this->params.lidar_frame_loc,
                                                   this->params.lidar_frame_map)
                                     .matrix();
   // Combine scans if specified
