@@ -699,7 +699,7 @@ void ScanMatcher::outputOptTraj(std::string path_) {
     ros::Time time_stamp_k = chronoToRosTime(this->final_poses[k].time_point);
     poses.AddSingleTimeStamp(time_stamp_k);
   }
-  poses.WriteToPoseFile(output_dir);
+  poses.WriteToJSON(output_dir);
 }
 
 void ScanMatcher::outputInitTraj(std::string path_) {
