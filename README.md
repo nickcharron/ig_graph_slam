@@ -36,7 +36,7 @@ git clone https://github.com/nickcharron/ig_graph_slam.git
 
 ```
 cd /ig_graph_slam
-bash ./scritps/install_deps.sh
+bash ./scripts/install_deps.sh
 ```
 
 5. Install xdot for viewing gtsam graph file outputted after mapping
