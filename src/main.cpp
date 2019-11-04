@@ -65,7 +65,7 @@ int main() {
 
   // Check output directory and create
   std::string save_path = p_->output_path +
-                          convertTimeToDate(std::chrono::system_clock::now()) +
+                          ConvertTimeToDate(std::chrono::system_clock::now()) +
                           "/";
   boost::filesystem::create_directories(save_path);
 

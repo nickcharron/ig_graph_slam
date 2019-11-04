@@ -12,17 +12,17 @@ imu_topic: ""
                                    # NOTE: rpy depends on mounting position. Check in void ICPScanMatcher::loadIMUMessage()
                                    # For IG: +x = +pitch, +y = -roll, +z = -yaw
 # odom_topic: "/odometry/filtered_odom"
-odom_topic: "/ig/loam/lidar_odom"
-odom_frame: "odom"
+odom_topic: "/odometry/ground_truth"
+odom_frame: "world"
 init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
 
 lidar_frame_loc: "hvlp_link"
 lidar_frame_map: "vvlp_link"
-bag_file_path: "/home/nick/bag_files/ig_scans/2019_02_13_Structures_Lab/ig_scan_2019-02-13-19-44-24-loam-short1.bag"
-use_prev_poses: true             # if you want to use pre-calculated pose results and just rebuild the maps, set to true
-prev_poses_path: "/home/nick/results/ig_maps/ig_graph_slam/ig_scan_2019-02-13-19-44-24-StructuresLab/2019_7_5_11_30_41/2019_7_5_11_31_28_opt_traj.txt"
+bag_file_path: "/home/nick/bag_files/ig_simulation/2019-09-24-11-34-26_IG_SLAM_SIM_elevator.bag"
+use_prev_poses: false             # if you want to use pre-calculated pose results and just rebuild the maps, set to true
+prev_poses_path: "/home/nick/mapping/2019_11_3_17_40_10/2019_11_3_17_41_2_opt_traj.txt"
 extrinsics_filename: "extrinsics_2018_12_20.json"
 
   # For Moose:
@@ -47,7 +47,7 @@ z_upper_threshold: 15
 z_lower_threshold: -1
 
 # Voxel Grid Filter (input clouds):
-downsample_input: false
+downsample_input: true
 input_downsample_size: 0.2
 
 # Radius outlier removal filter (input clouds)
@@ -83,7 +83,7 @@ z_lower_threshold_map: -4
 # ------------------------------------------------------------------------------
 
 # Graph Parameters:
-k_nearest_neighbours: 5             # maximum number of nearest neighbours for graph links
+k_nearest_neighbours: 3             # maximum number of nearest neighbours for graph links
 trajectory_sampling_distance: 0.25  # Minimum distance in m at which we should take new scans for localization
 map_sampling_distance: 0.001         # Minimum distance in m at which we should take new scans for mapping
 trajectory_rotation_change: 20      # Minimum change in rotation in Deg at which we should take new scans for localization

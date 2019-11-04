@@ -20,7 +20,7 @@ const uint32_t EPOCH_OFFSET = 315964800;
 const uint32_t LEAP_SECONDS = 18;
 
 inline std::string
-convertTimeToDate(std::chrono::system_clock::time_point time_) {
+ConvertTimeToDate(std::chrono::system_clock::time_point time_) {
   using namespace std;
   using namespace std::chrono;
   system_clock::duration tp = time_.time_since_epoch();
@@ -48,14 +48,14 @@ inline void ecefPointFromLLH(const double llh[3], double ecef[3]) {
   ecef[2] = Z;
 }
 
-inline TimePoint rosTimeToChrono(const std_msgs::Header &hdr) {
+inline TimePoint RosTimeToChrono(const std_msgs::Header &hdr) {
   std::chrono::seconds secs(hdr.stamp.sec);
   std::chrono::nanoseconds nsecs(hdr.stamp.nsec);
   auto dur = secs + nsecs;
   return TimePoint(dur);
 }
 
-inline ros::Time chronoToRosTime(const TimePoint &time_point) {
+inline ros::Time ChronoToRosTime(const TimePoint &time_point) {
   uint32_t seconds, nanoseconds;
   seconds = std::round(time_point.time_since_epoch().count()/1000000000);
   double tmp = time_point.time_since_epoch().count() -

@@ -20,7 +20,7 @@ using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;
 
 inline void outputTimePoint(const TimePoint t, const std::string output_text) {
-  LOG_INFO("%s %f", output_text, t.time_since_epoch().count());
+  std::cout << output_text << t.time_since_epoch().count() << "\n";
 }
 
 inline void

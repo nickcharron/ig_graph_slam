@@ -87,7 +87,7 @@ void ROSBag::loadGPSDataFromNavSatFix(
     boost::shared_ptr<sensor_msgs::NavSatFix> gps_msg) {
   try {
     // get rpy from imu container:
-    TimePoint imu_msg_time = rosTimeToChrono(gps_msg->header);
+    TimePoint imu_msg_time = RosTimeToChrono(gps_msg->header);
     // std::cout << "TimePoint" << imu_msg_time.time_since_epoch().count()<<
     // std::endl;
     auto rpy_msg =
@@ -113,7 +113,7 @@ void ROSBag::loadGPSDataFromNavSatFix(
       this->T_ECEF_MAP = gpsToEigen(gps_measurement, false);
     }
     this->gps_container.emplace(
-        rosTimeToChrono(gps_msg->header), 1,
+        RosTimeToChrono(gps_msg->header), 1,
         std::make_pair(gps_measurement, gps_stdev)); // (Vector6, Vector6)
   } catch (const std::out_of_range &e) {
     LOG_INFO("No IMU orientation for time of gps measurement, may happen at "
@@ -149,7 +149,7 @@ void ROSBag::loadOdomDataFromNavMsgsOdometry(
 
   // Add to measurement container
   this->odom_container.emplace(
-      rosTimeToChrono(odom_msg->header), 2,
+      RosTimeToChrono(odom_msg->header), 2,
       std::make_pair(T_MAP_LIDAR, odom_stdev)); // (Mat4, Vec6)
 }
 
@@ -174,7 +174,7 @@ void ROSBag::loadIMUMessage(rosbag::View::iterator &rosbag_iter,
     rpy_stdev << 10, // TODO: get real std dev from imu data
         10, 100, 0, 0, 0;
     this->imu_container.emplace(
-        rosTimeToChrono(imu_msg->header), 1,
+        RosTimeToChrono(imu_msg->header), 1,
         std::make_pair(rpy_measurement, rpy_stdev)); // (Vector3, Vector3)
   }
   if (end_of_bag) {
@@ -314,7 +314,7 @@ void ROSBag::loadPCLPointCloudFromPointCloud2(
   wave::PCLPointCloudPtr temp =
       boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   *temp = *this->cloud_tmp;
-  this->lidar_container.emplace_back(rosTimeToChrono(lidar_msg->header), 0,
+  this->lidar_container.emplace_back(RosTimeToChrono(lidar_msg->header), 0,
                                      temp);
 }
 
@@ -350,7 +350,7 @@ void ROSBag::loadPCLPointCloudFromPointCloud2Map(
   wave::PCLPointCloudPtr temp =
       boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   *temp = *this->cloud_tmp;
-  this->lidar_container_map.emplace_back(rosTimeToChrono(lidar_msg->header), 0,
+  this->lidar_container_map.emplace_back(RosTimeToChrono(lidar_msg->header), 0,
                                          temp);
 }
 

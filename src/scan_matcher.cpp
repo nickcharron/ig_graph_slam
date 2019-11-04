@@ -148,7 +148,7 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
 }
 
 void ScanMatcher::saveParamsFile(std::string save_path_) {
-  std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
+  std::string dateandtime = ConvertTimeToDate(std::chrono::system_clock::now());
   std::string dstFileName = save_path_ + dateandtime + "_params.txt";
   std::string yamlDirStr = __FILE__;
   yamlDirStr.erase(yamlDirStr.end() - 20, yamlDirStr.end());
@@ -159,7 +159,7 @@ void ScanMatcher::saveParamsFile(std::string save_path_) {
 }
 
 void ScanMatcher::saveGraphFile(GTSAMGraph graph_, std::string save_path_) {
-  std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
+  std::string dateandtime = ConvertTimeToDate(std::chrono::system_clock::now());
   std::string graphFileName = save_path_ + dateandtime + "gtsam_graph.dot";
   graph_.print(graphFileName, false);
 }
@@ -649,7 +649,7 @@ void ScanMatcher::outputAggregateMap(int mapping_method, std::string path_) {
     *this->aggregate =
         downSampleFilterIG(this->aggregate, this->params.downsample_cell_size);
   }
-  std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
+  std::string dateandtime = ConvertTimeToDate(std::chrono::system_clock::now());
   std::string mapType;
   switch (mapping_method) {
   case 1:
@@ -670,7 +670,7 @@ void ScanMatcher::outputAggregateMap(int mapping_method, std::string path_) {
 void ScanMatcher::outputOptTraj(std::string path_) {
   // output to text file
   std::ofstream file;
-  std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
+  std::string dateandtime = ConvertTimeToDate(std::chrono::system_clock::now());
   const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision,
                                          Eigen::DontAlignCols, ", ", ", ");
   file.open(path_ + dateandtime + "_opt_traj" + ".txt");
@@ -696,7 +696,7 @@ void ScanMatcher::outputOptTraj(std::string path_) {
 
   for (uint32_t k = 0; k < this->final_poses.size(); k++){
     poses.AddSinglePose(this->final_poses[k].value);
-    ros::Time time_stamp_k = chronoToRosTime(this->final_poses[k].time_point);
+    ros::Time time_stamp_k = beam::ChronoToRosTime(this->final_poses[k].time_point);
     poses.AddSingleTimeStamp(time_stamp_k);
   }
   poses.WriteToJSON(output_dir);
@@ -704,7 +704,7 @@ void ScanMatcher::outputOptTraj(std::string path_) {
 
 void ScanMatcher::outputInitTraj(std::string path_) {
   std::ofstream file;
-  std::string dateandtime = convertTimeToDate(std::chrono::system_clock::now());
+  std::string dateandtime = ConvertTimeToDate(std::chrono::system_clock::now());
   const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision,
                                          Eigen::DontAlignCols, ", ", ", ");
   file.open(path_ + dateandtime + "_init_traj" + ".txt");

@@ -28,6 +28,7 @@
 // libbeam specific headers
 #include <beam_calibration/TfTree.h>
 #include <beam_utils/math.hpp>
+#include <beam_utils/time.hpp>
 
 // IG Graph SLAM headers
 #include "conversions.hpp"
