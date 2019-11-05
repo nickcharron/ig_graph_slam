@@ -1,0 +1,13 @@
+%YAML:1.0
+image_width: 1280
+image_height: 1024
+camera_name: F3_link
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [656.087215199397, -0.724327833563604, 642.215743485640, 0, 658.407464471192, 510.408730765984, 0, 0, 1]
+distortion_model: plumb_bob
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [-0.211355903404838, 0.102673120970893, -0.0000643914883149995, 0.000927661542786687, -0.0248371059276580]

@@ -1,63 +1,47 @@
 #ifndef IG_GRAPH_SLAM_SCAN_MATCHER_HPP
 #define IG_GRAPH_SLAM_SCAN_MATCHER_HPP
 
-// PCL headers and other
+// Basic headers
+#include <boost/filesystem.hpp>
+#include <chrono>
+#include <ctime>
+#include <fstream>
+#include <math.h>
+#include <sstream>
+#include <string>
+#include <unistd.h>
+#include <unsupported/Eigen/MatrixFunctions>
+#include <nlohmann/json.hpp>
+
+// PCL headers
+#include <pcl/io/pcd_io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <unsupported/Eigen/MatrixFunctions>
+
 // WAVE headers
 #include "wave/matching/gicp.hpp"
+#include <wave/containers/measurement.hpp>
+#include <wave/containers/measurement_container.hpp>
 #include <wave/matching/icp.hpp>
 #include <wave/matching/pointcloud_display.hpp>
-#include <wave/utils/log.hpp>
+
+// libbeam specific headers
+#include <beam_calibration/TfTree.h>
+#include <beam_utils/math.hpp>
+#include <beam_utils/time.hpp>
 
 // IG Graph SLAM headers
+#include "conversions.hpp"
 #include "gtsam_graph.hpp"
-#include "kdtreetype.hpp"
 #include "load_ros_data.hpp"
+#include "measurementtypes.hpp"
+#include "pcl_filters.hpp"
+#include "slam_params.hpp"
+#include "utils.hpp"
 
 // Declare some templates:
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;
-
-/***
- * Params loaded from the ig_graph_slam_config file
- */
-struct Params {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  std::string bag_file_path, lidar_topic_loc, lidar_topic_map, gps_topic,
-      prev_poses_path, imu_topic, odom_topic, gps_type, matcher_type,
-      output_path;
-  int knn, set_min_neighbours, iterations, init_method, int_map_size,
-      downsample_output_method;
-  float trajectory_sampling_dist, map_sampling_dist, distance_match_limit,
-      distance_match_min, input_downsample_size, downsample_cell_size,
-      set_search_radius, x_lower_threshold, x_upper_threshold,
-      y_lower_threshold, y_upper_threshold, z_lower_threshold,
-      z_upper_threshold, x_lower_threshold_map, x_upper_threshold_map,
-      y_lower_threshold_map, y_upper_threshold_map, z_lower_threshold_map,
-      z_upper_threshold_map, loop_max_distance, loop_min_travel_distance;
-
-  bool ground_segment, combine_scans, use_gps, visualize, downsample_input,
-      step_matches, optimize_gps_lidar, fixed_scan_transform_cov,
-      use_prev_poses, use_rad_filter, use_pass_through_filter,
-      use_pass_through_filter_map;
-  Eigen::Affine3d T_LIDAR_GPS, T_LMAP_LLOC;
-  wave::MatX scan_transform_cov;
-  std::vector<std::string> topics;
-};
-
-/***
- * Fill params from YAML file into params object
- * @param params
- */
-void fillparams(Params &params);
-
-void outputParams(boost::shared_ptr<Params> p_);
-
-std::string getMatcherConfig(std::string matcher);
-
-bool validateParams(boost::shared_ptr<Params> p_);
 
 struct ROSBag;
 
@@ -78,7 +62,12 @@ struct ScanMatcher {
     this->aggregate = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     this->cloud_target = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     this->pcl_pc2 = boost::make_shared<pcl::PCLPointCloud2>();
-    // this->total_matches = 0;
+
+    // Get extrinsics path and load
+    std::string extrinsicsDir = __FILE__;
+    extrinsicsDir.erase(extrinsicsDir.end() - 38, extrinsicsDir.end());
+    extrinsicsDir += "calibrations/" + this->params.extrinsics_filename;
+    this->Tree.LoadJSON(extrinsicsDir);
   }
   ~ScanMatcher() {
     if (this->params.visualize) {
@@ -87,10 +76,53 @@ struct ScanMatcher {
   }
 
   /***
-   * Creates pose scan map with GPS data
+   * graph builder and optimizer main function
+   * @return
+   */
+  GTSAMGraph buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data);
+
+  /***
+   * Takes the config file for ig_graph_slam and copies it to the output
+   * directory to have a copy of the parameters used for each map
+   * @param save_path_ output directory
+   */
+  void saveParamsFile(std::string save_path_);
+
+  /***
+   * Plots the gtsam graph and saves it as a .dot file in the output directory
+   * @param save_path_ output directory
+   * @param graph_ gtsam graph object
+   */
+  void saveGraphFile(GTSAMGraph graph_, std::string save_path_);
+
+  /***
+   * Takes new scan if the distance between the scans are more than dist, or if
+   * the change in rotation is more than rot
+   * @param p1 pose of first scan
+   * @param p2 pose of second scan
+   * @param dist minimum distance between scans
+   * @param rot minimum rotation change between scans (in deg)
+   * @return
+   */
+  bool takeNewScan(const Eigen::Affine3d &p1, const Eigen::Affine3d &p2,
+                   const double &dist, const double &rot);
+
+  /***
+   * Load poses from a previous graph
+   */
+  void loadPrevPoses();
+
+  /***
+   * Creates pose scan map based on specified initialization method
    * @param ros_data
    */
   void createPoseScanMap(boost::shared_ptr<ROSBag> ros_data);
+
+  /***
+   * Creates pose scan map with inputted poses data
+   * @param ros_data
+   */
+  void createPoseScanMapFromPoses(boost::shared_ptr<ROSBag> ros_data);
 
   /***
    * Find Adjacent scans for all scans. Adjacent scans will only consist of
@@ -114,7 +146,7 @@ struct ScanMatcher {
    * @return
    */
   virtual bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj,
-                          wave::Mat6 &info, bool &correction_norm_valid,
+                          beam::Mat6 &info, bool &correction_norm_valid,
                           boost::shared_ptr<ROSBag> ros_data) = 0;
 
   /***
@@ -124,33 +156,45 @@ struct ScanMatcher {
    * pointcloud.
    * @param graph
    * @param ros_data
+   * @param mapping_method
    */
-  void createAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data,
+  void createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
                           int mapping_method);
 
   /***
    * Outputs the aggregate pointcloud map as a pcd file
-   * @param graph
+   * @param mapping_method
+   * @param path_
    */
-  void outputAggregateMap(GTSAMGraph &graph, boost::shared_ptr<ROSBag> ros_data,
-                          int mapping_method, std::string path_);
+  void outputAggregateMap(int mapping_method, std::string path_);
+
+  /***
+   * Outputs the optimized trajectory into a text file along with timestamps
+   * @param path_
+   */
+  void outputOptTraj(std::string path_);
+
+  /***
+   * Outputs the initial trajectory into a text file along with timestamps
+   * @param path_
+   */
+  void outputInitTraj(std::string path_);
 
   void displayPointCloud(
       wave::PCLPointCloudPtr cloud_display, int color,
       const Eigen::Affine3d &transform = Eigen::Affine3d::Identity());
 
   int total_matches;
-  // Eigen::Affine3d T_ECEF_MAP; // TODO: is this needed?
   Params params;
   wave::PointCloudDisplay init_display;
-  InitPose<double> init_pose; // see kdtreetype.hpp
   std::vector<int> pose_scan_map;
+  std::vector<wave::Measurement<Eigen::Affine3d, uint>> init_pose;
   std::vector<wave::Measurement<Eigen::Affine3d, uint>> final_poses;
   boost::shared_ptr<std::vector<std::vector<uint64_t>>> adjacency;
   boost::shared_ptr<std::vector<std::vector<uint64_t>>> loops;
-  pcl::PCLPointCloud2::Ptr
-      pcl_pc2; // used an intermediate when converting from ROS messages
+  pcl::PCLPointCloud2::Ptr pcl_pc2;
   wave::PCLPointCloudPtr cloud_temp_display, aggregate, cloud_target;
+  beam_calibration::TfTree Tree;
 };
 
 class ICPScanMatcher : public ScanMatcher {
@@ -159,14 +203,13 @@ public:
   ~ICPScanMatcher() {}
 
   bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj,
-                  wave::Mat6 &info, bool &correction_norm_valid,
+                  beam::Mat6 &info, bool &correction_norm_valid,
                   boost::shared_ptr<ROSBag> ros_data);
 
   wave::ICPMatcher matcher;
 
   // Declared here to avoid multiple allocation/deallocations
-  wave::PCLPointCloudPtr cloud_ref,
-      cloud_tgt; // used as intermediates to apply filters/matches
+  wave::PCLPointCloudPtr cloud_ref, cloud_tgt;
 };
 
 class GICPScanMatcher : public ScanMatcher {
@@ -175,14 +218,14 @@ public:
   ~GICPScanMatcher() {}
 
   bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj,
-                  wave::Mat6 &info, bool &correction_norm_valid,
+                  beam::Mat6 &info, bool &correction_norm_valid,
                   boost::shared_ptr<ROSBag> ros_data);
 
   wave::GICPMatcher matcher;
 
   // Declared here to avoid multiple allocation/deallocations
-  wave::PCLPointCloudPtr cloud_ref,
-      cloud_tgt; // used as intermediates to apply filters/matches
+  wave::PCLPointCloudPtr cloud_ref, cloud_tgt; // used as intermediates to
+                                               // apply filters/matches
 };
 
 #endif // IG_GRAPH_SLAM_SCAN_MATCHER_HPP

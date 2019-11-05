@@ -4,37 +4,26 @@
   # For IG:
 gps_type: "NavSatFix" # For IG use "NavSatFix", for Moose use "INSPVAX"
 gps_topic: ""
+gps_frame: "GPS_link"
 # gps_topic: "/piksi/navsatfix_best_fix"
 # gps_topic: "/gps/filtered"
 imu_topic: ""
 #imu_topic: "/imu/rpy/filtered" # imu topic used to fill gps_container rotation
                                    # NOTE: rpy depends on mounting position. Check in void ICPScanMatcher::loadIMUMessage()
                                    # For IG: +x = +pitch, +y = -roll, +z = -yaw
-odom_topic: "/odometry/filtered_odom"
-#odom_topic: "/ig/loam/lidar_odom"
+# odom_topic: "/odometry/filtered_odom"
+odom_topic: "/odometry/ground_truth"
+odom_frame: "world"
 init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
-#bag_file_path: "/home/robot/OPG_DEMO_JAN2019/bags/ig_scan_loam_OPG_JAN2019.bag"
-bag_file_path: "/home/robot/bag_files/ig_scans/2019-01-18-16-29-27-B-short3.bag"
-# TODO: Implement this:
-use_prev_poses: false             # if you want to use pre-calculated pose results and just rebuild the maps, set to true
-prev_poses_path: "/home/robot/results/ig_maps/ig_graph_slam/tmp_maps/mapX/poses.txt"
 
-T_LIDAR_GPS: # this is used to transform the lidar to the map frame for pose initialization
-  rows: 4
-  cols: 4
-  data: [ 1.00000,   0.00000,   0.00000,  -0.16450,
-          0.00000,   1.00000,   0.00000,   0.16100,
-          0.00000,   0.00000,   1.00000,   0.22860,
-          0.00000,   0.00000,   0.00000,   1.00000]
-T_LMAP_LLOC: # tranformation from localization lidar to map lidar
-  rows: 4
-  cols: 4
-  data: [  0.00000,    0.00000,   1.00000,   -0.12000,
-           0.00000,   -1.00000,   0.00000,    0.00000,
-           1.00000,    0.00000,   0.00000,    0.13500,
-           0.00000,    0.00000,   0.00000,    1.00000 ]
+lidar_frame_loc: "hvlp_link"
+lidar_frame_map: "vvlp_link"
+bag_file_path: "/home/nick/bag_files/ig_simulation/2019-09-24-11-34-26_IG_SLAM_SIM_elevator.bag"
+use_prev_poses: false             # if you want to use pre-calculated pose results and just rebuild the maps, set to true
+prev_poses_path: "/home/nick/mapping/2019_11_3_17_40_10/2019_11_3_17_41_2_opt_traj.txt"
+extrinsics_filename: "extrinsics_2018_12_20.json"
 
   # For Moose:
 # gps_type: "INSPVAX" # For IG use "NavSatFix", for Moose use "INSPVAX"
@@ -45,20 +34,6 @@ T_LMAP_LLOC: # tranformation from localization lidar to map lidar
 # lidar_topic_loc: "/velodyne_points"
 # lidar_topic_map: "/velodyne_points"
 # bag_file_path: "/home/nick/bag_files/moose/Colby-Drive-2018-03-07-15-All_processed.bag"
-# T_LIDAR_GPS:
-#   rows: 4
-#   cols: 4
-#   data: [0.01509071528209, 0.999682453252146, 0.020180757469545, -1.13100671456291,
-#          -0.999885273300259, 0.0150612284003753, 0.00161233877866006, 0.0537695687956896,
-#          0.00130787978818302, -0.0202027735432893, 0.999795047693085, -1.21218592853368,
-#          -0, 0, -0, 1]
-# T_LMAP_LLOC: # tranformation from localization lidar to map lidar
-#   rows: 4
-#   cols: 4
-#   data: [  1.00000,    0.00000,   0.00000,    0.0,
-#            0.00000,    1.00000,   0.00000,    0.0,
-#            0.00000,    0.00000,   1.00000,    0.0,
-#            0.00000,    0.00000,   0.00000,    1.0 ]
 # ------------------------------------------------------------------------------
 # Filters:
 # ------------------------------------------------------------------------------
@@ -86,33 +61,38 @@ ground_segment: false               # Whether to remove the ground points. This
                                     # reduce elevation accuracy of final map
 
 # Voxel filtering
-downsample_output_method: 3       # [1] downsample each scan before aggregating + each intermediate map
+downsample_output_method: 4       # [1] downsample each scan before aggregating + each intermediate map
                                   # [2] downsample only intermediate maps (default)
-                                  # [3] do not down sample output map
+                                  # [3] downsample final map only
+                                  # [4] do not down sample output map
 downsample_cell_size: 0.05        # Voxel cell length for final downsampling of aggregate map
-int_map_size: 15                  # Scans are combined into intermediate maps
+int_map_size: 5                  # Scans are combined into intermediate maps
                                   # each intermediate map is filtered once. Default: 15
 
 # PassThrough Filter for the Map scans: set min and max in each direction for input cloud
 use_pass_through_filter_map: true
-x_upper_threshold_map: 15
-x_lower_threshold_map: -15
-y_upper_threshold_map: 20
-y_lower_threshold_map: -20
-z_upper_threshold_map: 5
-z_lower_threshold_map: -5
+x_upper_threshold_map: 20
+x_lower_threshold_map: -20
+y_upper_threshold_map: 10
+y_lower_threshold_map: -10
+z_upper_threshold_map: 4
+z_lower_threshold_map: -4
 
 # ------------------------------------------------------------------------------
 # Mapping Parameters:
 # ------------------------------------------------------------------------------
 
 # Graph Parameters:
-k_nearest_neighbours: 2            # maximum number of nearest neighbours for graph links
-trajectory_sampling_distance: 4   # Minimum distance in m at which we should take new scans for localization
-map_sampling_distance: 1         # Minimum distance in m at which we should take new scans for mapping
-distance_match_min: 0               # specify minimum and maximum distance between scans to
-distance_match_limit: 10.0          # use for scan registration
-loop_max_distance: 4                # how close do two poses need to be to apply a loop closure constraint
+k_nearest_neighbours: 3             # maximum number of nearest neighbours for graph links
+trajectory_sampling_distance: 0.25  # Minimum distance in m at which we should take new scans for localization
+map_sampling_distance: 0.001         # Minimum distance in m at which we should take new scans for mapping
+trajectory_rotation_change: 20      # Minimum change in rotation in Deg at which we should take new scans for localization
+map_rotation_change: 5             # Minimum change in rotation in Deg at which we should take new scans for mapping
+distance_match_min: 1.0             # specify minimum and maximum distance between scans to
+distance_match_limit: 10.0           # use for scan registration
+rotation_match_min: 10              # specify minimum and maximum rotation (in deg) between scans to
+rotation_match_limit: 40            # use for scan registration. NOTE: this is not applied to loop closures
+loop_max_distance: 5                # how close do two poses need to be to apply a loop closure constraint
                                     # set to 0 to stop loop closure
 loop_min_travel_distance: 10        # how far does the robot need to travel before looking for loop closure
 iterations: 1                       # How many times to update initial estimates and redo matches
@@ -139,5 +119,4 @@ visualize: false                     # Whether to visualize matches as they happ
 step_matches: false
 combine_scans: false     # combine scans  from both lidar for scan registrations. Default false
 matcher_type: "icp"    # icp: point to point icp in PCL, loam: loam registration, gicp: wave::gicp
-#output_path: "/home/robot/results/ig_maps/ig_graph_slam/tmp_maps/"
-output_path: "/home/robot/OPG_DEMO_JAN2019/maps"
+output_path: "/home/nick/results/ig_maps/ig_graph_slam/tmp_maps/"

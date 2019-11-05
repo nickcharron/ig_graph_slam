@@ -6,8 +6,8 @@
 #include <chrono>
 #include <cmath>
 #include <ctime>
-#include <wave/utils/math.hpp>
-#include <wave_spatial_utils/world_frame_conversions.hpp>
+#include "world_frame_conversions.hpp"
+#include <unsupported/Eigen/MatrixFunctions>
 
 #define DEG_TO_RAD 0.0174532925199433
 #define RAD_TO_DEG 57.2957795130823209
@@ -20,7 +20,7 @@ const uint32_t EPOCH_OFFSET = 315964800;
 const uint32_t LEAP_SECONDS = 18;
 
 inline std::string
-convertTimeToDate(std::chrono::system_clock::time_point time_) {
+ConvertTimeToDate(std::chrono::system_clock::time_point time_) {
   using namespace std;
   using namespace std::chrono;
   system_clock::duration tp = time_.time_since_epoch();
@@ -48,11 +48,21 @@ inline void ecefPointFromLLH(const double llh[3], double ecef[3]) {
   ecef[2] = Z;
 }
 
-inline TimePoint rosTimeToChrono(const std_msgs::Header &hdr) {
+inline TimePoint RosTimeToChrono(const std_msgs::Header &hdr) {
   std::chrono::seconds secs(hdr.stamp.sec);
   std::chrono::nanoseconds nsecs(hdr.stamp.nsec);
   auto dur = secs + nsecs;
   return TimePoint(dur);
+}
+
+inline ros::Time ChronoToRosTime(const TimePoint &time_point) {
+  uint32_t seconds, nanoseconds;
+  seconds = std::round(time_point.time_since_epoch().count()/1000000000);
+  double tmp = time_point.time_since_epoch().count() -
+               std::round(time_point.time_since_epoch().count());
+  nanoseconds = std::round(tmp*1000000000);
+  ros::Time ros_time(seconds, nanoseconds);
+  return ros_time;
 }
 
 inline Eigen::AngleAxisd enu_to_ecef_rotation(const double *lla) {
@@ -80,6 +90,36 @@ inline TimePoint gpsTimeToChrono(const uint32_t gps_week,
   std::chrono::nanoseconds Nsecs(nsecs);
   auto dur = Secs + Nsecs;
   return TimePoint(dur);
+}
+
+inline Eigen::Vector3d invSkewTransform(const Eigen::Matrix3d M_){
+  Eigen::Vector3d V_;
+  V_(0) = M_(2,1);
+  V_(1) = M_(0,2);
+  V_(2) = M_(1,0);
+  return V_;
+}
+
+inline Eigen::Matrix3d skewTransform(const Eigen::Vector3d V_){
+  Eigen::Matrix3d M_;
+  M_(0,0) = 0;
+  M_(0,1) = -V_(2,0);
+  M_(0,2) = V_(1,0);
+  M_(1,0) = V_(2,0);
+  M_(1,1) = 0;
+  M_(1,2) = -V_(0,0);
+  M_(2,0) = -V_(1,0);
+  M_(2,1) = V_(0,0);
+  M_(2,2) = 0;
+  return M_;
+}
+
+inline Eigen::Vector3d RToLieAlgebra(const Eigen::Matrix3d R){
+  return invSkewTransform(R.log());
+}
+
+inline Eigen::Matrix3d LieAlgebraToR(const Eigen::Vector3d eps){
+  return skewTransform(eps).exp();
 }
 
 #endif // IG_GRAPH_SLAM_CONVERSIONS_HPP

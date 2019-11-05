@@ -1,0 +1,13 @@
+%YAML:1.0
+image_width: 2048
+image_height: 1536
+camera_name: F1_link
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [2338.485520924695, 0,  1002.8381839138167, 0, 2333.0927287230647, 784.1498440053573, 0, 0, 1]
+distortion_model: radtan
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [-0.2294924671994032, 0.18008566892263364, -0.0005326294604360527,-0.0004378797791316729, 0]

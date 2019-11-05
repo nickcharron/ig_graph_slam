@@ -10,7 +10,8 @@
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/dataset.h>
 
-#include <wave/utils/math.hpp>
+// libbeam specific headers
+#include <beam_utils/math.hpp>
 
 class GTSAMGraph {
 public:
@@ -21,7 +22,7 @@ public:
 
   // add a factor between to poses
   void addFactor(uint64_t from, uint64_t to, const Eigen::Affine3d &transform,
-                 const wave::Mat6 &info);
+                 const beam::Mat6 &info);
 
   void addInitialPose(const Eigen::Affine3d &pose, gtsam::Key id);
   void fixFirstPose();
