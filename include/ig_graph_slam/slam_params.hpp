@@ -27,9 +27,9 @@ struct Params {
 
   /***
    * Params constructor. Fills all variables in Params using config file and
-   * beam parser
+   * wave parser
    */
-  Params();
+  Params(std::string &config_file_path);
 
   /***
    * Output params to terminal
@@ -52,7 +52,7 @@ struct Params {
   std::string bag_file_path, lidar_topic_loc, lidar_topic_map, gps_topic,
       lidar_frame_loc, lidar_frame_map, gps_frame, prev_poses_path, imu_topic,
       odom_topic, gps_type, matcher_type, output_path, config_file_path,
-      extrinsics_filename, odom_frame;
+      extrinsics_filename, odom_frame, pose_output_override;
   int knn, set_min_neighbours, iterations, init_method, int_map_size,
       downsample_output_method;
   float trajectory_sampling_dist, map_sampling_dist, trajectory_rotation_change,

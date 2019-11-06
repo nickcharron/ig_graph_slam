@@ -1,6 +1,6 @@
 #include "slam_params.hpp"
 
-Params::Params() {
+Params::Params(std::string &config_file_path) {
   wave::ConfigParser parser;
   parser.addParam("gps_type", &(this->gps_type));
   parser.addParam("gps_topic", &(this->gps_topic));
@@ -69,17 +69,26 @@ Params::Params() {
   parser.addParam("output_path", &(this->output_path));
 
   // get config file path
-  std::string yamlDirStr = __FILE__;
-  yamlDirStr.erase(yamlDirStr.end() - 19, yamlDirStr.end());
-  yamlDirStr += "config/ig_graph_slam_config.yaml";
-  this->config_file_path = yamlDirStr;
+  std::string yamlDirStr;
+  if(config_file_path == "") {
+    yamlDirStr = __FILE__;
+    yamlDirStr.erase(yamlDirStr.end() - 19, yamlDirStr.end());
+    yamlDirStr += "config/ig_graph_slam_config.yaml";
+    this->config_file_path = yamlDirStr;
+  } else {
+    yamlDirStr = config_file_path;
+    this->config_file_path = yamlDirStr;
+  }
+  LOG_INFO("Loading config file: %s", yamlDirStr.c_str());
   std::ifstream fileName(yamlDirStr.c_str());
 
   if (fileName.good()) {
     parser.load(yamlDirStr);
   } else {
-    LOG_ERROR("ig_graph_slam.yaml not found in config folder");
+    LOG_ERROR("Config file not found.");
   }
+
+  LOG_INFO("Input Bag File: %s", this->bag_file_path.c_str());
 
   this->topics.push_back(this->lidar_topic_loc);
   this->topics.push_back(this->lidar_topic_map);

@@ -52,9 +52,9 @@ struct ScanMatcher {
    */
   //-------------------------------------------------------------------------
 
-  ScanMatcher(Params &p_) : params(p_), init_display("Graph") {
+  ScanMatcher(boost::shared_ptr<Params> &p_) : params(p_), init_display("Graph") {
     // Visualization:
-    if (this->params.visualize) {
+    if (this->params->visualize) {
       this->init_display.startSpin();
     }
     this->cloud_temp_display =
@@ -66,11 +66,11 @@ struct ScanMatcher {
     // Get extrinsics path and load
     std::string extrinsicsDir = __FILE__;
     extrinsicsDir.erase(extrinsicsDir.end() - 38, extrinsicsDir.end());
-    extrinsicsDir += "calibrations/" + this->params.extrinsics_filename;
+    extrinsicsDir += "calibrations/" + this->params->extrinsics_filename;
     this->Tree.LoadJSON(extrinsicsDir);
   }
   ~ScanMatcher() {
-    if (this->params.visualize) {
+    if (this->params->visualize) {
       this->init_display.stopSpin();
     }
   }
@@ -185,7 +185,7 @@ struct ScanMatcher {
       const Eigen::Affine3d &transform = Eigen::Affine3d::Identity());
 
   int total_matches;
-  Params params;
+  boost::shared_ptr<Params> params;
   wave::PointCloudDisplay init_display;
   std::vector<int> pose_scan_map;
   std::vector<wave::Measurement<Eigen::Affine3d, uint>> init_pose;
@@ -199,7 +199,7 @@ struct ScanMatcher {
 
 class ICPScanMatcher : public ScanMatcher {
 public:
-  ICPScanMatcher(Params &p_, std::string matcherConfigPath);
+  ICPScanMatcher(boost::shared_ptr<Params> &p_, std::string matcherConfigPath);
   ~ICPScanMatcher() {}
 
   bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj,
@@ -214,7 +214,7 @@ public:
 
 class GICPScanMatcher : public ScanMatcher {
 public:
-  GICPScanMatcher(Params &p_, std::string matcherConfigPath);
+  GICPScanMatcher(boost::shared_ptr<Params> &p_, std::string matcherConfigPath);
   ~GICPScanMatcher() {}
 
   bool matchScans(uint64_t i, uint64_t j, Eigen::Affine3d &L_Li_Lj,
