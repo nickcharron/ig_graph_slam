@@ -149,7 +149,7 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
 
 void ScanMatcher::saveParamsFile(std::string save_path_) {
   std::string dateandtime = ConvertTimeToDate(std::chrono::system_clock::now());
-  std::string dstFileName = save_path_ + dateandtime + "_params->txt";
+  std::string dstFileName = save_path_ + dateandtime + "_params.txt";
   std::string yamlDirStr = __FILE__;
   yamlDirStr.erase(yamlDirStr.end() - 20, yamlDirStr.end());
   yamlDirStr += "config/ig_graph_slam_config.yaml";

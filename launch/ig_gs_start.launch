@@ -1,4 +1,7 @@
 <launch>
-  <node pkg="ig_graph_slam" type="joy_mapping_controller.py" name="joy_mapping_control_mapping" output="screen"/>
+  <!-- Run loam -->
+  <include file="$(find loam_velodyne)/launch/ig_loam.launch" />
 
+  <!-- Start joystick mapping controller -->
+  <node pkg="ig_graph_slam" type="joy_mapping_controller.py" name="joy_mapping_control_mapping" output="screen"/>
 </launch>

@@ -34,7 +34,7 @@ def check_buttons():
         while buttons_array[0] == 1:    # Wait for button to be released
             pass
         print "START button selected."
-        os.system('rosrun ig_graph_slam collect_loam_gs_bag.sh &')
+        os.system('rosrun ig_graph_slam collect_loam_gs_bag_live.sh &')
 
     if buttons_array[1] == 1:
         while buttons_array[1] == 1:    # Wait for button to be released
