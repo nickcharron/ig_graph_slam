@@ -7,10 +7,10 @@ from std_msgs.msg import Bool
 
 # Initialize variables
 buttons_array = [0, 0]
-collect_bag_btn_num = 7
-collect_bag_btn_sym = "START"
-stop_bag_btn_num = 6
-stop_bag_btn_sym = "BACK"
+collect_bag_btn_num = 4
+collect_bag_btn_sym = "L1"
+stop_bag_btn_num = 5
+stop_bag_btn_sym = "R1"
 
 def joy_CB(joy_msg):
     global buttons_array
@@ -34,7 +34,7 @@ def check_buttons():
         while buttons_array[0] == 1:    # Wait for button to be released
             pass
         print "START button selected."
-        os.system('rosrun ig_graph_slam collect_loam_gs_bag.sh &')
+        os.system('rosrun ig_graph_slam collect_loam_gs_bag_live.sh &')
 
     if buttons_array[1] == 1:
         while buttons_array[1] == 1:    # Wait for button to be released

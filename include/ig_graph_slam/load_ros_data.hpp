@@ -52,7 +52,7 @@ struct ROSBag {
    * ROSBag parent class
    */
 
-  ROSBag(Params &p_);
+  ROSBag(boost::shared_ptr<Params> &p_);
   //~ROSBag();
 
   /***
@@ -163,7 +163,7 @@ struct ROSBag {
   wave::PCLPointCloudPtr cloud_tmp;
 
   // Other required variables
-  Params params;
+  boost::shared_ptr<Params> params;
   bool have_GPS_datum;
   Eigen::Affine3d T_ECEF_MAP; // this is in both ROSBag and ScanMatcher structs
 };

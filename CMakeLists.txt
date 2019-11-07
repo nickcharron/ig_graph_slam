@@ -49,7 +49,7 @@ LINK_DIRECTORIES(
         /opt/ros/kinetic/lib
 )
 
-ADD_EXECUTABLE(${PROJECT_NAME}_node
+ADD_EXECUTABLE(${PROJECT_NAME}_main
         src/main.cpp
         src/load_ros_data.cpp
         src/gtsam_graph.cpp
@@ -58,7 +58,7 @@ ADD_EXECUTABLE(${PROJECT_NAME}_node
         src/world_frame_conversions.cpp
         )
 
-TARGET_LINK_LIBRARIES(${PROJECT_NAME}_node
+TARGET_LINK_LIBRARIES(${PROJECT_NAME}_main
         wave::wave
         beam::utils
         beam::calibration
