@@ -20,6 +20,7 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
     // Iterate to update initial estimates and redo matches
     LOG_INFO("Iteration No. %d of %d.", outer_loops + 1,
              this->params->iterations);
+
     cnt_match = 0;
     graph.clear();
     graph.result.clear();
@@ -48,11 +49,11 @@ GTSAMGraph ScanMatcher::buildGTSAMGraph(boost::shared_ptr<ROSBag> ros_data) {
         match_success =
             this->matchScans(this->adjacency->at(j).at(iter), j, T_Liter_Lj,
                              info, correction_norm_valid, ros_data);
-
         if (!correction_norm_valid) // WHAT IS THIS??
         {
           continue;
         }
+
         if (match_success) // create factor in graph if scan successful
         {
           beam::Mat6 mgtsam; // Eigen::Matrix<double, 6, 6>
@@ -216,16 +217,36 @@ void ScanMatcher::loadPrevPoses() {
   }
 }
 
+std::vector<wave::Measurement<Eigen::Affine3d, uint>>
+ScanMatcher::loadInitialPoses() {
+  Eigen::Affine3d PoseK;
+  TimePoint timepointk;
+  std::string poses_file = this->params->init_files_path + "poses.json";
+  LOG_INFO("Reading initial poses from %s", poses_file.c_str());
+
+  beam_mapping::Poses poses;
+  poses.LoadFromJSON(poses_file);
+
+  for (uint64_t k = 0; k < poses.poses.size(); k++) {
+    PoseK = poses.poses[k];
+    timepointk = beam::RosTimeToChrono(poses.time_stamps[k]);
+    this->init_pose.emplace_back(timepointk, 0, PoseK);
+    this->pose_scan_map.push_back(k);
+  }
+  LOG_INFO("Loaded a total of %d poses.", pose_scan_map.size());
+  return init_pose;
+}
+
 void ScanMatcher::createPoseScanMap(boost::shared_ptr<ROSBag> ros_data) {
   LOG_INFO("Storing pose scans...");
   // save initial poses of the lidar scans based on GPS data and save
   // iterators corresponding to these scans
   int i = 0;
   Eigen::Affine3d T_ECEF_GPS, T_MAP_LIDAR, T_GPS_LIDAR;
-  T_GPS_LIDAR =
-      this->Tree
-          .GetTransformEigen(this->params->gps_frame, this->params->lidar_frame_loc)
-          .matrix();
+  T_GPS_LIDAR = this->Tree
+                    .GetTransformEigen(this->params->gps_frame,
+                                       this->params->lidar_frame_loc)
+                    .matrix();
   // this ierates through the lidar measurements
   for (uint64_t iter = 0; iter < ros_data->lidar_container.size(); iter++) {
     bool use_next_scan = false;
@@ -426,7 +447,7 @@ void ScanMatcher::createAggregateMap(boost::shared_ptr<ROSBag> ros_data,
     T_MAP_LLOC_k = this->final_poses[k].value;
     T_LMAP_LLOC =
         this->Tree.GetTransformEigen(this->params->lidar_frame_map,
-                                this->params->lidar_frame_loc); // static
+                                     this->params->lidar_frame_loc); // static
     T_MAP_LMAP_k = T_MAP_LLOC_k * T_LMAP_LLOC.inverse();
     int curr_index = this->pose_scan_map.at(k);
     TimePoint curr_pose_time = ros_data->lidar_container[curr_index].time_point;
@@ -686,7 +707,8 @@ void ScanMatcher::outputOptTraj(std::string path_) {
   beam_mapping::Poses poses;
   std::size_t bag_name_start = this->params->bag_file_path.rfind("/") + 1;
   std::size_t bag_name_end = this->params->bag_file_path.rfind(".bag");
-  std::string bag_name = this->params->bag_file_path.substr(bag_name_start, bag_name_end);
+  std::string bag_name =
+      this->params->bag_file_path.substr(bag_name_start, bag_name_end);
   std::string output_dir = path_;
   std::string fixed_frame = this->params->odom_frame;
   poses.SetBagName(bag_name);
@@ -694,13 +716,14 @@ void ScanMatcher::outputOptTraj(std::string path_) {
   poses.SetFixedFrame(fixed_frame);
   poses.SetMovingFrame(this->params->lidar_frame_loc);
 
-  for (uint32_t k = 0; k < this->final_poses.size(); k++){
+  for (uint32_t k = 0; k < this->final_poses.size(); k++) {
     poses.AddSinglePose(this->final_poses[k].value);
-    ros::Time time_stamp_k = beam::ChronoToRosTime(this->final_poses[k].time_point);
+    ros::Time time_stamp_k =
+        beam::ChronoToRosTime(this->final_poses[k].time_point);
     poses.AddSingleTimeStamp(time_stamp_k);
   }
   poses.WriteToJSON(output_dir);
-  if(params->pose_output_override != ""){
+  if (params->pose_output_override != "") {
     poses.WriteToJSON(params->pose_output_override);
   }
 }
@@ -720,7 +743,8 @@ void ScanMatcher::outputInitTraj(std::string path_) {
 }
 
 // ICPScanMatcher (Child Class) Functions
-ICPScanMatcher::ICPScanMatcher(boost::shared_ptr<Params> &p_, std::string matcherConfigPath)
+ICPScanMatcher::ICPScanMatcher(boost::shared_ptr<Params> &p_,
+                               std::string matcherConfigPath)
     : ScanMatcher(p_),
       // segmenter(this->seg_params),
       matcher(wave::ICPMatcherParams(matcherConfigPath)) {
@@ -732,15 +756,18 @@ ICPScanMatcher::ICPScanMatcher(boost::shared_ptr<Params> &p_, std::string matche
 bool ICPScanMatcher::matchScans(
     uint64_t i, uint64_t j, Eigen::Affine3d &T_Li_Lj, beam::Mat6 &info,
     bool &correction_norm_valid,
-    boost::shared_ptr<ROSBag> ros_data) { // j: current, (reference scan)
+    boost::shared_ptr<ROSBag> ros_data) {
+  // j: current, (reference scan)
   // i: adjacent scan (target)
   auto T_MAP_Lj = init_pose.at(j).value; // set initial guess of current scan
   auto T_MAP_Li = init_pose.at(i).value; // set initial guess of adjacent scan
   correction_norm_valid = true;
-  Eigen::Matrix4d T_LLOC_LMAP = this->Tree
-                                    .GetTransformEigen(this->params->lidar_frame_loc,
-                                                  this->params->lidar_frame_map)
-                                    .matrix();
+  Eigen::Matrix4d T_LLOC_LMAP =
+      this->Tree
+          .GetTransformEigen(this->params->lidar_frame_loc,
+                             this->params->lidar_frame_map)
+          .matrix();
+
   // Get scans
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ref2(
       new pcl::PointCloud<pcl::PointXYZ>);
@@ -771,7 +798,6 @@ bool ICPScanMatcher::matchScans(
     *cloud_ref2 += *cloud_ref_tmp;
     *cloud_tgt2 += *cloud_tgt_tmp;
   }
-
   // set current scan as reference scan
   this->matcher.setRef(cloud_ref2);
 
@@ -784,9 +810,9 @@ bool ICPScanMatcher::matchScans(
   // transform adjacent scan (i) to estimated current scan frame using
   // initialized T, then assign to cloud_target
   pcl::transformPointCloud(*cloud_tgt2, *(this->cloud_tgt), T_estLj_Li);
-
   this->matcher.setTarget(this->cloud_tgt);
   this->displayPointCloud(this->cloud_tgt, 1); // red
+
   if (matcher.match()) {
     auto T_estLj_Lj = this->matcher.getResult(); // assign estimated transform
                                                  // to new current position
@@ -820,7 +846,8 @@ bool ICPScanMatcher::matchScans(
 }
 
 // GICPScanMatcher (Child Class) Functions
-GICPScanMatcher::GICPScanMatcher(boost::shared_ptr<Params> &p_, std::string matcherConfigPath)
+GICPScanMatcher::GICPScanMatcher(boost::shared_ptr<Params> &p_,
+                                 std::string matcherConfigPath)
     : ScanMatcher(p_), matcher(wave::GICPMatcherParams(matcherConfigPath)) {
   this->params = p_;
   this->cloud_ref = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
@@ -844,10 +871,11 @@ bool GICPScanMatcher::matchScans(
   *cloud_ref2 = *ros_data->lidar_container[pose_scan_map.at(j)].value;
   *cloud_tgt2 = *ros_data->lidar_container[pose_scan_map.at(i)].value;
   TimePoint timepoint_j, timepoint_i;
-  Eigen::Matrix4d T_LLOC_LMAP = this->Tree
-                                    .GetTransformEigen(this->params->lidar_frame_loc,
-                                                  this->params->lidar_frame_map)
-                                    .matrix();
+  Eigen::Matrix4d T_LLOC_LMAP =
+      this->Tree
+          .GetTransformEigen(this->params->lidar_frame_loc,
+                             this->params->lidar_frame_map)
+          .matrix();
   // Combine scans if specified
   if (this->params->combine_scans) {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ref_tmp(

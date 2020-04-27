@@ -8,10 +8,11 @@ const uint64_t bias_offset = 1000000;
 using Clock = std::chrono::steady_clock;
 using TimePoint = std::chrono::time_point<Clock>;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   std::cout << "-------------------------------------------------------------\n"
             << "**USAGE INFORMATION**\n"
-            << "If using default location to config file ({...}/ig_graph_slam/config/ig_graph_slam_config.yaml): \n"
+            << "If using default location to config file "
+               "({...}/ig_graph_slam/config/ig_graph_slam_config.yaml): \n"
             << "USAGE: " << argv[0] << "\n"
             << "If loading config from another location: \n"
             << "USAGE: " << argv[0] << " /path/to/config/file/name.yaml \n"
@@ -28,11 +29,11 @@ int main(int argc, char* argv[]) {
   boost::shared_ptr<Params> p_;
   if (argc > 3) {
     throw std::invalid_argument{"Too many arguments. Refer to usage above."};
-  } else if(argc == 2){
+  } else if (argc == 2) {
     std::string config_file = argv[1];
     p_ = boost::make_shared<Params>(config_file);
     p_->pose_output_override = "";
-  } else if (argc == 3){
+  } else if (argc == 3) {
     std::string config_file = argv[1];
     std::string output_pose_file = argv[2];
     p_ = boost::make_shared<Params>(config_file);
@@ -75,6 +76,33 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
+  // Check output directory and create
+  std::string save_path = p_->output_path +
+                          ConvertTimeToDate(std::chrono::system_clock::now()) +
+                          "/";
+  boost::filesystem::create_directories(save_path);
+
+  // Save yaml file
+  scan_matcher->saveParamsFile(save_path);
+
+  // for when we are initializing the poses with a poses.json and have
+  // individual scans saved as plys
+  if (p_->init_method == 3) {
+    GTSAMGraph graph;
+    std::vector<wave::Measurement<Eigen::Affine3d, uint>> poses;
+    poses = scan_matcher->loadInitialPoses();
+    load_ros_data->loadPlys(poses); // TODO
+    scan_matcher->outputInitTraj(save_path);
+    graph = scan_matcher->buildGTSAMGraph(load_ros_data);
+    scan_matcher->saveGraphFile(graph, save_path);
+    scan_matcher->createAggregateMap(load_ros_data, 1);
+    scan_matcher->outputAggregateMap(1, save_path);
+    scan_matcher->outputOptTraj(save_path);
+    outputTimePointDiff(time_start, std::chrono::system_clock::now(),
+                        "Total computation time: ");
+    return 0;
+  }
+
   // iterate through bag messages and save imu messages only
   load_ros_data->loadIMUMessagesAll();
 
@@ -86,15 +114,6 @@ int main(int argc, char* argv[]) {
   // Output duration to load all ros messages
   outputTimePointDiff(time_start, std::chrono::system_clock::now(),
                       "Time to load ROS data: ");
-
-  // Check output directory and create
-  std::string save_path = p_->output_path +
-                          ConvertTimeToDate(std::chrono::system_clock::now()) +
-                          "/";
-  boost::filesystem::create_directories(save_path);
-
-  // Save yaml file
-  scan_matcher->saveParamsFile(save_path);
 
   GTSAMGraph graph;
   if (p_->use_prev_poses) {

@@ -9,6 +9,7 @@ Params::Params(std::string &config_file_path) {
   parser.addParam("odom_topic", &(this->odom_topic));
   parser.addParam("odom_frame", &(this->odom_frame));
   parser.addParam("init_method", &(this->init_method));
+  parser.addParam("init_files_path", &(this->init_files_path));
   parser.addParam("lidar_topic_loc", &(this->lidar_topic_loc));
   parser.addParam("lidar_topic_map", &(this->lidar_topic_map));
   parser.addParam("lidar_frame_loc", &(this->lidar_frame_loc));
@@ -70,7 +71,7 @@ Params::Params(std::string &config_file_path) {
 
   // get config file path
   std::string yamlDirStr;
-  if(config_file_path == "") {
+  if (config_file_path == "") {
     yamlDirStr = __FILE__;
     yamlDirStr.erase(yamlDirStr.end() - 19, yamlDirStr.end());
     yamlDirStr += "config/ig_graph_slam_config.yaml";
@@ -109,6 +110,7 @@ void Params::outputParams() {
             << "imu_topic: " << this->imu_topic << "\n"
             << "odom_topic: " << this->odom_topic << "\n"
             << "init_method: " << this->init_method << "\n"
+            << "init_files_path: " << this->init_files_path << "\n"
             << "lidar_topic_loc: " << this->lidar_topic_loc << "\n"
             << "lidar_topic_map: " << this->lidar_topic_map << "\n"
             << "bag_file_path: " << this->bag_file_path << "\n"
@@ -219,7 +221,8 @@ bool Params::validateParams() {
     return 0;
   }
 
-  if (!(this->init_method == 1 || this->init_method == 2)) {
+  if (!(this->init_method == 1 || this->init_method == 2 ||
+        this->init_method == 3)) {
     LOG_ERROR("Invalid initialization method. Enter 1 or 2.");
     return 0;
   }
@@ -243,7 +246,7 @@ bool Params::validateParams() {
     return 0;
   }
 
-  if (!boost::filesystem::exists(this->bag_file_path)) {
+  if (!boost::filesystem::exists(this->bag_file_path) && init_method != 3) {
     LOG_ERROR("Cannot find bag file.");
     return 0;
   }

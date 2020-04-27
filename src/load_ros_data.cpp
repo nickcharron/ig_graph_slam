@@ -1,5 +1,7 @@
 #include "load_ros_data.hpp"
 
+#include <pcl/io/ply_io.h>
+
 #define DEG_TO_RAD 0.0174532925199433
 #define RAD_TO_DEG 57.2957795130823209
 
@@ -195,8 +197,8 @@ void ROSBag::loadIMUMessagesAll() {
   } catch (rosbag::BagException &ex) {
     LOG_ERROR("Bag exception : %s", ex.what());
   }
-  rosbag::View view(bag, rosbag::TopicQuery(this->params->topics), ros::TIME_MIN,
-                    ros::TIME_MAX, true);
+  rosbag::View view(bag, rosbag::TopicQuery(this->params->topics),
+                    ros::TIME_MIN, ros::TIME_MAX, true);
 
   int bag_counter = 0, total_messages = view.size();
   bool end_of_bag = false, start_of_bag = true;
@@ -264,8 +266,8 @@ void ROSBag::loadROSBagMessagesAll() {
   } catch (rosbag::BagException &ex) {
     LOG_ERROR("Bag exception : %s", ex.what());
   }
-  rosbag::View view(bag, rosbag::TopicQuery(this->params->topics), ros::TIME_MIN,
-                    ros::TIME_MAX, true);
+  rosbag::View view(bag, rosbag::TopicQuery(this->params->topics),
+                    ros::TIME_MIN, ros::TIME_MAX, true);
 
   int bag_counter = 0, total_messages = view.size();
   bool end_of_bag = false;
@@ -280,6 +282,45 @@ void ROSBag::loadROSBagMessagesAll() {
     loadROSBagMessage(iter, end_of_bag);
   }
   bag.close();
+}
+
+void ROSBag::loadPlys(
+    const std::vector<wave::Measurement<Eigen::Affine3d, uint>> &poses) {
+  pcl::PLYReader reader;
+  for (int i = 0; i < poses.size(); i++) {
+    std::string file_name =
+        this->params->init_files_path + std::to_string(i + 1) + ".ply";
+    reader.read(file_name, *this->pcl_pc2_tmp);
+    pcl::fromPCLPointCloud2(*this->pcl_pc2_tmp, *this->cloud_tmp);
+    TimePoint timepoint = poses[i].time_point;
+
+    // check this, it might not be implemented correctly! See how CropXY is used
+    if (this->params->use_pass_through_filter) {
+      beam::Vec6 threshold_vec;
+      threshold_vec << this->params->x_lower_threshold,
+          this->params->x_upper_threshold, this->params->y_lower_threshold,
+          this->params->y_upper_threshold, this->params->z_lower_threshold,
+          this->params->z_upper_threshold;
+
+      *this->cloud_tmp = passThroughFilterIG(this->cloud_tmp, threshold_vec);
+    }
+
+    if (this->params->downsample_input) {
+      *this->cloud_tmp = downSampleFilterIG(
+          this->cloud_tmp, this->params->input_downsample_size);
+    }
+
+    if (this->params->use_rad_filter) {
+      *this->cloud_tmp =
+          radFilterIG(this->cloud_tmp, this->params->set_min_neighbours,
+                      this->params->set_search_radius);
+    }
+
+    wave::PCLPointCloudPtr temp =
+        boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    *temp = *this->cloud_tmp;
+    this->lidar_container.emplace_back(timepoint, 0, temp);
+  }
 }
 
 void ROSBag::loadPCLPointCloudFromPointCloud2(
@@ -301,8 +342,8 @@ void ROSBag::loadPCLPointCloudFromPointCloud2(
   // ***Add ground segmenter here?
 
   if (this->params->downsample_input) {
-    *this->cloud_tmp =
-        downSampleFilterIG(this->cloud_tmp, this->params->input_downsample_size);
+    *this->cloud_tmp = downSampleFilterIG(this->cloud_tmp,
+                                          this->params->input_downsample_size);
   }
 
   if (this->params->use_rad_filter) {
@@ -327,8 +368,10 @@ void ROSBag::loadPCLPointCloudFromPointCloud2Map(
   if (this->params->use_pass_through_filter) {
     beam::Vec6 threshold_vec;
     threshold_vec << this->params->x_lower_threshold_map,
-        this->params->x_upper_threshold_map, this->params->y_lower_threshold_map,
-        this->params->y_upper_threshold_map, this->params->z_lower_threshold_map,
+        this->params->x_upper_threshold_map,
+        this->params->y_lower_threshold_map,
+        this->params->y_upper_threshold_map,
+        this->params->z_lower_threshold_map,
         this->params->z_upper_threshold_map;
 
     *this->cloud_tmp = passThroughFilterIG(this->cloud_tmp, threshold_vec);
@@ -337,8 +380,8 @@ void ROSBag::loadPCLPointCloudFromPointCloud2Map(
   // ***Add ground segmenter here?
 
   if (this->params->downsample_input) {
-    *this->cloud_tmp =
-        downSampleFilterIG(this->cloud_tmp, this->params->input_downsample_size);
+    *this->cloud_tmp = downSampleFilterIG(this->cloud_tmp,
+                                          this->params->input_downsample_size);
   }
 
   if (this->params->use_rad_filter) {

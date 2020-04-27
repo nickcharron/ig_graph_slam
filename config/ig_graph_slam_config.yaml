@@ -14,7 +14,11 @@ imu_topic: ""
 # odom_topic: "/odometry/filtered_odom"
 odom_topic: "/odometry/ground_truth"
 odom_frame: "world"
-init_method: 2                    # Init. Graph Poses with (1) GPS/IMU, (2) odometry
+init_method: 3                    # Init. Graph Poses with (1) GPS/IMU,
+                                  # (2) odometry, (3) PLYs + Poses
+# if init_method set to 3, it will initialize poses and load scans from the path
+# below, where it expects 1.ply, ..., N.ply, along with a poses.json
+init_files_path: "/home/nick/results/Facebook/Data/2020_4_25_16_24_52/RawScans/"
 lidar_topic_loc: "/hvlp/velodyne_points"
 lidar_topic_map: "/vvlp/velodyne_points"
 
@@ -119,4 +123,4 @@ visualize: false                     # Whether to visualize matches as they happ
 step_matches: false
 combine_scans: false     # combine scans  from both lidar for scan registrations. Default false
 matcher_type: "icp"    # icp: point to point icp in PCL, loam: loam registration, gicp: wave::gicp
-output_path: "/home/nick/results/ig_maps/ig_graph_slam/tmp_maps/"
+output_path: "/home/nick/results/Facebook/Results/"

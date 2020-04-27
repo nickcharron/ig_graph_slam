@@ -121,6 +121,12 @@ struct ROSBag {
   void loadROSBagMessagesAll();
 
   /***
+   * Load scans from ply files and store in lidar container
+   */
+  void
+  loadPlys(const std::vector<wave::Measurement<Eigen::Affine3d, uint>> &poses);
+
+  /***
    * Load PCL point cloud message from ROS message into container (for
    * localization)
    * @param lidar_msg

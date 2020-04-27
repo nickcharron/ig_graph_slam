@@ -113,6 +113,13 @@ struct ScanMatcher {
   void loadPrevPoses();
 
   /***
+   * Load initial pose estimates from a json file. This requires the poses file
+   * to have equal number of poses to the number of scan plys
+   * @return poses read
+   */
+  std::vector<wave::Measurement<Eigen::Affine3d, uint>> loadInitialPoses();
+
+  /***
    * Creates pose scan map based on specified initialization method
    * @param ros_data
    */
